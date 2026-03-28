@@ -1,0 +1,162 @@
+import { useState } from 'react';
+import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Screen } from '@/components/ui/Screen';
+import { HiveCard } from '@/components/hive/HiveCard';
+import { Colors } from '@/constants/colors';
+import { fetchHives, deleteHive } from '@/services/hive';
+import { fetchInspections } from '@/services/inspection';
+import { useToastStore } from '@/store/toast';
+import { Hive } from '@/types';
+
+export default function KuberOversikt() {
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+  const showToast = useToastStore((s) => s.show);
+
+  const { data: hives = [], isLoading, refetch } = useQuery({
+    queryKey: ['hives'],
+    queryFn: fetchHives,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteHive,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hives'] });
+    },
+    onError: (error: Error) => {
+      showToast(error.message ?? 'Kunne ikke slette kuben. Prøv igjen.', 'error');
+    },
+  });
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
+  const handleDelete = (hive: Hive) => {
+    Alert.alert(
+      'Slett kube',
+      `Er du sikker på at du vil slette "${hive.name}"?`,
+      [
+        { text: 'Avbryt', style: 'cancel' },
+        { text: 'Slett', style: 'destructive', onPress: () => deleteMutation.mutate(hive.id) },
+      ]
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <Screen>
+        <View style={styles.centered}>
+          <Text style={styles.loadingText}>Laster kuber...</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen>
+      <View style={styles.header}>
+        <Text style={styles.title}>Mine Kuber</Text>
+        <Text style={styles.count}>{hives.length} {hives.length === 1 ? 'kube' : 'kuber'}</Text>
+      </View>
+
+      <FlatList
+        data={hives}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={[styles.list, hives.length === 0 && styles.emptyList]}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.honey} />
+        }
+        renderItem={({ item }) => (
+          <HiveWithInspection
+            hive={item}
+            onPress={() => router.push({ pathname: '/kuber/[id]' as any, params: { id: item.id } })}
+            onLongPress={() => handleDelete(item)}
+          />
+        )}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={styles.emptyEmoji}>🐝</Text>
+            <Text style={styles.emptyTitle}>Ingen kuber ennå</Text>
+            <Text style={styles.emptyText}>
+              Trykk + for å legge til din første bikube
+            </Text>
+          </View>
+        }
+      />
+
+      <Pressable
+        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+        onPress={() => router.push('/kuber/ny')}
+        accessibilityLabel="Legg til ny kube"
+        accessibilityRole="button"
+      >
+        <Text style={styles.fabText}>+</Text>
+      </Pressable>
+    </Screen>
+  );
+}
+
+function HiveWithInspection({
+  hive,
+  onPress,
+  onLongPress,
+}: {
+  hive: Hive;
+  onPress: () => void;
+  onLongPress: () => void;
+}) {
+  const { data: inspections = [] } = useQuery({
+    queryKey: ['inspections', hive.id],
+    queryFn: () => fetchInspections(hive.id),
+  });
+
+  return (
+    <Pressable onLongPress={onLongPress} delayLongPress={600}>
+      <HiveCard hive={hive} lastInspection={inspections[0]} onPress={onPress} />
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  title: { fontSize: 28, fontWeight: '800', color: Colors.dark },
+  count: { fontSize: 14, color: Colors.mid },
+  list: { padding: 20, gap: 12, paddingBottom: 100 },
+  emptyList: { flex: 1 },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loadingText: { fontSize: 15, color: Colors.mid },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 80 },
+  emptyEmoji: { fontSize: 56 },
+  emptyTitle: { fontSize: 20, fontWeight: '700', color: Colors.dark },
+  emptyText: { fontSize: 14, color: Colors.mid, textAlign: 'center', lineHeight: 20, maxWidth: 260 },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.honey,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.honey,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  fabPressed: { transform: [{ scale: 0.95 }], opacity: 0.9 },
+  fabText: { fontSize: 28, color: Colors.white, fontWeight: '400', lineHeight: 32 },
+});
