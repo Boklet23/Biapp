@@ -7,7 +7,7 @@ export interface SwarmReport {
   lng: number;
   description: string | null;
   contactInfo: string | null;
-  status: 'active' | 'resolved';
+  status: 'open' | 'resolved';
   reportedAt: string;
 }
 
@@ -26,7 +26,7 @@ function mapReport(row: Record<string, unknown>): SwarmReport {
     lng: row.lng as number,
     description: row.description as string | null,
     contactInfo: row.contact_info as string | null,
-    status: row.status as 'active' | 'resolved',
+    status: row.status as 'open' | 'resolved',
     reportedAt: row.reported_at as string,
   };
 }
@@ -35,7 +35,7 @@ export async function fetchSwarmReports(): Promise<SwarmReport[]> {
   const { data, error } = await supabase
     .from('swarm_reports')
     .select('*')
-    .eq('status', 'active')
+    .eq('status', 'open')
     .order('reported_at', { ascending: false });
 
   if (error) throw error;

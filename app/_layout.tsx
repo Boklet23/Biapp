@@ -9,22 +9,10 @@ import { fetchProfile } from '@/services/profile';
 import * as Sentry from '@sentry/react-native';
 
 Sentry.init({
-  dsn: 'https://b48b3d222387e65619940395e2011d33@o4511122972803072.ingest.de.sentry.io/4511122986893392',
-
-  // Adds more context data to events (IP address, cookies, user, etc.)
-  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
-  sendDefaultPii: true,
-
-  // Enable Logs
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  sendDefaultPii: false,
   enableLogs: true,
-
-  // Configure Session Replay
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1,
-  integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
-
-  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
-  // spotlight: __DEV__,
+  integrations: [Sentry.feedbackIntegration()],
 });
 
 const queryClient = new QueryClient({
@@ -40,14 +28,6 @@ function RootLayoutNav() {
   const { setSession, setProfile } = useAuthStore();
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-        const profile = await fetchProfile();
-        setProfile(profile);
-      }
-    });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (session) {
