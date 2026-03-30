@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
@@ -18,6 +18,7 @@ export default function KuberOversikt() {
   const { data: hives = [], isLoading, refetch } = useQuery({
     queryKey: ['hives'],
     queryFn: fetchHives,
+    meta: { onError: () => showToast('Kunne ikke laste kuber', 'error') },
   });
 
   const deleteMutation = useMutation({
@@ -51,7 +52,7 @@ export default function KuberOversikt() {
     return (
       <Screen>
         <View style={styles.centered}>
-          <Text style={styles.loadingText}>Laster kuber...</Text>
+          <ActivityIndicator size="large" color={Colors.honey} />
         </View>
       </Screen>
     );
@@ -136,7 +137,6 @@ const styles = StyleSheet.create({
   list: { padding: 20, gap: 12, paddingBottom: 100 },
   emptyList: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  loadingText: { fontSize: 15, color: Colors.mid },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 80 },
   emptyEmoji: { fontSize: 56 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: Colors.dark },

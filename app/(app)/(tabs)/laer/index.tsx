@@ -1,12 +1,19 @@
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 import { router } from 'expo-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
 import { ArticleCard } from '@/components/info/ArticleCard';
 import { DiseaseCard } from '@/components/disease/DiseaseCard';
+import { HoneyForecastChart } from '@/components/info/HoneyForecastChart';
+import { HarvestLogModal } from '@/components/info/HarvestLogModal';
 import { Colors } from '@/constants/colors';
 import { GUIDE_ARTICLES } from '@/constants/beginnerGuide';
 import { DISEASES } from '@/constants/diseases';
+import { fetchHives } from '@/services/hive';
+import { fetchHarvests, createHarvest, deleteHarvest } from '@/services/harvest';
+import { useAuthStore } from '@/store/auth';
+import { useToastStore } from '@/store/toast';
 
 function SectionTitle({ children }: { children: string }) {
   return <Text style={styles.sectionTitle}>{children}</Text>;
@@ -14,6 +21,44 @@ function SectionTitle({ children }: { children: string }) {
 
 export default function Info() {
   const [query, setQuery] = useState('');
+  const [harvestModalVisible, setHarvestModalVisible] = useState(false);
+
+  const profile = useAuthStore((s) => s.profile);
+  const { show: showToast } = useToastStore();
+  const queryClient = useQueryClient();
+
+  const { data: hives = [] } = useQuery({
+    queryKey: ['hives'],
+    queryFn: fetchHives,
+  });
+
+  const { data: harvests = [] } = useQuery({
+    queryKey: ['harvests'],
+    queryFn: fetchHarvests,
+  });
+
+  const activeHives = hives.filter((h) => h.isActive);
+  const activeHiveCount = activeHives.length;
+
+  const createMutation = useMutation({
+    mutationFn: (args: { hiveId: string; harvestedAt: string; quantityKg: number; notes: string }) =>
+      createHarvest({ hiveId: args.hiveId, harvestedAt: args.harvestedAt, quantityKg: args.quantityKg, notes: args.notes }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['harvests'] });
+      setHarvestModalVisible(false);
+      showToast('Høst registrert!', 'success');
+    },
+    onError: (error: Error) => showToast(error.message, 'error'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteHarvest,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['harvests'] });
+      showToast('Høst slettet', 'info');
+    },
+    onError: (error: Error) => showToast(error.message, 'error'),
+  });
 
   const filteredDiseases = useMemo(() => {
     if (!query.trim()) return DISEASES;
@@ -34,7 +79,16 @@ export default function Info() {
       >
         <Text style={styles.header}>Info</Text>
 
-        {/* Nybegynnerguide */}
+        <SectionTitle>Honningprognose</SectionTitle>
+        <HoneyForecastChart
+          activeHiveCount={activeHiveCount}
+          hives={activeHives}
+          harvests={harvests}
+          subscriptionTier={profile?.subscriptionTier ?? 'starter'}
+          onLogHarvest={() => setHarvestModalVisible(true)}
+          onDeleteHarvest={(id) => deleteMutation.mutate(id)}
+        />
+
         <SectionTitle>Nybegynnerguide</SectionTitle>
         <ScrollView
           horizontal
@@ -55,7 +109,6 @@ export default function Info() {
           ))}
         </ScrollView>
 
-        {/* Sykdomsguide */}
         <SectionTitle>Sykdomsguide</SectionTitle>
         <Text style={styles.sub}>10 vanlige tilstander i norsk birøkt</Text>
 
@@ -86,6 +139,16 @@ export default function Info() {
           ))
         )}
       </ScrollView>
+
+      <HarvestLogModal
+        visible={harvestModalVisible}
+        hives={activeHives}
+        onClose={() => setHarvestModalVisible(false)}
+        onSubmit={(hiveId, harvestedAt, quantityKg, notes) =>
+          createMutation.mutate({ hiveId, harvestedAt, quantityKg, notes })
+        }
+        loading={createMutation.isPending}
+      />
     </Screen>
   );
 }
@@ -102,11 +165,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 2,
   },
-  articleScroll: {
-    gap: 12,
-    paddingBottom: 4,
-    paddingRight: 4,
-  },
+  articleScroll: { gap: 12, paddingBottom: 4, paddingRight: 4 },
   sub: { fontSize: 13, color: Colors.mid, marginTop: -6, marginBottom: 4 },
   search: {
     backgroundColor: Colors.white,

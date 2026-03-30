@@ -1,14 +1,17 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
 import { WeatherCard } from '@/components/home/WeatherCard';
 import { HiveStatusCard, AddHiveCard } from '@/components/home/HiveStatusCard';
+import { HoneyWidget } from '@/components/home/HoneyWidget';
 import { SeasonGuide } from '@/components/calendar/SeasonGuide';
 import { Colors } from '@/constants/colors';
 import { fetchHives } from '@/services/hive';
 import { fetchAllInspections } from '@/services/inspection';
+import { fetchHarvests } from '@/services/harvest';
 import { useAuthStore } from '@/store/auth';
+import { useToastStore } from '@/store/toast';
 import { Inspection } from '@/types';
 
 function greeting(name: string | null | undefined): string {
@@ -25,11 +28,14 @@ function SectionTitle({ children }: { children: string }) {
 
 export default function Hjem() {
   const profile = useAuthStore((s) => s.profile);
+  const showToast = useToastStore((s) => s.show);
   const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
 
-  const { data: hives = [] } = useQuery({
+  const { data: hives = [], isLoading: hivesLoading } = useQuery({
     queryKey: ['hives'],
     queryFn: fetchHives,
+    meta: { onError: () => showToast('Kunne ikke laste kuber', 'error') },
   });
 
   const { data: allInspections = [] } = useQuery({
@@ -37,7 +43,11 @@ export default function Hjem() {
     queryFn: fetchAllInspections,
   });
 
-  // Siste inspeksjon per kube
+  const { data: harvests = [] } = useQuery({
+    queryKey: ['harvests'],
+    queryFn: fetchHarvests,
+  });
+
   const lastInspectionByHive = allInspections.reduce<Record<string, Inspection>>(
     (acc, insp) => {
       const existing = acc[insp.hiveId];
@@ -49,7 +59,14 @@ export default function Hjem() {
     {}
   );
 
-  // Vær: bruk koordinater fra første kube med coords, ellers Oslo
+  const activeHives = hives.filter((h) => h.isActive);
+
+  const harvestedKgThisYear = Math.round(
+    harvests
+      .filter((h) => h.harvestedAt.startsWith(String(currentYear)))
+      .reduce((sum, h) => sum + h.quantityKg, 0) * 10
+  ) / 10;
+
   const hiveWithCoords = hives.find((h) => h.locationLat && h.locationLng);
   const weatherLat = hiveWithCoords?.locationLat;
   const weatherLng = hiveWithCoords?.locationLng;
@@ -58,7 +75,6 @@ export default function Hjem() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Hilsen + Profil-ikon */}
         <View style={styles.greetingRow}>
           <Text style={styles.greeting}>{greeting(profile?.displayName)}</Text>
           <Pressable
@@ -71,20 +87,19 @@ export default function Hjem() {
           </Pressable>
         </View>
 
-        {/* Vær */}
         <SectionTitle>Vær</SectionTitle>
         <WeatherCard lat={weatherLat} lng={weatherLng} locationName={weatherLocation} />
 
-        {/* Kuber */}
         <SectionTitle>Mine kuber</SectionTitle>
-        {hives.length === 0 ? (
+        {hivesLoading ? (
+          <View style={styles.loadingBox}>
+            <ActivityIndicator color={Colors.honey} />
+          </View>
+        ) : hives.length === 0 ? (
           <View style={styles.emptyHives}>
             <Text style={styles.emptyEmoji}>🐝</Text>
             <Text style={styles.emptyText}>Du har ingen kuber ennå</Text>
-            <Text
-              style={styles.emptyLink}
-              onPress={() => router.push('/kuber/ny' as any)}
-            >
+            <Text style={styles.emptyLink} onPress={() => router.push('/kuber/ny' as any)}>
               Legg til din første kube →
             </Text>
           </View>
@@ -108,7 +123,12 @@ export default function Hjem() {
           </ScrollView>
         )}
 
-        {/* Sesongguide */}
+        <SectionTitle>Honning</SectionTitle>
+        <HoneyWidget
+          activeHiveCount={activeHives.length}
+          harvestedKgThisYear={harvestedKgThisYear}
+        />
+
         <SectionTitle>Dette måneden</SectionTitle>
         <SeasonGuide month={currentMonth} />
       </ScrollView>
@@ -124,12 +144,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
   },
-  greeting: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.dark,
-    flex: 1,
-  },
+  greeting: { fontSize: 24, fontWeight: '800', color: Colors.dark, flex: 1 },
   profileBtn: { padding: 4 },
   profileBtnText: { fontSize: 22 },
   sectionTitle: {
@@ -141,11 +156,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 2,
   },
-  hiveScroll: {
-    gap: 12,
-    paddingBottom: 4,
-    paddingRight: 4,
+  loadingBox: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
   },
+  hiveScroll: { gap: 12, paddingBottom: 4, paddingRight: 4 },
   emptyHives: {
     backgroundColor: Colors.white,
     borderRadius: 16,

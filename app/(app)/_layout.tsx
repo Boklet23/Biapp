@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
-import { View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { Redirect, router, Stack } from 'expo-router';
-import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { useAuthStore } from '@/store/auth';
 import { GlobalToast } from '@/components/ui/Toast';
 import { Colors } from '@/constants/colors';
 import { requestNotificationPermission, registerPushToken } from '@/services/notifications';
+
+const isExpoGo = Constants.appOwnership === 'expo';
 
 export default function AppLayout() {
   const { session, isLoading } = useAuthStore();
@@ -18,16 +20,24 @@ export default function AppLayout() {
   }, [session]);
 
   useEffect(() => {
-    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const eventId = response.notification.request.content.data?.eventId as string | undefined;
-      if (eventId) {
-        router.push('/(app)/(tabs)/kalender' as any);
-      }
+    if (isExpoGo) return;
+    let sub: { remove: () => void } | null = null;
+    import('expo-notifications').then(({ addNotificationResponseReceivedListener }) => {
+      sub = addNotificationResponseReceivedListener((response) => {
+        const eventId = response.notification.request.content.data?.eventId as string | undefined;
+        if (eventId) {
+          router.push('/(app)/(tabs)/kalender' as any);
+        }
+      });
     });
-    return () => sub.remove();
+    return () => { sub?.remove(); };
   }, []);
 
-  if (isLoading) return null;
+  if (isLoading) return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <ActivityIndicator size="large" />
+    </View>
+  );
 
   if (!session) {
     return <Redirect href="/(auth)" />;

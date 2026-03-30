@@ -12,7 +12,6 @@ Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
   sendDefaultPii: false,
   enableLogs: true,
-  integrations: [Sentry.feedbackIntegration()],
 });
 
 const queryClient = new QueryClient({
@@ -28,6 +27,20 @@ function RootLayoutNav() {
   const { setSession, setProfile } = useAuthStore();
 
   useEffect(() => {
+    // Resolve isLoading immediately using getSession — don't wait for onAuthStateChange
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        if (session) {
+          fetchProfile().then((profile) => setProfile(profile)).catch(() => setProfile(null));
+        } else {
+          setProfile(null);
+        }
+      })
+      .catch(() => {
+        setSession(null); // Force isLoading=false even if getSession() fails
+      });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (session) {

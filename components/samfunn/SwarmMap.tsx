@@ -2,13 +2,19 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Location from 'expo-location';
-import Mapbox, { Camera, MapView, MarkerView, PointAnnotation } from '@rnmapbox/maps';
+import Constants from 'expo-constants';
 import { Colors } from '@/constants/colors';
 import { fetchSwarmReports, createSwarmReport, SwarmReport } from '@/services/swarmReport';
 import { useToastStore } from '@/store/toast';
 import { ReportSwarmModal } from './ReportSwarmModal';
 
-Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
+const isExpoGo = Constants.appOwnership === 'expo';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const mapboxLib = isExpoGo ? null : (require('@rnmapbox/maps') as typeof import('@rnmapbox/maps'));
+if (mapboxLib) {
+  mapboxLib.default.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
+}
 
 const OSLO = { lat: 59.9139, lng: 10.7522 };
 
@@ -64,6 +70,11 @@ export function SwarmMap() {
     }
     setModalVisible(true);
   };
+
+  if (!mapboxLib) return null;
+
+  const { MapView, Camera, PointAnnotation } = mapboxLib;
+  const Mapbox = mapboxLib.default;
 
   const centerCoords: [number, number] = userLocation
     ? [userLocation.lng, userLocation.lat]

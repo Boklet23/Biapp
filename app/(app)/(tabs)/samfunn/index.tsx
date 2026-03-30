@@ -1,11 +1,14 @@
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AssociationCard } from '@/components/samfunn/AssociationCard';
-import { SwarmMap } from '@/components/samfunn/SwarmMap';
 import { Colors } from '@/constants/colors';
 import { BEE_ASSOCIATIONS } from '@/constants/beeAssociations';
+
+const SwarmMap = lazy(() =>
+  import('@/components/samfunn/SwarmMap').then((m) => ({ default: m.SwarmMap }))
+);
 
 type Tab = 'kart' | 'lag';
 
@@ -50,7 +53,9 @@ export default function Samfunn() {
 
       {/* Innhold */}
       {activeTab === 'kart' ? (
-        <SwarmMap />
+        <Suspense fallback={null}>
+          <SwarmMap />
+        </Suspense>
       ) : (
         <ScrollView
           contentContainerStyle={styles.content}

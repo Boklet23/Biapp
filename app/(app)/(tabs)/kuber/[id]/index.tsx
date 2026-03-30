@@ -1,48 +1,15 @@
-import { useLayoutEffect } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { lazy, Suspense, useLayoutEffect } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import Mapbox, { Camera, MapView, PointAnnotation } from '@rnmapbox/maps';
 import { Screen } from '@/components/ui/Screen';
 import { HiveTypeChip } from '@/components/hive/HiveTypeChip';
 import { Colors } from '@/constants/colors';
 import { fetchHive } from '@/services/hive';
 import { fetchInspections } from '@/services/inspection';
-import { Hive, Inspection } from '@/types';
+import { Inspection } from '@/types';
 
-Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
-
-function HiveMapSection({ hive }: { hive: Hive }) {
-  if (!hive.locationLat || !hive.locationLng) return null;
-  return (
-    <View style={styles.mapSection}>
-      <MapView
-        style={styles.map}
-        styleURL={Mapbox.StyleURL.Street}
-        logoEnabled={false}
-        attributionPosition={{ bottom: 2, right: 4 }}
-        scrollEnabled={false}
-        zoomEnabled={false}
-        pitchEnabled={false}
-        rotateEnabled={false}
-      >
-        <Camera
-          centerCoordinate={[hive.locationLng, hive.locationLat]}
-          zoomLevel={13}
-          animationDuration={0}
-        />
-        <PointAnnotation
-          id="hive-location"
-          coordinate={[hive.locationLng, hive.locationLat]}
-        >
-          <View style={styles.pin}>
-            <Text style={styles.pinEmoji}>🏠</Text>
-          </View>
-        </PointAnnotation>
-      </MapView>
-    </View>
-  );
-}
+const HiveMap = lazy(() => import('@/components/hive/HiveMap'));
 
 const MOOD_EMOJI = ['', '😟', '😐', '😊', '😁', '🤩'];
 
@@ -135,7 +102,9 @@ export default function KubeProfil() {
         </View>
 
         {/* Map */}
-        <HiveMapSection hive={hive} />
+        <Suspense fallback={null}>
+          <HiveMap hive={hive} />
+        </Suspense>
 
         {/* Last inspection summary */}
         <View style={styles.section}>
@@ -229,22 +198,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   location: { fontSize: 14, color: Colors.mid },
-
-  mapSection: {
-    height: 160,
-    borderRadius: 14,
-    overflow: 'hidden',
-    marginBottom: 4,
-  },
-  map: { flex: 1 },
-  pin: {
-    width: 32, height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.honey,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pinEmoji: { fontSize: 16 },
 
   section: { marginBottom: 24 },
   sectionTitle: {

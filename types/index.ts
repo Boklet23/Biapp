@@ -104,3 +104,13 @@ export interface CalendarEvent {
   notificationId: string | null;
   createdAt: string;
 }
+
+export interface HarvestRecord {
+  id: string;
+  userId: string;
+  hiveId: string;
+  harvestedAt: string; // 'YYYY-MM-DD'
+  quantityKg: number;
+  notes: string | null;
+  createdAt: string;
+}
