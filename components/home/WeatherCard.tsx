@@ -42,11 +42,17 @@ export function WeatherCard({ lat, lng, locationName }: WeatherCardProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     const useLat = lat ?? OSLO_LAT;
     const useLng = lng ?? OSLO_LNG;
-    fetchWeather(useLat, useLng)
-      .then(setWeather)
-      .finally(() => setLoading(false));
+    setLoading(true);
+    fetchWeather(useLat, useLng).then((data) => {
+      if (!cancelled) {
+        setWeather(data);
+        setLoading(false);
+      }
+    });
+    return () => { cancelled = true; };
   }, [lat, lng]);
 
   const displayLocation = locationName ?? 'Oslo';

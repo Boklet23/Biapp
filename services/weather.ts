@@ -2,6 +2,7 @@
 // Docs: https://api.met.no/weatherapi/locationforecast/2.0/documentation
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 time
+const CACHE_MAX_SIZE = 100;
 
 const SYMBOL_TO_NORWEGIAN: Record<string, string> = {
   clearsky_day: 'Klarvær',
@@ -85,6 +86,10 @@ export async function fetchWeather(lat: number, lng: number): Promise<WeatherDat
       fetchedAt: Date.now(),
     };
 
+    if (cache.size >= CACHE_MAX_SIZE) {
+      const oldestKey = cache.keys().next().value as string;
+      cache.delete(oldestKey);
+    }
     cache.set(key, data);
     return data;
   } catch {

@@ -9,14 +9,19 @@ export interface CreateCalendarEventData {
 }
 
 function mapEvent(row: Record<string, unknown>): CalendarEvent {
+  if (typeof row.id !== 'string') throw new Error('Ugyldig hendelse: mangler id');
+  if (typeof row.user_id !== 'string') throw new Error('Ugyldig hendelse: mangler user_id');
+  if (typeof row.title !== 'string') throw new Error('Ugyldig hendelse: mangler title');
+  if (typeof row.event_date !== 'string') throw new Error('Ugyldig hendelse: mangler event_date');
+  if (typeof row.created_at !== 'string') throw new Error('Ugyldig hendelse: mangler created_at');
   return {
-    id: row.id as string,
-    userId: row.user_id as string,
-    title: row.title as string,
-    eventDate: row.event_date as string,
-    notes: row.notes as string | null,
-    notificationId: row.notification_id as string | null,
-    createdAt: row.created_at as string,
+    id: row.id,
+    userId: row.user_id,
+    title: row.title,
+    eventDate: row.event_date,
+    notes: typeof row.notes === 'string' ? row.notes : null,
+    notificationId: typeof row.notification_id === 'string' ? row.notification_id : null,
+    createdAt: row.created_at,
   };
 }
 

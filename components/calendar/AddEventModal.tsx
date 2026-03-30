@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors } from '@/constants/colors';
@@ -30,6 +30,20 @@ export function AddEventModal({ visible, initialDate, onClose, onSubmit, loading
     return new Date();
   });
   const [showPicker, setShowPicker] = useState(Platform.OS === 'ios');
+
+  useEffect(() => {
+    if (visible) {
+      setTitle('');
+      setNotes('');
+      setShowPicker(Platform.OS === 'ios');
+      if (initialDate) {
+        const [y, m, d] = initialDate.split('-').map(Number);
+        setDate(new Date(y, m - 1, d));
+      } else {
+        setDate(new Date());
+      }
+    }
+  }, [visible, initialDate]);
 
   const handleSubmit = () => {
     if (!title.trim()) return;

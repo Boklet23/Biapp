@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -25,9 +25,11 @@ export default function RedigerKube() {
   const [locationName, setLocationName] = useState('');
   const [notes, setNotes] = useState('');
   const [nameError, setNameError] = useState('');
+  const initialized = useRef(false);
 
   useEffect(() => {
-    if (hive) {
+    if (hive && !initialized.current) {
+      initialized.current = true;
       setName(hive.name);
       setType(hive.type);
       setLocationName(hive.locationName ?? '');

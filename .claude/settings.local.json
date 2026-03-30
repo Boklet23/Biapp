@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(npx tsc:*)",
+      "WebSearch",
+      "WebFetch(domain:commons.wikimedia.org)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "Bash(grep -r from.*users C:UsersandreclaudecodeProsjekterBierbiappapp C:UsersandreclaudecodeProsjekterBierbiappservices)",
+      "Bash(grep -r \"select.*profile\\\\|fetch.*profile\\\\|UPDATE.*users\" C:UsersandreclaudecodeProsjekterBierbiapp --include=*.ts --include=*.tsx)",
+      "Bash(grep -r \"setProfile\\\\|useAuthStore\\\\|profile\" C:UsersandreclaudecodeProsjekterBierbiappapp --include=*.ts --include=*.tsx)",
+      "Bash(grep -r \"useEffect.*profile\\\\|useAuthStore\" C:UsersandreclaudecodeProsjekterBierbiapp --include=*.ts --include=*.tsx ! -path */node_modules/*)",
+      "Bash(npx eas:*)",
+      "WebFetch(domain:expo.dev)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm install:*)",
+      "Bash(npx expo:*)",
+      "Bash(npm show:*)",
+      "Bash(curl -s \"https://job-logs.eascdn.net/production/4cd0d1e8-fb3b-45d8-b45f-a744300baedf/1774724955513-e5733914-a8b8-4e13-9984-1eb9cab09a2c.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260328%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260328T191510Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=4442a458a835cbf8ad892ee85348cb96d2cd41a3914e67f00be08de4f21bcc8e293a92c3e31932f7a9b4dedf74fda5f3839fe798ae98d4ae23e50b136ccf987dc18d57c044280ce850f3d7e867abb39c9454056dd902543c37f118dd582fd6d558b27268f3af68153cf42ad35f18f00ef437774685dca538f3cc2beada9f429bd8773dbdf31c51e6cd9f71f0ee28609e2e7dfb90c060dd35ea7f4949f717775ffb0fc8f6630f62beae56ed9179cf146cd08fd7cc9d6481f7c0ac19777c227d5934fb70e393028437e6cf2ad4c1a9e340368e0465278abca14b56af6078007e218be76e9385c170d91c0eeb63e93a841d486a7088b9\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(python3 -c \"import json,sys; b=json.load\\(sys.stdin\\)[0]; print\\(b[''''id''''], b[''''status''''], b.get\\(''''error'''',''''''''\\)\\)\")",
+      "Bash(python3 -c \"import json,sys; b=json.load\\(sys.stdin\\)[0]; print\\(b[''''id''''], b[''''status'''']\\)\")",
+      "Bash(python3 -c \"import json,sys; b=json.load\\(sys.stdin\\)[0]; print\\(b.get\\(''''error'''',''''''''\\)\\)\")",
+      "Bash(python3 -c \":*)",
+      "Bash(curl -s \"https://job-logs.eascdn.net/production/981262ac-d3c0-4eeb-b4b2-2e5fbf1a2c61/1774726113751-61c4aed0-77a0-4cd0-a196-e53c65feef38.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260328%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260328T193106Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=1cbd2cca42907fe0d3bdafb3e67dccf921cafff78179e98fb6ec58ce3175c17b216145b36c6b896d0388003332b9965399af9b3264591b2c5fd17abe193e1af2e55a310715690b6e6ee519838886f22a0456539157f36db774ce6b5243c1a4bedc2d8605a5799202bd13258777a50e05252ae9c0b2b64b18c25a83cdc4577ca48872669ee44c3d2e28be95fbde934358c5a8967c193e2b6f020147602f5a93d1c75a5bb8fc53e141ff731b8a67d483e00a0794527b155fa9afef7126a19a7901fec6676b00f22fd91ccdc55c71e960f77d9e43ddc48f58193b92e9797badfd8abede197d1e686441304b37be95e42714c328c4626db9661c566d4e095a0ba8ed\")",
+      "Bash(python3 -c \"import sys,json; [print\\(json.loads\\(l\\).get\\(''''msg'''',''''''''\\)\\) for l in sys.stdin if l.strip\\(\\)]\")",
+      "Bash(curl -s \"https://job-logs.eascdn.net/production/0cc1d902-c90d-4463-b089-7f94fcd2ed29/1774726408219-5e420532-2cb9-4c06-8552-dbf2fb2409fb.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260328%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260328T193735Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=69166e3345bfe4293a383c939f0e6b2966223d6666579fa985edf07a79f2b87e129b81862d16d382a50a15cd75856a7dea86630df7b05f5099cf33a07eb19261c33af29f189a3dec1085bef58d5b8784f4e0ef1d19e271ee7ccce1d00b86e9bc12386f4cfb4cc894caa19ffa9f08033016dee3c7b110e5efd4407d1e485f851fd8a4b2e1d3fc1ef841815bd2d1bb65234cc9c1b294ade485decbcc858219d6563c6d7fe64004af113320ba5a6c7abf64713f6cb7274aa7201ed569e62a14458c22070bc13a0d5d0916ae54ea77a5b2aa3225cb0935f842017c2c33d537536ebc64e56dd66e8003389f8977f8871af478e6914c1abeb6c58b9018b0eec2658b5e\")"
+    ]
+  }
+}

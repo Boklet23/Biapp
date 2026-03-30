@@ -75,6 +75,9 @@ export default function Kalender() {
       queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
       showToast('Hendelse slettet', 'success');
     },
+    onError: (error: Error) => {
+      showToast(error.message ?? 'Kunne ikke slette hendelse', 'error');
+    },
   });
 
   const inspectionDates = useMemo(() => {
