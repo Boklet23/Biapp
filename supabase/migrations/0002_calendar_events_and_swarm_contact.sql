@@ -6,6 +6,9 @@
 -- Add missing contact_info column to swarm_reports
 alter table swarm_reports add column if not exists contact_info text;
 
+-- Add push_token column to profiles for Expo push notifications
+alter table profiles add column if not exists push_token text;
+
 -- ─────────────────────────────────────────────
 -- CALENDAR EVENTS
 -- ─────────────────────────────────────────────

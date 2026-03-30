@@ -1,5 +1,8 @@
 import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { supabase } from '@/lib/supabase';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -49,4 +52,25 @@ export async function scheduleEventNotification(
 
 export async function cancelNotification(notificationId: string): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync(notificationId);
+}
+
+export async function registerPushToken(): Promise<void> {
+  if (!Device.isDevice) return;
+  if (Platform.OS === 'web') return;
+
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
+  if (!projectId) return;
+
+  try {
+    const granted = await requestNotificationPermission();
+    if (!granted) return;
+
+    const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from('profiles').update({ push_token: token }).eq('id', user.id);
+  } catch {
+    // Push-token er nice-to-have — appen fungerer uten
+  }
 }

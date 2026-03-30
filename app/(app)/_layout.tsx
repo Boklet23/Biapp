@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
-import { Redirect, Stack } from 'expo-router';
+import { Redirect, router, Stack } from 'expo-router';
+import * as Notifications from 'expo-notifications';
 import { useAuthStore } from '@/store/auth';
 import { GlobalToast } from '@/components/ui/Toast';
 import { Colors } from '@/constants/colors';
-import { requestNotificationPermission } from '@/services/notifications';
+import { requestNotificationPermission, registerPushToken } from '@/services/notifications';
 
 export default function AppLayout() {
   const { session, isLoading } = useAuthStore();
@@ -12,8 +13,19 @@ export default function AppLayout() {
   useEffect(() => {
     if (session) {
       requestNotificationPermission();
+      registerPushToken();
     }
   }, [session]);
+
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const eventId = response.notification.request.content.data?.eventId as string | undefined;
+      if (eventId) {
+        router.push('/(app)/(tabs)/kalender' as any);
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   if (isLoading) return null;
 
