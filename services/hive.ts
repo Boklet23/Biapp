@@ -89,16 +89,20 @@ export async function deleteHive(id: string): Promise<void> {
 }
 
 function mapHive(row: Record<string, unknown>): Hive {
+  if (typeof row.id !== 'string') throw new Error('Ugyldig hive: mangler id');
+  if (typeof row.user_id !== 'string') throw new Error('Ugyldig hive: mangler user_id');
+  if (typeof row.name !== 'string') throw new Error('Ugyldig hive: mangler name');
+  if (typeof row.created_at !== 'string') throw new Error('Ugyldig hive: mangler created_at');
   return {
-    id: row.id as string,
-    userId: row.user_id as string,
-    name: row.name as string,
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
     type: row.type as HiveType,
-    locationLat: row.location_lat as number | null,
-    locationLng: row.location_lng as number | null,
-    locationName: row.location_name as string | null,
-    isActive: row.is_active as boolean,
-    notes: row.notes as string | null,
-    createdAt: row.created_at as string,
+    locationLat: typeof row.location_lat === 'number' ? row.location_lat : null,
+    locationLng: typeof row.location_lng === 'number' ? row.location_lng : null,
+    locationName: typeof row.location_name === 'string' ? row.location_name : null,
+    isActive: row.is_active === true,
+    notes: typeof row.notes === 'string' ? row.notes : null,
+    createdAt: row.created_at,
   };
 }

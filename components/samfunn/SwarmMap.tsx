@@ -51,10 +51,16 @@ export function SwarmMap() {
   });
 
   const handleReportPress = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === 'granted') {
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setUserLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude });
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setUserLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude });
+      } else {
+        showToast('Posisjon ikke tilgjengelig — rapporten plasseres ved Oslo', 'error');
+      }
+    } catch {
+      showToast('Kunne ikke hente posisjon — rapporten plasseres ved Oslo', 'error');
     }
     setModalVisible(true);
   };

@@ -9,6 +9,7 @@ import { InfoSheet, InfoRow, InfoText } from '@/components/ui/InfoSheet';
 import { Colors } from '@/constants/colors';
 import { HiveTypeChip } from '@/components/hive/HiveTypeChip';
 import { createHive } from '@/services/hive';
+import { useToastStore } from '@/store/toast';
 import { HiveType } from '@/types';
 
 const HIVE_TYPES: HiveType[] = ['langstroth', 'warre', 'toppstang', 'annet'];
@@ -36,6 +37,7 @@ const INFO_CONTENT: Record<InfoTopic, { title: string; content: React.ReactNode 
 
 export default function NyKube() {
   const queryClient = useQueryClient();
+  const showToast = useToastStore((s) => s.show);
   const [name, setName] = useState('');
   const [type, setType] = useState<HiveType>('langstroth');
   const [locationName, setLocationName] = useState('');
@@ -51,6 +53,7 @@ export default function NyKube() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
+        showToast('GPS-tillatelse nektet. Gi tilgang i Innstillinger.', 'error');
         return;
       }
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
@@ -63,6 +66,8 @@ export default function NyKube() {
           setLocationName(parts.join(', '));
         }
       }
+    } catch {
+      showToast('Kunne ikke hente posisjon. Prøv igjen.', 'error');
     } finally {
       setGpsLoading(false);
     }
@@ -70,7 +75,7 @@ export default function NyKube() {
 
   const mutation = useMutation({
     mutationFn: createHive,
-    onError: (error) => { console.error('[createHive]', error); },
+    onError: (error: Error) => showToast(error.message ?? 'Kunne ikke lagre kube', 'error'),
     onSuccess: (hive) => {
       queryClient.invalidateQueries({ queryKey: ['hives'] });
       router.replace({ pathname: '/kuber/[id]' as any, params: { id: hive.id } });

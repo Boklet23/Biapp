@@ -2,15 +2,18 @@ import { supabase } from '@/lib/supabase';
 import { ExperienceLevel, SubscriptionTier, User } from '@/types';
 
 function mapProfile(row: Record<string, unknown>): User {
+  if (typeof row.id !== 'string') throw new Error('Ugyldig profil: mangler id');
+  if (typeof row.email !== 'string') throw new Error('Ugyldig profil: mangler email');
+  if (typeof row.created_at !== 'string') throw new Error('Ugyldig profil: mangler created_at');
   return {
-    id: row.id as string,
-    email: row.email as string,
-    displayName: row.display_name as string | null,
-    municipalityId: row.municipality_id as number | null,
-    experienceLevel: row.experience_level as ExperienceLevel | null,
+    id: row.id,
+    email: row.email,
+    displayName: typeof row.display_name === 'string' ? row.display_name : null,
+    municipalityId: typeof row.municipality_id === 'number' ? row.municipality_id : null,
+    experienceLevel: (row.experience_level as ExperienceLevel | null) ?? null,
     subscriptionTier: (row.subscription_tier as SubscriptionTier) ?? 'starter',
-    teamId: row.team_id as string | null,
-    createdAt: row.created_at as string,
+    teamId: typeof row.team_id === 'string' ? row.team_id : null,
+    createdAt: row.created_at,
   };
 }
 

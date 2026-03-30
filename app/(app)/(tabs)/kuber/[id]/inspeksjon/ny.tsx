@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { StepIndicator } from '@/components/inspection/StepIndicator';
@@ -27,15 +28,18 @@ const MOOD_EMOJIS = ['😟', '😐', '😊', '😁', '🤩'];
 const VARROA_METHODS = ['vaskemetode', 'sukkerpuder', 'limbunn'];
 const TOTAL_STEPS = 4;
 
-function formatDateForInput(d: Date): string {
-  return d.toISOString().slice(0, 16);
+function formatDateForDisplay(d: Date): string {
+  return d.toLocaleString('nb-NO', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit',
+  });
 }
 
 // ─── Step 1: Grunninfo ──────────────────────────────────────────────────────
 
 interface Step1Props {
-  inspectedAt: string;
-  setInspectedAt: (v: string) => void;
+  inspectedAt: Date;
+  setInspectedAt: (v: Date) => void;
   weatherTemp: string;
   setWeatherTemp: (v: string) => void;
   weatherCondition: string;
@@ -44,19 +48,33 @@ interface Step1Props {
 }
 
 function Step1({ inspectedAt, setInspectedAt, weatherTemp, setWeatherTemp, weatherCondition, setWeatherCondition, weatherLoading }: Step1Props) {
+  const [showPicker, setShowPicker] = useState(false);
+
   return (
     <View style={styles.stepContent}>
       <Text style={styles.stepHeading}>Grunninfo</Text>
 
       <View style={styles.field}>
         <Text style={styles.label}>Dato og tid</Text>
-        <TextInput
+        <Pressable
           style={styles.input}
-          value={inspectedAt}
-          onChangeText={setInspectedAt}
-          placeholder="ÅÅÅÅ-MM-DDTHH:MM"
-          placeholderTextColor={Colors.mid + '80'}
-        />
+          onPress={() => setShowPicker(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Velg dato og tid"
+        >
+          <Text style={styles.inputText}>{formatDateForDisplay(inspectedAt)}</Text>
+        </Pressable>
+        {showPicker && (
+          <DateTimePicker
+            value={inspectedAt}
+            mode="datetime"
+            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            onChange={(_, date) => {
+              if (Platform.OS === 'android') setShowPicker(false);
+              if (date) setInspectedAt(date);
+            }}
+          />
+        )}
       </View>
 
       <View style={styles.row}>
@@ -266,7 +284,7 @@ export default function NyInspeksjon() {
   const [step, setStep] = useState(1);
 
   // Step 1
-  const [inspectedAt, setInspectedAt] = useState(formatDateForInput(new Date()));
+  const [inspectedAt, setInspectedAt] = useState(new Date());
   const [weatherTemp, setWeatherTemp] = useState('');
   const [weatherCondition, setWeatherCondition] = useState('');
   const [weatherLoading, setWeatherLoading] = useState(false);
@@ -324,7 +342,7 @@ export default function NyInspeksjon() {
     if (isLastStep) {
       mutation.mutate({
         hiveId: id,
-        inspectedAt: new Date(inspectedAt).toISOString(),
+        inspectedAt: inspectedAt.toISOString(),
         weatherTemp: weatherTemp ? Number(weatherTemp) : undefined,
         weatherCondition: weatherCondition.trim() || undefined,
         numFramesBrood: framesBrood,
@@ -471,6 +489,10 @@ const styles = StyleSheet.create({
     color: Colors.dark,
     borderWidth: 1,
     borderColor: Colors.mid + '20',
+  },
+  inputText: {
+    fontSize: 15,
+    color: Colors.dark,
   },
   notesInput: {
     height: 100,

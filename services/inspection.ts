@@ -32,10 +32,15 @@ export async function fetchInspections(hiveId: string): Promise<Inspection[]> {
 }
 
 export async function fetchAllInspections(): Promise<Inspection[]> {
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
   const { data, error } = await supabase
     .from('inspections')
     .select('*')
-    .order('inspected_at', { ascending: false });
+    .gte('inspected_at', oneYearAgo.toISOString())
+    .order('inspected_at', { ascending: false })
+    .limit(500);
 
   if (error) throw error;
   return data.map(mapInspection);
@@ -85,24 +90,28 @@ export async function createInspection(input: CreateInspectionData): Promise<Ins
 }
 
 function mapInspection(row: Record<string, unknown>): Inspection {
+  if (typeof row.id !== 'string') throw new Error('Ugyldig inspeksjon: mangler id');
+  if (typeof row.hive_id !== 'string') throw new Error('Ugyldig inspeksjon: mangler hive_id');
+  if (typeof row.user_id !== 'string') throw new Error('Ugyldig inspeksjon: mangler user_id');
+  if (typeof row.inspected_at !== 'string') throw new Error('Ugyldig inspeksjon: mangler inspected_at');
   return {
-    id: row.id as string,
-    hiveId: row.hive_id as string,
-    userId: row.user_id as string,
-    inspectedAt: row.inspected_at as string,
-    weatherTemp: row.weather_temp as number | null,
-    weatherCondition: row.weather_condition as string | null,
-    numFramesBrood: row.num_frames_brood as number | null,
-    numFramesHoney: row.num_frames_honey as number | null,
-    numFramesEmpty: row.num_frames_empty as number | null,
-    queenSeen: row.queen_seen as boolean,
-    queenCellsFound: row.queen_cells_found as boolean,
-    varroaCount: row.varroa_count as number | null,
-    varroaMethod: row.varroa_method as string | null,
-    diseaseObservations: row.disease_observations as Record<string, unknown> | null,
-    treatmentApplied: row.treatment_applied as boolean,
-    treatmentProduct: row.treatment_product as string | null,
-    notes: row.notes as string | null,
-    moodScore: row.mood_score as number | null,
+    id: row.id,
+    hiveId: row.hive_id,
+    userId: row.user_id,
+    inspectedAt: row.inspected_at,
+    weatherTemp: typeof row.weather_temp === 'number' ? row.weather_temp : null,
+    weatherCondition: typeof row.weather_condition === 'string' ? row.weather_condition : null,
+    numFramesBrood: typeof row.num_frames_brood === 'number' ? row.num_frames_brood : null,
+    numFramesHoney: typeof row.num_frames_honey === 'number' ? row.num_frames_honey : null,
+    numFramesEmpty: typeof row.num_frames_empty === 'number' ? row.num_frames_empty : null,
+    queenSeen: row.queen_seen === true,
+    queenCellsFound: row.queen_cells_found === true,
+    varroaCount: typeof row.varroa_count === 'number' ? row.varroa_count : null,
+    varroaMethod: typeof row.varroa_method === 'string' ? row.varroa_method : null,
+    diseaseObservations: row.disease_observations != null ? row.disease_observations as Record<string, unknown> : null,
+    treatmentApplied: row.treatment_applied === true,
+    treatmentProduct: typeof row.treatment_product === 'string' ? row.treatment_product : null,
+    notes: typeof row.notes === 'string' ? row.notes : null,
+    moodScore: typeof row.mood_score === 'number' ? row.mood_score : null,
   };
 }

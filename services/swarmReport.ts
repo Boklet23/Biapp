@@ -19,15 +19,20 @@ export interface CreateSwarmReportData {
 }
 
 function mapReport(row: Record<string, unknown>): SwarmReport {
+  if (typeof row.id !== 'string') throw new Error('Ugyldig svermrapport: mangler id');
+  if (typeof row.user_id !== 'string') throw new Error('Ugyldig svermrapport: mangler user_id');
+  if (typeof row.lat !== 'number') throw new Error('Ugyldig svermrapport: mangler lat');
+  if (typeof row.lng !== 'number') throw new Error('Ugyldig svermrapport: mangler lng');
+  if (typeof row.reported_at !== 'string') throw new Error('Ugyldig svermrapport: mangler reported_at');
   return {
-    id: row.id as string,
-    userId: row.user_id as string,
-    lat: row.lat as number,
-    lng: row.lng as number,
-    description: row.description as string | null,
-    contactInfo: row.contact_info as string | null,
+    id: row.id,
+    userId: row.user_id,
+    lat: row.lat,
+    lng: row.lng,
+    description: typeof row.description === 'string' ? row.description : null,
+    contactInfo: typeof row.contact_info === 'string' ? row.contact_info : null,
     status: row.status as 'open' | 'resolved',
-    reportedAt: row.reported_at as string,
+    reportedAt: row.reported_at,
   };
 }
 
