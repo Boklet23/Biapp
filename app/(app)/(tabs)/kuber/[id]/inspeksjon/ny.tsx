@@ -19,12 +19,12 @@ import { StepIndicator } from '@/components/inspection/StepIndicator';
 import { FrameCounter } from '@/components/inspection/FrameCounter';
 import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/colors';
+import { MOOD_EMOJIS } from '@/constants/ui';
 import { fetchHive } from '@/services/hive';
 import { createInspection } from '@/services/inspection';
 import { fetchWeather } from '@/services/weather';
 
 const STEP_LABELS = ['Grunninfo', 'Kubestatus', 'Helse', 'Notater'];
-const MOOD_EMOJIS = ['😟', '😐', '😊', '😁', '🤩'];
 const VARROA_METHODS = ['vaskemetode', 'sukkerpuder', 'limbunn'];
 const TOTAL_STEPS = 4;
 

@@ -3,9 +3,8 @@ import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
 import { Colors } from '@/constants/colors';
+import { MOOD_EMOJI } from '@/constants/ui';
 import { fetchInspection } from '@/services/inspection';
-
-const MOOD_EMOJI = ['', '😟', '😐', '😊', '😁', '🤩'];
 const MOOD_LABEL = ['', 'Bekymret', 'Nøytral', 'Bra', 'Flott', 'Strålende'];
 
 function formatDate(iso: string): string {

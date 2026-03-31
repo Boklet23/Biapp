@@ -23,25 +23,6 @@ const HIVE_TYPES: HiveType[] = ['langstroth', 'warre', 'toppstang', 'annet'];
 
 type InfoTopic = 'name' | 'type' | 'location' | 'notes';
 
-const INFO_CONTENT: Record<InfoTopic, { title: string; content: React.ReactNode }> = {
-  name: {
-    title: 'Navn på kube',
-    content: null, // settes inline
-  },
-  type: {
-    title: 'Kubetype',
-    content: null,
-  },
-  location: {
-    title: 'Sted',
-    content: null,
-  },
-  notes: {
-    title: 'Notater',
-    content: null,
-  },
-};
-
 export default function NyKube() {
   const queryClient = useQueryClient();
   const showToast = useToastStore((s) => s.show);

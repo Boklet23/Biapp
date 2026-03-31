@@ -11,14 +11,13 @@ import { fetchAllInspections } from '@/services/inspection';
 import { fetchCalendarEvents, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from '@/services/calendarEvent';
 import { scheduleEventNotification, cancelNotification } from '@/services/notifications';
 import { useToastStore } from '@/store/toast';
+import { MOOD_EMOJI } from '@/constants/ui';
 import { CalendarEvent, Inspection } from '@/types';
 
 const MONTH_NAMES = [
   '', 'Januar', 'Februar', 'Mars', 'April', 'Mai', 'Juni',
   'Juli', 'August', 'September', 'Oktober', 'November', 'Desember',
 ];
-
-const MOOD_EMOJI = ['', '😟', '😐', '😊', '😁', '🤩'];
 
 function formatTime(iso: string): string {
   const d = new Date(iso);

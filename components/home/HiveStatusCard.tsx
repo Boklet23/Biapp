@@ -1,8 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Colors, Shadows } from '@/constants/colors';
+import { MOOD_EMOJI } from '@/constants/ui';
 import { Hive, Inspection } from '@/types';
-
-const MOOD_EMOJI = ['', '😟', '😐', '😊', '😁', '🤩'];
 
 interface HiveStatusCardProps {
   hive: Hive;

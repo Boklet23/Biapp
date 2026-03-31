@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Location from 'expo-location';
 import Constants from 'expo-constants';
 import { Colors } from '@/constants/colors';
+import { OSLO } from '@/constants/locations';
 import { fetchSwarmReports, createSwarmReport, SwarmReport } from '@/services/swarmReport';
 import { useToastStore } from '@/store/toast';
 import { ReportSwarmModal } from './ReportSwarmModal';
@@ -15,8 +16,6 @@ const mapboxLib = isExpoGo ? null : (require('@rnmapbox/maps') as typeof import(
 if (mapboxLib) {
   mapboxLib.default.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
 }
-
-const OSLO = { lat: 59.9139, lng: 10.7522 };
 
 function daysSince(iso: string): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);

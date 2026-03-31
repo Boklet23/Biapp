@@ -6,13 +6,12 @@ import { Screen } from '@/components/ui/Screen';
 import { HiveTypeChip } from '@/components/hive/HiveTypeChip';
 import { LoadingCard } from '@/components/ui/LoadingCard';
 import { Colors, Shadows } from '@/constants/colors';
+import { MOOD_EMOJI } from '@/constants/ui';
 import { fetchHive } from '@/services/hive';
 import { fetchInspections } from '@/services/inspection';
 import { Inspection } from '@/types';
 
 const HiveMap = lazy(() => import('@/components/hive/HiveMap'));
-
-const MOOD_EMOJI = ['', '😟', '😐', '😊', '😁', '🤩'];
 
 const VARROA_DOTS = 5;
 

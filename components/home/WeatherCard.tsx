@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '@/constants/colors';
+import { OSLO } from '@/constants/locations';
 import { fetchWeather, WeatherData } from '@/services/weather';
-
-// Oslo som standard hvis ingen kubeplassering med koordinater
-const OSLO_LAT = 59.9139;
-const OSLO_LNG = 10.7522;
 
 const SYMBOL_EMOJI: Record<string, string> = {
   clearsky: '☀️',
@@ -43,8 +40,8 @@ export function WeatherCard({ lat, lng, locationName }: WeatherCardProps) {
 
   useEffect(() => {
     let cancelled = false;
-    const useLat = lat ?? OSLO_LAT;
-    const useLng = lng ?? OSLO_LNG;
+    const useLat = lat ?? OSLO.lat;
+    const useLng = lng ?? OSLO.lng;
     setLoading(true);
     fetchWeather(useLat, useLng).then((data) => {
       if (!cancelled) {
