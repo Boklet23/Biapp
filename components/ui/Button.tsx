@@ -30,11 +30,11 @@ export function Button({
 
   return (
     <Pressable
-      style={({ pressed }) => [
+      style={(state) => [
         styles.base,
         styles[variant],
         (disabled || loading) && styles.disabled,
-        pressed && styles.pressed,
+        state.pressed && styles.pressed,
         style,
       ]}
       onPress={handlePress}
@@ -63,6 +63,11 @@ const styles = StyleSheet.create({
     opacity: 0.85,
     transform: [{ scale: 0.98 }],
   },
+  focused: {
+    borderWidth: 2,
+    borderColor: Colors.honey,
+    opacity: 0.95,
+  },
   disabled: {
     opacity: 0.45,
   },
@@ -88,7 +93,7 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   secondaryLabel: {
-    color: Colors.honeyDark,
+    color: Colors.dark,  // honeyDark on amber fails WCAG AA — dark provides 14:1 contrast
   },
   ghostLabel: {
     color: Colors.honey,

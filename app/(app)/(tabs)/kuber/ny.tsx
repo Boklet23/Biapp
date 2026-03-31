@@ -10,7 +10,14 @@ import { Colors } from '@/constants/colors';
 import { HiveTypeChip } from '@/components/hive/HiveTypeChip';
 import { createHive } from '@/services/hive';
 import { useToastStore } from '@/store/toast';
-import { HiveType } from '@/types';
+import { BeeBreed, HiveType } from '@/types';
+
+const BEE_BREEDS: { value: BeeBreed; label: string; kg: number }[] = [
+  { value: 'norsk_landbee', label: 'Norsk landbee', kg: 16 },
+  { value: 'buckfast',      label: 'Buckfast',       kg: 25 },
+  { value: 'carniolan',     label: 'Carniolan',      kg: 22 },
+  { value: 'annet',         label: 'Annet/Ukjent',   kg: 20 },
+];
 
 const HIVE_TYPES: HiveType[] = ['langstroth', 'warre', 'toppstang', 'annet'];
 
@@ -40,6 +47,7 @@ export default function NyKube() {
   const showToast = useToastStore((s) => s.show);
   const [name, setName] = useState('');
   const [type, setType] = useState<HiveType>('langstroth');
+  const [beeBreed, setBeeBreed] = useState<BeeBreed>('annet');
   const [locationName, setLocationName] = useState('');
   const [locationLat, setLocationLat] = useState<number | null>(null);
   const [locationLng, setLocationLng] = useState<number | null>(null);
@@ -91,6 +99,7 @@ export default function NyKube() {
     mutation.mutate({
       name: name.trim(),
       type,
+      beeBreed,
       locationName: locationName.trim() || undefined,
       locationLat: locationLat ?? undefined,
       locationLng: locationLng ?? undefined,
@@ -143,6 +152,27 @@ export default function NyKube() {
               accessibilityState={{ checked: type === t }}
             >
               <HiveTypeChip type={t} />
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Bierase */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionLabel}>Bierase</Text>
+        </View>
+        <View style={styles.breedRow}>
+          {BEE_BREEDS.map((b) => (
+            <Pressable
+              key={b.value}
+              onPress={() => setBeeBreed(b.value)}
+              style={[styles.breedOption, beeBreed === b.value && styles.breedSelected]}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: beeBreed === b.value }}
+            >
+              <Text style={[styles.breedLabel, beeBreed === b.value && styles.breedLabelActive]}>
+                {b.label}
+              </Text>
+              <Text style={styles.breedKg}>~{b.kg} kg/år</Text>
             </Pressable>
           ))}
         </View>
@@ -316,6 +346,40 @@ const styles = StyleSheet.create({
     height: 88,
     paddingTop: 12,
     textAlignVertical: 'top',
+  },
+  breedRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20,
+  },
+  breedOption: {
+    flex: 1,
+    minWidth: '45%',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.mid + '30',
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    gap: 2,
+  },
+  breedSelected: {
+    borderColor: Colors.honey,
+    backgroundColor: Colors.honey + '12',
+  },
+  breedLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.mid,
+  },
+  breedLabelActive: {
+    color: Colors.honey,
+  },
+  breedKg: {
+    fontSize: 11,
+    color: Colors.mid + '90',
   },
   gpsBtn: {
     flexDirection: 'row',

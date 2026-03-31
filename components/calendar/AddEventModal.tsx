@@ -6,6 +6,8 @@ import { Colors } from '@/constants/colors';
 interface AddEventModalProps {
   visible: boolean;
   initialDate: string | null; // 'YYYY-MM-DD'
+  initialValues?: { title: string; eventDate: string; notes: string };
+  isEditing?: boolean;
   onClose: () => void;
   onSubmit: (title: string, date: string, notes: string) => void;
   loading: boolean;
@@ -19,12 +21,13 @@ function formatDateNO(d: Date): string {
   return d.toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
-export function AddEventModal({ visible, initialDate, onClose, onSubmit, loading }: AddEventModalProps) {
+export function AddEventModal({ visible, initialDate, initialValues, isEditing, onClose, onSubmit, loading }: AddEventModalProps) {
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [date, setDate] = useState<Date>(() => {
-    if (initialDate) {
-      const [y, m, d] = initialDate.split('-').map(Number);
+    const src = initialValues?.eventDate ?? initialDate;
+    if (src) {
+      const [y, m, d] = src.split('-').map(Number);
       return new Date(y, m - 1, d);
     }
     return new Date();
@@ -33,17 +36,18 @@ export function AddEventModal({ visible, initialDate, onClose, onSubmit, loading
 
   useEffect(() => {
     if (visible) {
-      setTitle('');
-      setNotes('');
+      setTitle(initialValues?.title ?? '');
+      setNotes(initialValues?.notes ?? '');
       setShowPicker(Platform.OS === 'ios');
-      if (initialDate) {
-        const [y, m, d] = initialDate.split('-').map(Number);
+      const src = initialValues?.eventDate ?? initialDate;
+      if (src) {
+        const [y, m, d] = src.split('-').map(Number);
         setDate(new Date(y, m - 1, d));
       } else {
         setDate(new Date());
       }
     }
-  }, [visible, initialDate]);
+  }, [visible, initialDate, initialValues]);
 
   const handleSubmit = () => {
     if (!title.trim()) return;
@@ -57,7 +61,7 @@ export function AddEventModal({ visible, initialDate, onClose, onSubmit, loading
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.sheet}>
         <View style={styles.handle} />
-        <Text style={styles.title}>Ny hendelse 📅</Text>
+        <Text style={styles.title}>{isEditing ? 'Rediger hendelse ✏️' : 'Ny hendelse 📅'}</Text>
 
         <Text style={styles.label}>Tittel</Text>
         <TextInput
@@ -112,7 +116,7 @@ export function AddEventModal({ visible, initialDate, onClose, onSubmit, loading
           {loading ? (
             <ActivityIndicator color={Colors.white} size="small" />
           ) : (
-            <Text style={styles.submitBtnText}>Lagre hendelse</Text>
+            <Text style={styles.submitBtnText}>{isEditing ? 'Oppdater' : 'Lagre hendelse'}</Text>
           )}
         </Pressable>
 

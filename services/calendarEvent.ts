@@ -55,6 +55,26 @@ export async function createCalendarEvent(input: CreateCalendarEventData): Promi
   return mapEvent(data);
 }
 
+export async function updateCalendarEvent(
+  id: string,
+  input: Omit<CreateCalendarEventData, 'notificationId'> & { notificationId?: string }
+): Promise<CalendarEvent> {
+  const { data, error } = await supabase
+    .from('calendar_events')
+    .update({
+      title: input.title,
+      event_date: input.eventDate,
+      notes: input.notes ?? null,
+      notification_id: input.notificationId ?? null,
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapEvent(data);
+}
+
 export async function deleteCalendarEvent(id: string): Promise<void> {
   const { error } = await supabase
     .from('calendar_events')

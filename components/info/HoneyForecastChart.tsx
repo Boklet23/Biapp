@@ -11,7 +11,21 @@ const SEASONAL_FACTORS: Record<number, number> = {
   9: 0.12, 10: 0.05, 11: 0.00, 12: 0.00,
 };
 
-const AVG_KG_PER_HIVE_PER_YEAR = 20;
+const DEFAULT_KG_PER_HIVE_PER_YEAR = 20;
+
+// Average annual honey yield per bee breed (kg/year in Norwegian conditions)
+const BREED_KG_PER_YEAR: Record<string, number> = {
+  norsk_landbee: 16,
+  buckfast:      25,
+  carniolan:     22,
+  annet:         20,
+};
+
+function avgYieldForHives(hives: Hive[]): number {
+  if (hives.length === 0) return DEFAULT_KG_PER_HIVE_PER_YEAR;
+  const total = hives.reduce((sum, h) => sum + (BREED_KG_PER_YEAR[h.beeBreed ?? 'annet'] ?? DEFAULT_KG_PER_HIVE_PER_YEAR), 0);
+  return total / hives.length;
+}
 
 const MONTH_ABBR = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Des'];
 
@@ -37,8 +51,10 @@ interface HoneyForecastChartProps {
 
 function buildChartData(
   activeHiveCount: number,
+  hives: Hive[],
   harvests: HarvestRecord[],
 ): MonthData[] {
+  const avgYield = avgYieldForHives(hives);
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
@@ -76,7 +92,7 @@ function buildChartData(
       barType = offset === 0 ? 'current' : offset < 0 ? 'actual' : 'current';
     } else {
       // Model-based estimate/forecast
-      kg = Math.round(activeHiveCount * AVG_KG_PER_HIVE_PER_YEAR * SEASONAL_FACTORS[month] * 10) / 10;
+      kg = Math.round(activeHiveCount * avgYield * SEASONAL_FACTORS[month] * 10) / 10;
       barType = offset === 0 ? 'current' : offset > 0 ? 'forecast' : 'actual';
     }
 
@@ -128,7 +144,7 @@ export function HoneyForecastChart({
   const plotH = chartHeight - PAD_TOP - PAD_BOTTOM;
 
   const [selected, setSelected] = useState<MonthData | null>(null);
-  const data = buildChartData(activeHiveCount, harvests);
+  const data = buildChartData(activeHiveCount, hives, harvests);
   const maxKg = Math.max(...data.map((d) => d.kg), 1);
   const yMax = Math.ceil(maxKg / 5) * 5 || 5;
 
@@ -309,7 +325,7 @@ export function HoneyForecastChart({
       <Text style={styles.disclaimer}>
         {activeHiveCount === 0
           ? 'Legg til kuber for å se prognose'
-          : `~${AVG_KG_PER_HIVE_PER_YEAR} kg/kube/år · Norsk sesongmodell · Trykk stang for detaljer`}
+          : `~${Math.round(avgYieldForHives(hives))} kg/kube/år · Norsk sesongmodell · Trykk stang for detaljer`}
       </Text>
     </View>
   );

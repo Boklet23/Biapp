@@ -8,7 +8,7 @@ import { SeasonGuide } from '@/components/calendar/SeasonGuide';
 import { AddEventModal } from '@/components/calendar/AddEventModal';
 import { Colors } from '@/constants/colors';
 import { fetchAllInspections } from '@/services/inspection';
-import { fetchCalendarEvents, createCalendarEvent, deleteCalendarEvent } from '@/services/calendarEvent';
+import { fetchCalendarEvents, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from '@/services/calendarEvent';
 import { scheduleEventNotification, cancelNotification } from '@/services/notifications';
 import { useToastStore } from '@/store/toast';
 import { CalendarEvent, Inspection } from '@/types';
@@ -33,6 +33,7 @@ export default function Kalender() {
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
   const { data: allInspections = [] } = useQuery({
     queryKey: ['all-inspections'],
@@ -61,6 +62,27 @@ export default function Kalender() {
     },
     onError: (error: Error) => {
       showToast(error.message ?? 'Kunne ikke lagre hendelse', 'error');
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (args: { id: string; title: string; date: string; notes: string; oldNotifId: string | null }) => {
+      const notifId = await scheduleEventNotification(args.id, args.title, args.date);
+      if (args.oldNotifId) await cancelNotification(args.oldNotifId);
+      return updateCalendarEvent(args.id, {
+        title: args.title,
+        eventDate: args.date,
+        notes: args.notes || undefined,
+        notificationId: notifId ?? undefined,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calendar-events'] });
+      setEditingEvent(null);
+      showToast('Hendelse oppdatert!', 'success');
+    },
+    onError: (error: Error) => {
+      showToast(error.message ?? 'Kunne ikke oppdatere hendelse', 'error');
     },
   });
 
@@ -167,14 +189,16 @@ export default function Kalender() {
               <Pressable
                 key={ev.id}
                 style={({ pressed }) => [styles.eventRow, pressed && styles.rowPressed]}
+                onPress={() => setEditingEvent(ev)}
                 onLongPress={() => handleDeleteEvent(ev)}
+                delayLongPress={500}
               >
                 <View style={styles.eventDot} />
                 <View style={styles.eventContent}>
                   <Text style={styles.eventTitle}>{ev.title}</Text>
                   {ev.notes ? <Text style={styles.eventNotes}>{ev.notes}</Text> : null}
                 </View>
-                <Text style={styles.holdText}>Hold for å slette</Text>
+                <Text style={styles.editHint}>Trykk for å redigere</Text>
               </Pressable>
             ))}
 
@@ -230,6 +254,24 @@ export default function Kalender() {
         onSubmit={(title, date, notes) => createMutation.mutate({ title, date, notes })}
         loading={createMutation.isPending}
       />
+
+      <AddEventModal
+        visible={editingEvent != null}
+        initialDate={null}
+        initialValues={editingEvent ? { title: editingEvent.title, eventDate: editingEvent.eventDate, notes: editingEvent.notes ?? '' } : undefined}
+        isEditing
+        onClose={() => setEditingEvent(null)}
+        onSubmit={(title, date, notes) =>
+          editingEvent && updateMutation.mutate({
+            id: editingEvent.id,
+            title,
+            date,
+            notes,
+            oldNotifId: editingEvent.notificationId,
+          })
+        }
+        loading={updateMutation.isPending}
+      />
     </Screen>
   );
 }
@@ -282,7 +324,7 @@ const styles = StyleSheet.create({
   eventContent: { flex: 1 },
   eventTitle: { fontSize: 15, fontWeight: '600', color: Colors.dark },
   eventNotes: { fontSize: 12, color: Colors.mid, marginTop: 2 },
-  holdText: { fontSize: 11, color: Colors.mid + '80' },
+  editHint: { fontSize: 11, color: Colors.mid + '80' },
 
   inspRow: {
     flexDirection: 'row',

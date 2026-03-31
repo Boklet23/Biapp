@@ -12,3 +12,21 @@ export const Colors = {
   info: '#3498DB',
   notifiable: '#C0392B',
 } as const;
+
+// Standardised shadow presets — use these instead of inline shadow values
+export const Shadows = {
+  card: {
+    shadowColor: '#1A1A2E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  elevated: {
+    shadowColor: '#1A1A2E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+} as const;

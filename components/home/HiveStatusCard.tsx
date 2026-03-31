@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Colors } from '@/constants/colors';
+import { Colors, Shadows } from '@/constants/colors';
 import { Hive, Inspection } from '@/types';
 
 const MOOD_EMOJI = ['', '😟', '😐', '😊', '😁', '🤩'];
@@ -46,7 +46,14 @@ export function HiveStatusCard({ hive, lastInspection, onPress }: HiveStatusCard
         <Text style={[styles.days, styles.daysOverdue]}>Ikke inspisert</Text>
       )}
 
-      {isOverdue && <View style={styles.overdueDot} />}
+      {isOverdue && (
+        <View
+          style={styles.overdueBadge}
+          accessibilityLabel="Inspeksjon forfalt"
+        >
+          <Text style={styles.overdueBadgeText}>!</Text>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -74,11 +81,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 14,
-    shadowColor: Colors.dark,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 6,
-    elevation: 2,
+    ...Shadows.card,
     gap: 4,
     position: 'relative',
   },
@@ -87,14 +90,24 @@ const styles = StyleSheet.create({
   days: { fontSize: 12, color: Colors.mid },
   daysOverdue: { color: Colors.warning, fontWeight: '600' },
   mood: { fontSize: 20, marginTop: 4 },
-  overdueDot: {
+  overdueBadge: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: 8,
+    right: 8,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: Colors.warning,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: Colors.white,
+  },
+  overdueBadgeText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: Colors.white,
+    lineHeight: 14,
   },
   addCard: {
     borderWidth: 1.5,

@@ -1,5 +1,6 @@
 export type ExperienceLevel = 'nybegynner' | 'erfaren' | 'profesjonell';
 export type HiveType = 'langstroth' | 'warre' | 'toppstang' | 'annet';
+export type BeeBreed = 'norsk_landbee' | 'buckfast' | 'carniolan' | 'annet';
 export type SubscriptionTier = 'starter' | 'hobbyist' | 'profesjonell' | 'lag';
 export type TeamRole = 'owner' | 'admin' | 'member';
 export type DiseaseSeverity = 'lav' | 'moderat' | 'alvorlig' | 'kritisk';
@@ -29,6 +30,7 @@ export interface Hive {
   userId: string;
   name: string;
   type: HiveType;
+  beeBreed: BeeBreed | null;
   locationLat: number | null;
   locationLng: number | null;
   locationName: string | null;

@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Hive, Inspection } from '@/types';
-import { Colors } from '@/constants/colors';
+import { Colors, Shadows } from '@/constants/colors';
 import { HiveTypeChip } from './HiveTypeChip';
 
 function daysSince(dateStr: string): string {
@@ -63,11 +63,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 18,
     gap: 8,
-    shadowColor: Colors.dark,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
+    ...Shadows.card,
   },
   pressed: {
     opacity: 0.85,

@@ -1,9 +1,10 @@
 import { supabase } from '@/lib/supabase';
-import { Hive, HiveType } from '@/types';
+import { BeeBreed, Hive, HiveType } from '@/types';
 
 export interface CreateHiveData {
   name: string;
   type: HiveType;
+  beeBreed?: BeeBreed;
   locationName?: string;
   locationLat?: number;
   locationLng?: number;
@@ -46,6 +47,7 @@ export async function createHive(input: CreateHiveData): Promise<Hive> {
       user_id: user.id,
       name: input.name,
       type: input.type,
+      bee_breed: input.beeBreed ?? null,
       location_name: input.locationName ?? null,
       location_lat: input.locationLat ?? null,
       location_lng: input.locationLng ?? null,
@@ -62,6 +64,7 @@ export async function updateHive(id: string, input: UpdateHiveData): Promise<Hiv
   const patch: Record<string, unknown> = {};
   if (input.name !== undefined) patch.name = input.name;
   if (input.type !== undefined) patch.type = input.type;
+  if (input.beeBreed !== undefined) patch.bee_breed = input.beeBreed;
   if (input.locationName !== undefined) patch.location_name = input.locationName;
   if (input.locationLat !== undefined) patch.location_lat = input.locationLat;
   if (input.locationLng !== undefined) patch.location_lng = input.locationLng;
@@ -98,6 +101,7 @@ function mapHive(row: Record<string, unknown>): Hive {
     userId: row.user_id,
     name: row.name,
     type: row.type as HiveType,
+    beeBreed: typeof row.bee_breed === 'string' ? row.bee_breed as BeeBreed : null,
     locationLat: typeof row.location_lat === 'number' ? row.location_lat : null,
     locationLng: typeof row.location_lng === 'number' ? row.location_lng : null,
     locationName: typeof row.location_name === 'string' ? row.location_name : null,
