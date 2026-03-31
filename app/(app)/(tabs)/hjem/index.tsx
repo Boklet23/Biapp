@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
 import { WeatherCard } from '@/components/home/WeatherCard';
 import { LocationPickerModal, PickedLocation } from '@/components/home/LocationPickerModal';
+import { HiveScene } from '@/components/animations/HiveScene';
 import { HiveStatusCard, AddHiveCard } from '@/components/home/HiveStatusCard';
 import { HoneyWidget } from '@/components/home/HoneyWidget';
 import { SeasonSummaryCard } from '@/components/home/SeasonSummaryCard';
@@ -205,6 +206,9 @@ export default function Hjem() {
             </View>
           </>
         )}
+
+        {/* 3D Bikube-scene */}
+        <HiveScene scene="exterior" height={200} borderRadius={16} />
 
         {/* Vær */}
         <SectionTitle>Vær</SectionTitle>

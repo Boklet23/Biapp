@@ -17,6 +17,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { StepIndicator } from '@/components/inspection/StepIndicator';
 import { FrameCounter } from '@/components/inspection/FrameCounter';
+import { HiveScene } from '@/components/animations/HiveScene';
+import { INSPECTION_STEP_SCENE } from '@/constants/hiveScene';
 import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/colors';
 import { MOOD_EMOJIS } from '@/constants/ui';
@@ -382,6 +384,7 @@ export default function NyInspeksjon() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <HiveScene scene={INSPECTION_STEP_SCENE[step]} height={130} />
       <StepIndicator current={step} total={TOTAL_STEPS} labels={STEP_LABELS} />
 
       <ScrollView
