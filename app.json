@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "BiApp",
+    "name": "BiVokter",
     "slug": "biapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "biapp",
+    "scheme": "bivokter",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -49,19 +49,19 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "BiApp trenger tilgang til bilder for inspeksjonslogg."
+          "photosPermission": "BiVokter trenger tilgang til bilder for inspeksjonslogg."
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "BiApp bruker posisjon for å vise kart og hente vær."
+          "locationWhenInUsePermission": "BiVokter bruker posisjon for å vise kart og hente vær."
         }
       ],
       [
         "expo-media-library",
         {
-          "photosPermission": "BiApp lagrer bilder fra inspeksjoner."
+          "photosPermission": "BiVokter lagrer bilder fra inspeksjoner."
         }
       ],
       [

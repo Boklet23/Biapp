@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '@/constants/colors';
 import { OSLO } from '@/constants/locations';
 import { fetchWeather, WeatherData } from '@/services/weather';
@@ -32,9 +32,10 @@ interface WeatherCardProps {
   lat?: number | null;
   lng?: number | null;
   locationName?: string | null;
+  onPress?: () => void;
 }
 
-export function WeatherCard({ lat, lng, locationName }: WeatherCardProps) {
+export function WeatherCard({ lat, lng, locationName, onPress }: WeatherCardProps) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -55,7 +56,12 @@ export function WeatherCard({ lat, lng, locationName }: WeatherCardProps) {
   const displayLocation = locationName ?? 'Oslo';
 
   return (
-    <View style={styles.card}>
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && onPress ? { opacity: 0.85 } : null]}
+      onPress={onPress}
+      accessibilityRole={onPress ? 'button' : 'none'}
+      accessibilityLabel="Vær — trykk for å endre sted"
+    >
       {loading ? (
         <ActivityIndicator color={Colors.honey} size="small" />
       ) : weather ? (
@@ -66,11 +72,12 @@ export function WeatherCard({ lat, lng, locationName }: WeatherCardProps) {
             <Text style={styles.condition}>{weather.condition}</Text>
             <Text style={styles.location}>📍 {displayLocation}</Text>
           </View>
+          {onPress && <Text style={styles.editHint}>Endre sted ›</Text>}
         </View>
       ) : (
         <Text style={styles.noData}>Vær ikke tilgjengelig</Text>
       )}
-    </View>
+    </Pressable>
   );
 }
 
@@ -98,4 +105,11 @@ const styles = StyleSheet.create({
   condition: { fontSize: 14, color: Colors.mid },
   location: { fontSize: 12, color: Colors.mid, marginTop: 2 },
   noData: { fontSize: 14, color: Colors.mid },
+  editHint: {
+    marginLeft: 'auto',
+    fontSize: 12,
+    color: Colors.honey,
+    fontWeight: '600',
+    alignSelf: 'flex-end',
+  },
 });

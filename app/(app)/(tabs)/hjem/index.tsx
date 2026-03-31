@@ -1,9 +1,11 @@
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
 import { WeatherCard } from '@/components/home/WeatherCard';
+import { LocationPickerModal, PickedLocation } from '@/components/home/LocationPickerModal';
 import { HiveStatusCard, AddHiveCard } from '@/components/home/HiveStatusCard';
 import { HoneyWidget } from '@/components/home/HoneyWidget';
 import { SeasonSummaryCard } from '@/components/home/SeasonSummaryCard';
@@ -82,11 +84,24 @@ function buildAlerts(
   return alerts;
 }
 
+const WEATHER_LOCATION_KEY = 'bivokter_weather_location';
+
 export default function Hjem() {
   const profile = useAuthStore((s) => s.profile);
   const showToast = useToastStore((s) => s.show);
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
+
+  const [locationPickerVisible, setLocationPickerVisible] = useState(false);
+  const [savedLocation, setSavedLocation] = useState<PickedLocation | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem(WEATHER_LOCATION_KEY).then((raw) => {
+      if (raw) {
+        try { setSavedLocation(JSON.parse(raw)); } catch {}
+      }
+    });
+  }, []);
 
   const { data: hives = [], isLoading: hivesLoading } = useQuery({
     queryKey: ['hives'],
@@ -133,9 +148,15 @@ export default function Hjem() {
   }, [alerts.length]);
 
   const hiveWithCoords = hives.find((h) => h.locationLat && h.locationLng);
-  const weatherLat = hiveWithCoords?.locationLat;
-  const weatherLng = hiveWithCoords?.locationLng;
-  const weatherLocation = hiveWithCoords?.locationName ?? null;
+  const weatherLat = savedLocation?.lat ?? hiveWithCoords?.locationLat;
+  const weatherLng = savedLocation?.lng ?? hiveWithCoords?.locationLng;
+  const weatherLocation = savedLocation?.name ?? hiveWithCoords?.locationName ?? null;
+
+  const handleLocationPick = async (loc: PickedLocation) => {
+    setSavedLocation(loc);
+    setLocationPickerVisible(false);
+    await AsyncStorage.setItem(WEATHER_LOCATION_KEY, JSON.stringify(loc)).catch(() => {});
+  };
 
   return (
     <Screen>
@@ -187,7 +208,12 @@ export default function Hjem() {
 
         {/* Vær */}
         <SectionTitle>Vær</SectionTitle>
-        <WeatherCard lat={weatherLat} lng={weatherLng} locationName={weatherLocation} />
+        <WeatherCard
+          lat={weatherLat}
+          lng={weatherLng}
+          locationName={weatherLocation}
+          onPress={() => setLocationPickerVisible(true)}
+        />
 
         {/* Kuber */}
         <SectionTitle>Mine kuber</SectionTitle>
@@ -241,6 +267,11 @@ export default function Hjem() {
         <SectionTitle>Dette måneden</SectionTitle>
         <SeasonGuide month={currentMonth} />
       </ScrollView>
+      <LocationPickerModal
+        visible={locationPickerVisible}
+        onClose={() => setLocationPickerVisible(false)}
+        onPick={handleLocationPick}
+      />
     </Screen>
   );
 }

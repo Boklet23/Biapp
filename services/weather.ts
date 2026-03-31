@@ -64,7 +64,7 @@ export async function fetchWeather(lat: number, lng: number): Promise<WeatherDat
       `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lng}`,
       {
         headers: {
-          'User-Agent': 'BiApp/1.0 (kontakt@biapp.no)',
+          'User-Agent': 'BiVokter/1.0 (kontakt@bivokter.no)',
         },
       }
     );
