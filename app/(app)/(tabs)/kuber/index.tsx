@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
 import { HiveCard } from '@/components/hive/HiveCard';
+import { BeeParticles } from '@/components/animations/BeeParticles';
 import { Colors } from '@/constants/colors';
 import { fetchHives, deleteHive } from '@/services/hive';
 import { fetchInspections } from '@/services/inspection';
@@ -60,9 +61,12 @@ export default function KuberOversikt() {
 
   return (
     <Screen>
-      <View style={styles.header}>
-        <Text style={styles.title}>Mine Kuber</Text>
-        <Text style={styles.count}>{hives.length} {hives.length === 1 ? 'kube' : 'kuber'}</Text>
+      <View style={styles.headerWrap}>
+        <BeeParticles height={70} />
+        <View style={styles.header}>
+          <Text style={styles.title}>Mine Kuber</Text>
+          <Text style={styles.count}>{hives.length} {hives.length === 1 ? 'kube' : 'kuber'}</Text>
+        </View>
       </View>
 
       <FlatList
@@ -124,6 +128,10 @@ function HiveWithInspection({
 }
 
 const styles = StyleSheet.create({
+  headerWrap: {
+    position: 'relative',
+    overflow: 'hidden',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

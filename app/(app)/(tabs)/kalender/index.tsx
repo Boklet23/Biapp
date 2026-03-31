@@ -19,6 +19,14 @@ const MONTH_NAMES = [
   'Juli', 'August', 'September', 'Oktober', 'November', 'Desember',
 ];
 
+/** Sesongfarge — brukes som en farget stripe øverst i kalenderen */
+const SEASON_COLOR: Record<number, string> = {
+  1: '#D6EAF8', 2: '#D6EAF8', 3: '#D5F5E3',  // vinter → tidligsommar
+  4: '#D5F5E3', 5: '#D5F5E3', 6: '#FEF9E7',  // vår → sommer
+  7: '#FEF9E7', 8: '#FEF9E7', 9: '#FDEBD0',  // sommer → høst
+  10: '#FDEBD0', 11: '#D6EAF8', 12: '#D6EAF8', // høst → vinter
+};
+
 function formatTime(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' });
@@ -142,8 +150,11 @@ export default function Kalender() {
     ]);
   }
 
+  const seasonColor = SEASON_COLOR[month] ?? '#FEF9E7';
+
   return (
     <Screen style={styles.screen}>
+      <View style={[styles.seasonStripe, { backgroundColor: seasonColor }]} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.header}>Kalender</Text>
 
@@ -277,6 +288,7 @@ export default function Kalender() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  seasonStripe: { height: 4 },
   content: { padding: 20, paddingTop: 12, gap: 16, paddingBottom: 100 },
   header: { fontSize: 28, fontWeight: '800', color: Colors.dark },
 

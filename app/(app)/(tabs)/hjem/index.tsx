@@ -18,6 +18,14 @@ import { scheduleInspectionReminderDeduped } from '@/services/notifications';
 import { Hive, Inspection } from '@/types';
 
 const VARROA_ALERT_THRESHOLD = 3;
+
+function timeOfDayGlow(): string {
+  const h = new Date().getHours();
+  if (h >= 5  && h < 10) return '#FFF3CD30'; // morgen — varm gul
+  if (h >= 10 && h < 17) return '#FFF8E130'; // dag — lys amber
+  if (h >= 17 && h < 21) return '#FFE08230'; // kveld — dyp honning
+  return '#1A1A2E18';                         // natt — mørk blå
+}
 const INSPECTION_OVERDUE_DAYS = 14;
 
 function greeting(name: string | null | undefined): string {
@@ -133,7 +141,7 @@ export default function Hjem() {
     <Screen>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hilsen + Avatar */}
-        <View style={styles.greetingRow}>
+        <View style={[styles.greetingRow, { backgroundColor: timeOfDayGlow() }]}>
           <Text style={styles.greeting}>{greeting(profile?.displayName)}</Text>
           <Pressable
             onPress={() => router.push('/(app)/profil' as any)}
