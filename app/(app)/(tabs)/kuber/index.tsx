@@ -5,16 +5,23 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
 import { HiveCard } from '@/components/hive/HiveCard';
 import { BeeParticles } from '@/components/animations/BeeParticles';
+import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { Colors } from '@/constants/colors';
 import { fetchHives, deleteHive } from '@/services/hive';
 import { fetchInspections } from '@/services/inspection';
+import { useAuthStore } from '@/store/auth';
 import { useToastStore } from '@/store/toast';
 import { Hive } from '@/types';
+
+const STARTER_HIVE_LIMIT = 3;
 
 export default function KuberOversikt() {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
   const showToast = useToastStore((s) => s.show);
+  const profile = useAuthStore((s) => s.profile);
+  const isStarter = (profile?.subscriptionTier ?? 'starter') === 'starter';
 
   const { data: hives = [], isLoading, refetch } = useQuery({
     queryKey: ['hives'],
@@ -96,12 +103,23 @@ export default function KuberOversikt() {
 
       <Pressable
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
-        onPress={() => router.push('/kuber/ny')}
+        onPress={() => {
+          if (isStarter && hives.length >= STARTER_HIVE_LIMIT) {
+            setUpgradeModalVisible(true);
+          } else {
+            router.push('/kuber/ny');
+          }
+        }}
         accessibilityLabel="Legg til ny kube"
         accessibilityRole="button"
       >
         <Text style={styles.fabText}>+</Text>
       </Pressable>
+
+      <UpgradeModal
+        visible={upgradeModalVisible}
+        onClose={() => setUpgradeModalVisible(false)}
+      />
     </Screen>
   );
 }

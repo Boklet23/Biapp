@@ -7,6 +7,7 @@ import { ArticleCard } from '@/components/info/ArticleCard';
 import { DiseaseCard } from '@/components/disease/DiseaseCard';
 import { HoneyForecastChart } from '@/components/info/HoneyForecastChart';
 import { HarvestLogModal } from '@/components/info/HarvestLogModal';
+import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { Colors } from '@/constants/colors';
 import { GUIDE_ARTICLES } from '@/constants/beginnerGuide';
 import { DISEASES } from '@/constants/diseases';
@@ -22,6 +23,7 @@ function SectionTitle({ children }: { children: string }) {
 export default function Info() {
   const [query, setQuery] = useState('');
   const [harvestModalVisible, setHarvestModalVisible] = useState(false);
+  const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
 
   const profile = useAuthStore((s) => s.profile);
   const { show: showToast } = useToastStore();
@@ -87,6 +89,7 @@ export default function Info() {
           subscriptionTier={profile?.subscriptionTier ?? 'starter'}
           onLogHarvest={() => setHarvestModalVisible(true)}
           onDeleteHarvest={(id) => deleteMutation.mutate(id)}
+          onUpgrade={() => setUpgradeModalVisible(true)}
         />
 
         <SectionTitle>Nybegynnerguide</SectionTitle>
@@ -148,6 +151,11 @@ export default function Info() {
           createMutation.mutate({ hiveId, harvestedAt, quantityKg, notes })
         }
         loading={createMutation.isPending}
+      />
+
+      <UpgradeModal
+        visible={upgradeModalVisible}
+        onClose={() => setUpgradeModalVisible(false)}
       />
     </Screen>
   );
