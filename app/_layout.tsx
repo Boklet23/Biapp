@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth';
 import { fetchProfile } from '@/services/profile';
+import { initPurchases, mapEntitlementToTier, syncTierToSupabase } from '@/services/subscription';
 import * as Sentry from '@sentry/react-native';
 
 Sentry.init({
@@ -32,7 +33,17 @@ function RootLayoutNav() {
       .then(({ data: { session } }) => {
         setSession(session);
         if (session) {
-          fetchProfile().then((profile) => setProfile(profile)).catch(() => setProfile(null));
+          fetchProfile().then((profile) => {
+            setProfile(profile);
+            // Init RevenueCat and sync subscription tier
+            initPurchases(session.user.id).then(async (info) => {
+              const tier = mapEntitlementToTier(info);
+              if (profile && tier !== profile.subscriptionTier) {
+                await syncTierToSupabase(tier).catch(() => {});
+                setProfile({ ...profile, subscriptionTier: tier });
+              }
+            }).catch(() => {});
+          }).catch(() => setProfile(null));
         } else {
           setProfile(null);
         }

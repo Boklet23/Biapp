@@ -47,6 +47,7 @@ interface HoneyForecastChartProps {
   subscriptionTier: string;
   onLogHarvest: () => void;
   onDeleteHarvest: (id: string) => void;
+  onUpgrade?: () => void;
 }
 
 function buildChartData(
@@ -136,6 +137,7 @@ export function HoneyForecastChart({
   subscriptionTier,
   onLogHarvest,
   onDeleteHarvest,
+  onUpgrade,
 }: HoneyForecastChartProps) {
   const { width: screenWidth } = useWindowDimensions();
   const chartWidth = Math.min(screenWidth - 32, 380);
@@ -193,12 +195,13 @@ export function HoneyForecastChart({
           </View>
         </View>
       ) : (
-        <Pressable style={styles.lockedStats} onPress={() => {}}>
+        <Pressable style={styles.lockedStats} onPress={onUpgrade}>
           <Text style={styles.lockedIcon}>🔒</Text>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.lockedTitle}>Statistikk utilgjengelig</Text>
             <Text style={styles.lockedSub}>Oppgrader til Hobbyist for årsstatistikk og høstlogg</Text>
           </View>
+          <Text style={styles.lockedChevron}>›</Text>
         </Pressable>
       )}
 
@@ -372,6 +375,7 @@ const styles = StyleSheet.create({
   lockedIcon: { fontSize: 22 },
   lockedTitle: { fontSize: 13, fontWeight: '700', color: Colors.dark },
   lockedSub: { fontSize: 11, color: Colors.mid, marginTop: 1 },
+  lockedChevron: { fontSize: 20, color: Colors.mid },
   tooltip: {
     flexDirection: 'row',
     justifyContent: 'space-between',
