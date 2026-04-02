@@ -36,6 +36,7 @@ export interface Hive {
   locationName: string | null;
   isActive: boolean;
   notes: string | null;
+  photoUrl: string | null;
   createdAt: string;
 }
 

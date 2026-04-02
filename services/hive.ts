@@ -1,3 +1,4 @@
+import * as FileSystem from 'expo-file-system';
 import { supabase } from '@/lib/supabase';
 import { BeeBreed, Hive, HiveType } from '@/types';
 
@@ -9,6 +10,36 @@ export interface CreateHiveData {
   locationLat?: number;
   locationLng?: number;
   notes?: string;
+  photoUrl?: string;
+}
+
+/**
+ * Last opp et lokalt bilde til Supabase Storage (hive-photos-bucket).
+ * Returnerer public URL som kan lagres i hives.photo_url.
+ */
+export async function uploadHivePhoto(localUri: string, userId: string): Promise<string> {
+  const ext = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+  const safeExt = ['jpg', 'jpeg', 'png'].includes(ext) ? ext : 'jpg';
+  const contentType = safeExt === 'png' ? 'image/png' : 'image/jpeg';
+  const fileName = `${userId}/${Date.now()}.${safeExt}`;
+
+  const base64 = await FileSystem.readAsStringAsync(localUri, { encoding: 'base64' });
+
+  // Konverter base64 → Uint8Array uten ekstern pakke
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  const { error } = await supabase.storage
+    .from('hive-photos')
+    .upload(fileName, bytes, { contentType, upsert: false });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from('hive-photos').getPublicUrl(fileName);
+  return data.publicUrl;
 }
 
 export interface UpdateHiveData extends Partial<CreateHiveData> {
@@ -52,6 +83,7 @@ export async function createHive(input: CreateHiveData): Promise<Hive> {
       location_lat: input.locationLat ?? null,
       location_lng: input.locationLng ?? null,
       notes: input.notes ?? null,
+      photo_url: input.photoUrl ?? null,
     })
     .select()
     .single();
@@ -69,6 +101,7 @@ export async function updateHive(id: string, input: UpdateHiveData): Promise<Hiv
   if (input.locationLat !== undefined) patch.location_lat = input.locationLat;
   if (input.locationLng !== undefined) patch.location_lng = input.locationLng;
   if (input.notes !== undefined) patch.notes = input.notes;
+  if (input.photoUrl !== undefined) patch.photo_url = input.photoUrl;
   if (input.isActive !== undefined) patch.is_active = input.isActive;
 
   const { data, error } = await supabase
@@ -107,6 +140,7 @@ function mapHive(row: Record<string, unknown>): Hive {
     locationName: typeof row.location_name === 'string' ? row.location_name : null,
     isActive: row.is_active === true,
     notes: typeof row.notes === 'string' ? row.notes : null,
+    photoUrl: typeof row.photo_url === 'string' ? row.photo_url : null,
     createdAt: row.created_at,
   };
 }

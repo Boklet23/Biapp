@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { InfoSheet, InfoRow, InfoText } from '@/components/ui/InfoSheet';
 import { Colors } from '@/constants/colors';
 import { HiveTypeChip } from '@/components/hive/HiveTypeChip';
-import { createHive } from '@/services/hive';
+import { createHive, uploadHivePhoto } from '@/services/hive';
+import { supabase } from '@/lib/supabase';
 import { useToastStore } from '@/store/toast';
 import { BeeBreed, HiveType } from '@/types';
 
@@ -34,6 +36,7 @@ export default function NyKube() {
   const [locationLng, setLocationLng] = useState<number | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [notes, setNotes] = useState('');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [nameError, setNameError] = useState('');
   const [infoTopic, setInfoTopic] = useState<InfoTopic | null>(null);
 
@@ -63,13 +66,46 @@ export default function NyKube() {
   };
 
   const mutation = useMutation({
-    mutationFn: createHive,
+    mutationFn: async (data: Parameters<typeof createHive>[0] & { localPhotoUri?: string }) => {
+      const { localPhotoUri, ...hiveData } = data;
+      if (localPhotoUri) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) hiveData.photoUrl = await uploadHivePhoto(localPhotoUri, user.id);
+        } catch {
+          // Non-fatal: lagre kube uten bilde
+          showToast('Bildet ble ikke lastet opp — kuben lagres uten bilde.', 'error');
+        }
+      }
+      return createHive(hiveData);
+    },
     onError: (error: Error) => showToast(error.message ?? 'Kunne ikke lagre kube', 'error'),
     onSuccess: (hive) => {
       queryClient.invalidateQueries({ queryKey: ['hives'] });
       router.replace({ pathname: '/kuber/[id]' as any, params: { id: hive.id } });
     },
   });
+
+  const handlePickPhoto = () => {
+    Alert.alert('Legg til bilde', 'Velg kilde', [
+      { text: 'Kamera', onPress: () => pickImage('camera') },
+      { text: 'Galleri', onPress: () => pickImage('library') },
+      { text: 'Avbryt', style: 'cancel' },
+    ]);
+  };
+
+  const pickImage = async (source: 'camera' | 'library') => {
+    const fn = source === 'camera'
+      ? ImagePicker.launchCameraAsync
+      : ImagePicker.launchImageLibraryAsync;
+    const result = await fn({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.7,
+    });
+    if (!result.canceled) setPhotoUri(result.assets[0].uri);
+  };
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -85,6 +121,7 @@ export default function NyKube() {
       locationLat: locationLat ?? undefined,
       locationLng: locationLng ?? undefined,
       notes: notes.trim() || undefined,
+      localPhotoUri: photoUri ?? undefined,
     });
   };
 
@@ -191,6 +228,35 @@ export default function NyKube() {
           style={styles.notesInput}
           onInfo={() => setInfoTopic('notes')}
         />
+
+        {/* Bilde av kuben */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionLabel}>Bilde (valgfritt)</Text>
+        </View>
+        {photoUri ? (
+          <View style={styles.photoPreview}>
+            <Image source={{ uri: photoUri }} style={styles.photoThumb} resizeMode="cover" />
+            <Pressable
+              style={styles.photoRemove}
+              onPress={() => setPhotoUri(null)}
+              accessibilityRole="button"
+              accessibilityLabel="Fjern bilde"
+              hitSlop={8}
+            >
+              <Text style={styles.photoRemoveText}>×</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [styles.photoAdd, pressed && { opacity: 0.7 }]}
+            onPress={handlePickPhoto}
+            accessibilityRole="button"
+            accessibilityLabel="Legg til bilde av kuben"
+          >
+            <Text style={styles.photoAddIcon}>📷</Text>
+            <Text style={styles.photoAddText}>Legg til bilde</Text>
+          </Pressable>
+        )}
 
         <Button
           label="Lagre kube"
@@ -362,6 +428,42 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.mid + '90',
   },
+  photoAdd: {
+    height: 90,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.mid + '30',
+    borderStyle: 'dashed',
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  photoAddIcon: { fontSize: 26 },
+  photoAddText: { fontSize: 14, color: Colors.mid, fontWeight: '500' },
+  photoPreview: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  photoThumb: {
+    width: 120,
+    height: 90,
+    borderRadius: 12,
+  },
+  photoRemove: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoRemoveText: { fontSize: 14, color: Colors.white, fontWeight: '700', lineHeight: 16 },
   gpsBtn: {
     flexDirection: 'row',
     alignItems: 'center',

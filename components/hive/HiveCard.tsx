@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Hive, Inspection } from '@/types';
 import { Colors, Shadows } from '@/constants/colors';
 import { HiveTypeChip } from './HiveTypeChip';
@@ -30,28 +30,41 @@ export function HiveCard({ hive, lastInspection, onPress }: HiveCardProps) {
       accessibilityRole="button"
       accessibilityLabel={`Kube: ${hive.name}`}
     >
-      <View style={styles.header}>
-        <Text style={styles.name}>{hive.name}</Text>
-        <HiveTypeChip type={hive.type} />
-      </View>
+      <View style={styles.row}>
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.name}>{hive.name}</Text>
+            <HiveTypeChip type={hive.type} />
+          </View>
 
-      {hive.locationName ? (
-        <Text style={styles.location}>📍 {hive.locationName}</Text>
-      ) : null}
+          {hive.locationName ? (
+            <Text style={styles.location}>📍 {hive.locationName}</Text>
+          ) : null}
 
-      <View style={styles.footer}>
-        {lastInspection ? (
-          <>
-            <Text style={styles.meta}>
-              Sist inspisert: {daysSince(lastInspection.inspectedAt)}
-            </Text>
-            {totalFrames > 0 && (
-              <Text style={styles.meta}>{totalFrames} rammer</Text>
+          <View style={styles.footer}>
+            {lastInspection ? (
+              <>
+                <Text style={styles.meta}>
+                  Sist inspisert: {daysSince(lastInspection.inspectedAt)}
+                </Text>
+                {totalFrames > 0 && (
+                  <Text style={styles.meta}>{totalFrames} rammer</Text>
+                )}
+              </>
+            ) : (
+              <Text style={styles.noInspection}>Ikke inspisert ennå</Text>
             )}
-          </>
-        ) : (
-          <Text style={styles.noInspection}>Ikke inspisert ennå</Text>
-        )}
+          </View>
+        </View>
+
+        {hive.photoUrl ? (
+          <Image
+            source={{ uri: hive.photoUrl }}
+            style={styles.thumb}
+            resizeMode="cover"
+            accessibilityLabel={`Bilde av ${hive.name}`}
+          />
+        ) : null}
       </View>
     </Pressable>
   );
@@ -62,12 +75,26 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 18,
-    gap: 8,
     ...Shadows.card,
   },
   pressed: {
     opacity: 0.85,
     transform: [{ scale: 0.99 }],
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 0,
+  },
+  content: {
+    flex: 1,
+    gap: 8,
+  },
+  thumb: {
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+    marginLeft: 14,
   },
   header: {
     flexDirection: 'row',
