@@ -1,16 +1,17 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AssociationCard } from '@/components/samfunn/AssociationCard';
 import { Colors } from '@/constants/colors';
 import { BEE_ASSOCIATIONS } from '@/constants/beeAssociations';
+import { BEE_EQUIPMENT_VENDORS } from '@/constants/beeEquipmentVendors';
 
 const SwarmMap = lazy(() =>
   import('@/components/samfunn/SwarmMap').then((m) => ({ default: m.SwarmMap }))
 );
 
-type Tab = 'kart' | 'lag';
+type Tab = 'kart' | 'lag' | 'utstyr';
 
 export default function Samfunn() {
   const [activeTab, setActiveTab] = useState<Tab>('kart');
@@ -37,7 +38,7 @@ export default function Samfunn() {
             onPress={() => setActiveTab('kart')}
           >
             <Text style={[styles.tabText, activeTab === 'kart' && styles.tabTextActive]}>
-              🗺 Svirm-kart
+              🗺 Svirm
             </Text>
           </Pressable>
           <Pressable
@@ -45,7 +46,15 @@ export default function Samfunn() {
             onPress={() => setActiveTab('lag')}
           >
             <Text style={[styles.tabText, activeTab === 'lag' && styles.tabTextActive]}>
-              🏛 Birøkterlag
+              🏛 Lag
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.tab, activeTab === 'utstyr' && styles.tabActive]}
+            onPress={() => setActiveTab('utstyr')}
+          >
+            <Text style={[styles.tabText, activeTab === 'utstyr' && styles.tabTextActive]}>
+              🛒 Utstyr
             </Text>
           </Pressable>
         </View>
@@ -56,7 +65,7 @@ export default function Samfunn() {
         <Suspense fallback={null}>
           <SwarmMap />
         </Suspense>
-      ) : (
+      ) : activeTab === 'lag' ? (
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
@@ -79,6 +88,26 @@ export default function Samfunn() {
               <AssociationCard key={assoc.id} association={assoc} />
             ))
           )}
+        </ScrollView>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.sub}>Norske forhandlere av birøkterutstyr</Text>
+          {BEE_EQUIPMENT_VENDORS.map((vendor) => (
+            <Pressable
+              key={vendor.id}
+              style={({ pressed }) => [styles.vendorCard, pressed && { opacity: 0.75 }]}
+              onPress={() => Linking.openURL(vendor.website)}
+            >
+              <View style={styles.vendorInfo}>
+                <Text style={styles.vendorName}>{vendor.name}</Text>
+                <Text style={styles.vendorDesc}>{vendor.description}</Text>
+              </View>
+              <Text style={styles.vendorLink}>🌐</Text>
+            </Pressable>
+          ))}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -108,7 +137,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   tabActive: { backgroundColor: Colors.honey },
-  tabText: { fontSize: 13, fontWeight: '600', color: Colors.mid },
+  tabText: { fontSize: 12, fontWeight: '600', color: Colors.mid },
   tabTextActive: { color: Colors.white },
   content: { padding: 16, paddingTop: 14, gap: 12, paddingBottom: 32 },
   sub: { fontSize: 14, color: Colors.mid, marginBottom: 2 },
@@ -123,4 +152,20 @@ const styles = StyleSheet.create({
     borderColor: Colors.mid + '20',
   },
   empty: { fontSize: 14, color: Colors.mid, textAlign: 'center', marginTop: 12 },
+  vendorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    padding: 16,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  vendorInfo: { flex: 1 },
+  vendorName: { fontSize: 15, fontWeight: '700', color: Colors.dark, marginBottom: 3 },
+  vendorDesc: { fontSize: 13, color: Colors.mid, lineHeight: 18 },
+  vendorLink: { fontSize: 22, marginLeft: 12 },
 });

@@ -51,6 +51,81 @@ function cacheKey(lat: number, lng: number): string {
   return `${lat.toFixed(3)},${lng.toFixed(3)}`;
 }
 
+export interface ForecastDay {
+  date: string; // 'YYYY-MM-DD'
+  maxTemp: number;
+  symbol: string;
+  condition: string;
+  goodForInspection: boolean; // temp ≥ 14°C, no precipitation
+}
+
+const forecastCache = new Map<string, { days: ForecastDay[]; fetchedAt: number }>();
+
+export async function fetchForecast(lat: number, lng: number): Promise<ForecastDay[]> {
+  const key = cacheKey(lat, lng) + '_forecast';
+  const cached = forecastCache.get(key);
+  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) return cached.days;
+
+  try {
+    const res = await fetch(
+      `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lng}`,
+      { headers: { 'User-Agent': 'BiVokter/1.0 (kontakt@bivokter.no)' } }
+    );
+    if (!res.ok) return [];
+
+    const json = await res.json();
+    const timeseries: unknown[] = json?.properties?.timeseries ?? [];
+
+    // Group by date — prefer the entry closest to noon (12:00), fall back to any entry.
+    // Yr.no returns hourly for 48h then 6-hourly, so not every day has a 12:00 slot.
+    const byDate = new Map<string, { temp: number; symbol: string; hourDist: number }>();
+    for (const entry of timeseries) {
+      const ts = entry as Record<string, unknown>;
+      const time = typeof ts.time === 'string' ? ts.time : '';
+      const date = time.split('T')[0];
+      if (!date) continue;
+      const hour = parseInt(time.split('T')[1]?.split(':')[0] ?? '0', 10);
+      const hourDist = Math.abs(hour - 12); // distance from noon
+      const existing = byDate.get(date);
+      if (existing && existing.hourDist <= hourDist) continue; // keep closer-to-noon entry
+      const details = (ts.data as Record<string, unknown>)?.instant as Record<string, unknown> | undefined;
+      const temp = (details?.details as Record<string, unknown>)?.air_temperature;
+      const next6 = ((ts.data as Record<string, unknown>)?.next_6_hours as Record<string, unknown> | undefined)?.summary as Record<string, unknown> | undefined;
+      const next1 = ((ts.data as Record<string, unknown>)?.next_1_hours as Record<string, unknown> | undefined)?.summary as Record<string, unknown> | undefined;
+      const symbolCode = next6?.symbol_code ?? next1?.symbol_code;
+      byDate.set(date, {
+        temp: typeof temp === 'number' ? Math.round(temp) : 0,
+        symbol: typeof symbolCode === 'string' ? symbolCode : 'clearsky_day',
+        hourDist,
+      });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const days: ForecastDay[] = [];
+    for (const [date, v] of byDate) {
+      if (date < today) continue;
+      if (days.length >= 7) break;
+      const hasPrecip = v.symbol.includes('rain') || v.symbol.includes('snow') || v.symbol.includes('sleet') || v.symbol.includes('thunder');
+      days.push({
+        date,
+        maxTemp: v.temp,
+        symbol: v.symbol,
+        condition: symbolToNorwegian(v.symbol),
+        goodForInspection: v.temp >= 14 && !hasPrecip,
+      });
+    }
+
+    if (forecastCache.size >= CACHE_MAX_SIZE) {
+      const oldestKey = forecastCache.keys().next().value as string;
+      forecastCache.delete(oldestKey);
+    }
+    forecastCache.set(key, { days, fetchedAt: Date.now() });
+    return days;
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchWeather(lat: number, lng: number): Promise<WeatherData | null> {
   const key = cacheKey(lat, lng);
   const cached = cache.get(key);

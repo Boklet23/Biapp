@@ -30,41 +30,49 @@ export function HiveCard({ hive, lastInspection, onPress }: HiveCardProps) {
       accessibilityRole="button"
       accessibilityLabel={`Kube: ${hive.name}`}
     >
-      <View style={styles.row}>
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.name}>{hive.name}</Text>
-            <HiveTypeChip type={hive.type} />
-          </View>
-
-          {hive.locationName ? (
-            <Text style={styles.location}>📍 {hive.locationName}</Text>
-          ) : null}
-
-          <View style={styles.footer}>
-            {lastInspection ? (
-              <>
-                <Text style={styles.meta}>
-                  Sist inspisert: {daysSince(lastInspection.inspectedAt)}
-                </Text>
-                {totalFrames > 0 && (
-                  <Text style={styles.meta}>{totalFrames} rammer</Text>
-                )}
-              </>
-            ) : (
-              <Text style={styles.noInspection}>Ikke inspisert ennå</Text>
-            )}
-          </View>
-        </View>
-
-        {hive.photoUrl ? (
+      {/* Topp: bilde med navn-overlay ELLER enkel header */}
+      {hive.photoUrl ? (
+        <View style={styles.photoWrapper}>
           <Image
             source={{ uri: hive.photoUrl }}
-            style={styles.thumb}
+            style={styles.photo}
             resizeMode="cover"
             accessibilityLabel={`Bilde av ${hive.name}`}
           />
+          {/* Mørk gradient-overlay nederst i bildet */}
+          <View style={styles.photoOverlay} />
+          <View style={styles.photoMeta}>
+            <Text style={styles.photoName} numberOfLines={1}>{hive.name}</Text>
+            <HiveTypeChip type={hive.type} light />
+          </View>
+        </View>
+      ) : (
+        <View style={styles.header}>
+          <Text style={styles.name} numberOfLines={1}>{hive.name}</Text>
+          <HiveTypeChip type={hive.type} />
+        </View>
+      )}
+
+      {/* Bunninformasjon */}
+      <View style={styles.body}>
+        {hive.locationName ? (
+          <Text style={styles.location}>📍 {hive.locationName}</Text>
         ) : null}
+
+        <View style={styles.footer}>
+          {lastInspection ? (
+            <>
+              <Text style={styles.meta}>
+                Inspisert {daysSince(lastInspection.inspectedAt)}
+              </Text>
+              {totalFrames > 0 && (
+                <Text style={styles.meta}>{totalFrames} rammer</Text>
+              )}
+            </>
+          ) : (
+            <Text style={styles.noInspection}>Ikke inspisert ennå</Text>
+          )}
+        </View>
       </View>
     </Pressable>
   );
@@ -74,39 +82,71 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.white,
     borderRadius: 16,
-    padding: 18,
+    overflow: 'hidden',
     ...Shadows.card,
   },
   pressed: {
     opacity: 0.85,
     transform: [{ scale: 0.99 }],
   },
-  row: {
+
+  /* Med bilde */
+  photoWrapper: {
+    position: 'relative',
+    height: 140,
+  },
+  photo: {
+    width: '100%',
+    height: 140,
+  },
+  photoOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 72,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  photoMeta: {
+    position: 'absolute',
+    bottom: 10,
+    left: 14,
+    right: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 0,
-  },
-  content: {
-    flex: 1,
+    justifyContent: 'space-between',
     gap: 8,
   },
-  thumb: {
-    width: 72,
-    height: 72,
-    borderRadius: 10,
-    marginLeft: 14,
+  photoName: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
+
+  /* Uten bilde */
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 4,
+    gap: 8,
   },
   name: {
+    flex: 1,
     fontSize: 17,
     fontWeight: '700',
     color: Colors.dark,
-    flex: 1,
-    marginRight: 8,
+  },
+
+  /* Felles bunn */
+  body: {
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 14,
+    gap: 6,
   },
   location: {
     fontSize: 13,
@@ -115,7 +155,6 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 4,
   },
   meta: {
     fontSize: 13,

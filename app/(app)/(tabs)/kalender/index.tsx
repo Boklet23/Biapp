@@ -7,6 +7,8 @@ import { MonthView } from '@/components/calendar/MonthView';
 import { SeasonGuide } from '@/components/calendar/SeasonGuide';
 import { AddEventModal } from '@/components/calendar/AddEventModal';
 import { Colors } from '@/constants/colors';
+import { POLLEN_BY_MONTH } from '@/constants/pollenCalendar';
+import { SeasonChecklist } from '@/components/calendar/SeasonChecklist';
 import { fetchAllInspections } from '@/services/inspection';
 import { fetchCalendarEvents, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from '@/services/calendarEvent';
 import { scheduleEventNotification, cancelNotification } from '@/services/notifications';
@@ -245,6 +247,29 @@ export default function Kalender() {
         )}
 
         <SeasonGuide month={month} />
+
+        {/* Sesong-sjekkliste */}
+        <SeasonChecklist month={month} year={year} />
+
+        {/* Pollenkalender */}
+        {(() => {
+          const plants = POLLEN_BY_MONTH[month] ?? [];
+          if (plants.length === 0) return null;
+          return (
+            <View style={styles.pollenCard}>
+              <Text style={styles.pollenTitle}>🌸 Pollenkalender — {MONTH_NAMES[month]}</Text>
+              <Text style={styles.pollenSub}>Bieplanter som blomstrer denne måneden</Text>
+              <View style={styles.pollenList}>
+                {plants.map((p) => (
+                  <View key={p.plant} style={styles.pollenItem}>
+                    <Text style={styles.pollenIcon}>{p.icon}</Text>
+                    <Text style={styles.pollenPlant}>{p.plant}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          );
+        })()}
       </ScrollView>
 
       {/* FAB */}
@@ -353,6 +378,28 @@ const styles = StyleSheet.create({
   moodEmoji: { fontSize: 18 },
   chevron: { fontSize: 20, color: Colors.mid },
   emptyText: { fontSize: 14, color: Colors.mid, paddingVertical: 8 },
+
+  pollenCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 8,
+    gap: 8,
+  },
+  pollenTitle: { fontSize: 15, fontWeight: '700', color: Colors.dark },
+  pollenSub: { fontSize: 12, color: Colors.mid, marginTop: -4 },
+  pollenList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  pollenItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.honey + '12',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  pollenIcon: { fontSize: 16 },
+  pollenPlant: { fontSize: 13, color: Colors.dark, fontWeight: '500' },
 
   fab: {
     position: 'absolute',

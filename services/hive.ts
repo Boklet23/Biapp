@@ -25,12 +25,8 @@ export async function uploadHivePhoto(localUri: string, userId: string): Promise
 
   const base64 = await FileSystem.readAsStringAsync(localUri, { encoding: 'base64' });
 
-  // Konverter base64 → Uint8Array uten ekstern pakke
   const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
+  const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
 
   const { error } = await supabase.storage
     .from('hive-photos')
@@ -83,7 +79,7 @@ export async function createHive(input: CreateHiveData): Promise<Hive> {
       location_lat: input.locationLat ?? null,
       location_lng: input.locationLng ?? null,
       notes: input.notes ?? null,
-      photo_url: input.photoUrl ?? null,
+      ...(input.photoUrl !== undefined ? { photo_url: input.photoUrl } : {}),
     })
     .select()
     .single();

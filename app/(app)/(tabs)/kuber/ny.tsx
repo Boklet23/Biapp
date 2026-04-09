@@ -147,6 +147,33 @@ export default function NyKube() {
           onInfo={() => setInfoTopic('name')}
         />
 
+        {/* Bilde av kuben — øverst for synlighet */}
+        {photoUri ? (
+          <View style={styles.photoHeroWrapper}>
+            <Image source={{ uri: photoUri }} style={styles.photoHero} resizeMode="cover" />
+            <Pressable
+              style={styles.photoRemove}
+              onPress={() => setPhotoUri(null)}
+              accessibilityRole="button"
+              accessibilityLabel="Fjern bilde"
+              hitSlop={8}
+            >
+              <Text style={styles.photoRemoveText}>×</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [styles.photoHeroAdd, pressed && { opacity: 0.7 }]}
+            onPress={handlePickPhoto}
+            accessibilityRole="button"
+            accessibilityLabel="Legg til bilde av kuben"
+          >
+            <Text style={styles.photoAddIcon}>📷</Text>
+            <Text style={styles.photoAddText}>Legg til bilde av kuben</Text>
+            <Text style={styles.photoAddSub}>Velg fra galleri eller ta et nytt bilde</Text>
+          </Pressable>
+        )}
+
         {/* Kubetype */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>Kubetype</Text>
@@ -228,35 +255,6 @@ export default function NyKube() {
           style={styles.notesInput}
           onInfo={() => setInfoTopic('notes')}
         />
-
-        {/* Bilde av kuben */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>Bilde (valgfritt)</Text>
-        </View>
-        {photoUri ? (
-          <View style={styles.photoPreview}>
-            <Image source={{ uri: photoUri }} style={styles.photoThumb} resizeMode="cover" />
-            <Pressable
-              style={styles.photoRemove}
-              onPress={() => setPhotoUri(null)}
-              accessibilityRole="button"
-              accessibilityLabel="Fjern bilde"
-              hitSlop={8}
-            >
-              <Text style={styles.photoRemoveText}>×</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <Pressable
-            style={({ pressed }) => [styles.photoAdd, pressed && { opacity: 0.7 }]}
-            onPress={handlePickPhoto}
-            accessibilityRole="button"
-            accessibilityLabel="Legg til bilde av kuben"
-          >
-            <Text style={styles.photoAddIcon}>📷</Text>
-            <Text style={styles.photoAddText}>Legg til bilde</Text>
-          </Pressable>
-        )}
 
         <Button
           label="Lagre kube"
@@ -428,29 +426,31 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.mid + '90',
   },
-  photoAdd: {
-    height: 90,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: Colors.mid + '30',
+  photoHeroAdd: {
+    height: 160,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: Colors.honey + '50',
     borderStyle: 'dashed',
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.honey + '08',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     marginBottom: 4,
   },
-  photoAddIcon: { fontSize: 26 },
-  photoAddText: { fontSize: 14, color: Colors.mid, fontWeight: '500' },
-  photoPreview: {
+  photoAddIcon: { fontSize: 36 },
+  photoAddText: { fontSize: 15, color: Colors.honey, fontWeight: '700' },
+  photoAddSub: { fontSize: 12, color: Colors.mid },
+  photoHeroWrapper: {
     position: 'relative',
-    alignSelf: 'flex-start',
     marginBottom: 4,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
-  photoThumb: {
-    width: 120,
-    height: 90,
-    borderRadius: 12,
+  photoHero: {
+    width: '100%',
+    height: 160,
+    borderRadius: 16,
   },
   photoRemove: {
     position: 'absolute',

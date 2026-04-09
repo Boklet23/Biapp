@@ -117,3 +117,66 @@ export interface HarvestRecord {
   notes: string | null;
   createdAt: string;
 }
+
+export interface Treatment {
+  id: string;
+  hiveId: string;
+  userId: string;
+  treatedAt: string; // 'YYYY-MM-DD'
+  product: string;
+  dose: string | null;
+  method: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface HiveWeight {
+  id: string;
+  hiveId: string;
+  userId: string;
+  weighedAt: string; // 'YYYY-MM-DD'
+  weightKg: number;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface Queen {
+  id: string;
+  hiveId: string;
+  userId: string;
+  introducedAt: string; // 'YYYY-MM-DD'
+  replacedAt: string | null;
+  origin: string | null;
+  breed: string | null;
+  markedColor: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export type MarketplaceCategory = 'dronning' | 'avlegger' | 'utstyr' | 'honning' | 'annet';
+
+export interface MarketplaceListing {
+  id: string;
+  userId: string;
+  title: string;
+  description: string | null;
+  category: MarketplaceCategory;
+  price: number | null;
+  priceUnit: string;
+  location: string | null;
+  contactInfo: string | null;
+  isActive: boolean;
+  createdAt: string;
+  sellerName: string | null;
+}
+
+export interface FeedPost {
+  id: string;
+  userId: string;
+  content: string;
+  imageUrl: string | null;
+  likes: number;
+  createdAt: string;
+  authorName: string | null;
+  likedByMe: boolean;
+}

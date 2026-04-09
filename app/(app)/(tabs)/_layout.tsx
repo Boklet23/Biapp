@@ -40,7 +40,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="kuber/index"
+        name="kuber"
         options={{
           title: 'Mine Kuber',
           tabBarIcon: ({ focused }) => (
@@ -58,7 +58,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="laer/index"
+        name="laer"
         options={{
           title: 'Info',
           tabBarIcon: ({ focused }) => (

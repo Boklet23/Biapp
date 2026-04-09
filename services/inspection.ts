@@ -31,6 +31,25 @@ export async function fetchInspections(hiveId: string): Promise<Inspection[]> {
   return data.map(mapInspection);
 }
 
+/** Fetch only the latest inspection per hive — fast, minimal payload, used for home screen UI. */
+export async function fetchLastInspectionPerHive(): Promise<Record<string, Inspection>> {
+  const { data, error } = await supabase
+    .from('inspections')
+    .select('id, hive_id, user_id, inspected_at, varroa_count, queen_seen, queen_cells_found, mood_score')
+    .order('inspected_at', { ascending: false });
+
+  if (error) throw error;
+
+  const map: Record<string, Inspection> = {};
+  for (const row of data as Record<string, unknown>[]) {
+    const hiveId = row.hive_id as string;
+    if (!map[hiveId]) {
+      map[hiveId] = mapInspection(row);
+    }
+  }
+  return map;
+}
+
 export async function fetchAllInspections(): Promise<Inspection[]> {
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);

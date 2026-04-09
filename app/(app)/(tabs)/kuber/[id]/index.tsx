@@ -1,10 +1,18 @@
-import { lazy, Suspense, useLayoutEffect } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { lazy, Suspense, useLayoutEffect, useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
 import { HiveTypeChip } from '@/components/hive/HiveTypeChip';
 import { LoadingCard } from '@/components/ui/LoadingCard';
+import { TreatmentSection } from '@/components/hive/TreatmentSection';
+import { WeightSection } from '@/components/hive/WeightSection';
+import { HarvestSection } from '@/components/hive/HarvestSection';
+import { HealthScoreSection } from '@/components/hive/HealthScoreSection';
+import { QueenSection } from '@/components/hive/QueenSection';
+import { TreatmentRecommendationSection } from '@/components/hive/TreatmentRecommendationSection';
+import { fetchTreatments } from '@/services/treatment';
 import { Colors, Shadows } from '@/constants/colors';
 import { MOOD_EMOJI } from '@/constants/ui';
 import { fetchHive } from '@/services/hive';
@@ -13,7 +21,7 @@ import { Inspection } from '@/types';
 
 const HiveMap = lazy(() => import('@/components/hive/HiveMap'));
 
-const VARROA_DOTS = 5;
+const VARROA_MAX_POINTS = 6;
 
 function varroaColor(count: number): string {
   if (count <= 2) return Colors.success;
@@ -22,14 +30,34 @@ function varroaColor(count: number): string {
 }
 
 function VarroaTrend({ inspections }: { inspections: Inspection[] }) {
-  const withVarroa = inspections.filter((i) => i.varroaCount != null).slice(0, VARROA_DOTS);
+  const { width } = useWindowDimensions();
+  const withVarroa = [...inspections.filter((i) => i.varroaCount != null)]
+    .slice(0, VARROA_MAX_POINTS)
+    .reverse(); // oldest → newest
+
   if (withVarroa.length === 0) return null;
+
+  const chartW = width - 80; // account for padding
+  const chartH = 80;
+  const padX = 16;
+  const padY = 10;
+  const innerW = chartW - padX * 2;
+  const innerH = chartH - padY * 2;
+
+  const maxVal = Math.max(...withVarroa.map((i) => i.varroaCount!), 4);
+  const points = withVarroa.map((insp, idx) => {
+    const x = padX + (withVarroa.length === 1 ? innerW / 2 : (idx / (withVarroa.length - 1)) * innerW);
+    const y = padY + innerH - (insp.varroaCount! / maxVal) * innerH;
+    return { x, y, count: insp.varroaCount!, date: insp.inspectedAt, id: insp.id };
+  });
+
+  const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(' ');
+  const lastColor = varroaColor(withVarroa[withVarroa.length - 1].varroaCount!);
 
   return (
     <View style={styles.trendCard}>
       <View style={styles.trendHeader}>
         <Text style={styles.trendTitle}>Varroa-trend (siste {withVarroa.length})</Text>
-        {/* Inline legend — visible before dots */}
         <View style={styles.trendLegend}>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: Colors.success }]} />
@@ -45,20 +73,46 @@ function VarroaTrend({ inspections }: { inspections: Inspection[] }) {
           </View>
         </View>
       </View>
-      <View style={styles.trendRow}>
-        {[...withVarroa].reverse().map((insp) => {
-          const color = varroaColor(insp.varroaCount!);
+
+      <Svg width={chartW} height={chartH} style={styles.trendSvg}>
+        {/* Baseline */}
+        <Line
+          x1={padX} y1={padY + innerH}
+          x2={padX + innerW} y2={padY + innerH}
+          stroke={Colors.mid + '30'} strokeWidth={1}
+        />
+        {/* Trend line */}
+        {points.length > 1 && (
+          <Polyline
+            points={polylinePoints}
+            fill="none"
+            stroke={lastColor}
+            strokeWidth={2.5}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        )}
+        {/* Data points */}
+        {points.map((p) => {
+          const color = varroaColor(p.count);
           return (
-            <View key={insp.id} style={styles.trendItem}>
-              <View style={[styles.trendDot, { backgroundColor: color }]} />
-              <Text style={[styles.trendCount, { color }]}>{insp.varroaCount}</Text>
-              <Text style={styles.trendDate}>
-                {new Date(insp.inspectedAt).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' })}
-              </Text>
-            </View>
+            <Circle key={p.id} cx={p.x} cy={p.y} r={5} fill={color} stroke="#fff" strokeWidth={1.5} />
           );
         })}
-      </View>
+        {/* X-axis date labels */}
+        {points.map((p) => (
+          <SvgText
+            key={`lbl-${p.id}`}
+            x={p.x}
+            y={chartH - 1}
+            fontSize={9}
+            fill={Colors.mid}
+            textAnchor="middle"
+          >
+            {new Date(p.date).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' })}
+          </SvgText>
+        ))}
+      </Svg>
     </View>
   );
 }
@@ -116,6 +170,11 @@ export default function KubeProfil() {
   const { data: inspections = [] } = useQuery({
     queryKey: ['inspections', id],
     queryFn: () => fetchInspections(id),
+  });
+
+  const { data: treatments = [] } = useQuery({
+    queryKey: ['treatments', id],
+    queryFn: () => fetchTreatments(id),
   });
 
   useLayoutEffect(() => {
@@ -205,6 +264,12 @@ export default function KubeProfil() {
           )}
         </View>
 
+        {/* Helsescore */}
+        <HealthScoreSection inspections={inspections} />
+
+        {/* Anbefalinger */}
+        <TreatmentRecommendationSection inspections={inspections} treatments={treatments} />
+
         {/* Varroa trend */}
         {inspections.length > 0 && <VarroaTrend inspections={inspections} />}
 
@@ -224,12 +289,25 @@ export default function KubeProfil() {
           )}
         </View>
 
+        {/* Dronningsporing */}
+        <QueenSection hiveId={id} />
+
+        {/* Høstlogg */}
+        <HarvestSection hiveId={id} />
+
+        {/* Behandlingslogg */}
+        <TreatmentSection hiveId={id} />
+
+        {/* Kubevekt */}
+        <WeightSection hiveId={id} />
+
         {hive.notes && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Notater</Text>
             <Text style={styles.notesText}>{hive.notes}</Text>
           </View>
         )}
+
       </ScrollView>
 
       {/* New inspection FAB */}
@@ -249,7 +327,6 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: 20, gap: 0, paddingBottom: 100 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  loadingText: { fontSize: 15, color: Colors.mid },
   editBtn: { fontSize: 16, color: Colors.honey, fontWeight: '600' },
 
   hiveHeader: {
@@ -320,11 +397,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   trendTitle: { fontSize: 13, fontWeight: '700', color: Colors.mid, textTransform: 'uppercase', letterSpacing: 0.8 },
-  trendRow: { flexDirection: 'row', gap: 12 },
-  trendItem: { alignItems: 'center', gap: 4 },
-  trendDot: { width: 28, height: 28, borderRadius: 14 },
-  trendCount: { fontSize: 13, fontWeight: '700', color: Colors.dark },
-  trendDate: { fontSize: 10, color: Colors.mid, textAlign: 'center' },
+  trendSvg: { marginTop: 6 },
   trendLegend: { flexDirection: 'row', gap: 16 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },

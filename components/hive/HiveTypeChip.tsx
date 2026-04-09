@@ -17,13 +17,15 @@ const COLORS: Record<HiveType, { bg: string; text: string }> = {
 
 interface HiveTypeChipProps {
   type: HiveType;
+  /** Vis hvit tekst på mørk halvgjennomsiktig bakgrunn (for bruk over foto) */
+  light?: boolean;
 }
 
-export function HiveTypeChip({ type }: HiveTypeChipProps) {
+export function HiveTypeChip({ type, light }: HiveTypeChipProps) {
   const { bg, text } = COLORS[type];
   return (
-    <View style={[styles.chip, { backgroundColor: bg }]}>
-      <Text style={[styles.label, { color: text }]}>{LABELS[type]}</Text>
+    <View style={[styles.chip, light ? styles.chipLight : { backgroundColor: bg }]}>
+      <Text style={[styles.label, { color: light ? '#FFFFFF' : text }]}>{LABELS[type]}</Text>
     </View>
   );
 }
@@ -34,6 +36,13 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 20,
     alignSelf: 'flex-start',
+  },
+  chipLight: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
   label: {
     fontSize: 12,

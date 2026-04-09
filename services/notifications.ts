@@ -192,6 +192,63 @@ export async function getSeasonalRemindersEnabled(): Promise<boolean> {
   }
 }
 
+const SWARM_CHECKED_KEY = 'bivokter_swarm_checked';
+const SWARM_ALERT_RADIUS_KM = 30;
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/** Sjekker om det er nye svermrapporter innen SWARM_ALERT_RADIUS_KM km fra en av brukerens kuber */
+export async function checkNearbySwarmAlerts(
+  hiveLats: number[],
+  hiveLngs: number[]
+): Promise<void> {
+  if (isExpoGo || hiveLats.length === 0) return;
+
+  try {
+    const lastChecked = await AsyncStorage.getItem(SWARM_CHECKED_KEY).catch(() => null);
+    const since = lastChecked ?? new Date(Date.now() - 7 * 86400000).toISOString();
+
+    const { data, error } = await supabase
+      .from('swarm_reports')
+      .select('id, lat, lng, description, created_at')
+      .eq('status', 'open')
+      .gte('created_at', since);
+
+    if (error || !data) return;
+
+    await AsyncStorage.setItem(SWARM_CHECKED_KEY, new Date().toISOString()).catch(() => null);
+
+    const nearby = (data as { id: string; lat: number; lng: number; description: string }[]).filter((report) =>
+      hiveLats.some((lat, i) => haversineKm(lat, hiveLngs[i], report.lat, report.lng) <= SWARM_ALERT_RADIUS_KM)
+    );
+
+    if (nearby.length === 0) return;
+
+    const granted = await requestNotificationPermission();
+    if (!granted) return;
+
+    const { scheduleNotificationAsync } = await import('expo-notifications');
+    await scheduleNotificationAsync({
+      content: {
+        title: `🐝 ${nearby.length} sverm${nearby.length > 1 ? 'er' : ''} nær deg`,
+        body: `Nye svermrapporter innen ${SWARM_ALERT_RADIUS_KM} km. Sjekk Samfunn-fanen.`,
+        sound: true,
+      },
+      trigger: null,
+    });
+  } catch {
+    // Sverm-varsler er nice-to-have
+  }
+}
+
 export async function registerPushToken(): Promise<void> {
   if (isExpoGo) return;
   if (Platform.OS === 'web') return;

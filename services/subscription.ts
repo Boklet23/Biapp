@@ -3,17 +3,22 @@ import Purchases, {
   LOG_LEVEL,
   PurchasesPackage,
 } from 'react-native-purchases';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { SubscriptionTier } from '@/types';
 
 const ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? '';
+const isExpoGo = Constants.appOwnership === 'expo';
 
 /** Initialiser RevenueCat og koble til bruker-ID. Returnerer CustomerInfo. */
 export async function initPurchases(userId: string): Promise<CustomerInfo> {
+  if (isExpoGo) {
+    throw new Error('RevenueCat ikke tilgjengelig i Expo Go');
+  }
   if (Platform.OS !== 'android') {
-    // iOS-nøkkel legges til senere
-    throw new Error('RevenueCat kun konfigurert for Android foreløpig');
+    // iOS: ikke konfigurert ennå — returner mock CustomerInfo med starter-tier
+    return { entitlements: { active: {} } } as unknown as CustomerInfo;
   }
   Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.ERROR);
   await Purchases.configure({ apiKey: ANDROID_KEY, appUserID: userId });

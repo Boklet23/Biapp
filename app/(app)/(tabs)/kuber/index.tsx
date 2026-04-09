@@ -71,8 +71,30 @@ export default function KuberOversikt() {
       <View style={styles.headerWrap}>
         <BeeParticles height={70} />
         <View style={styles.header}>
-          <Text style={styles.title}>Mine Kuber</Text>
-          <Text style={styles.count}>{hives.length} {hives.length === 1 ? 'kube' : 'kuber'}</Text>
+          <View>
+            <Text style={styles.title}>Mine Kuber</Text>
+            <Text style={styles.count}>{hives.length} {hives.length === 1 ? 'kube' : 'kuber'}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {hives.length >= 2 && (
+              <Pressable
+                style={({ pressed }) => [styles.compareBtn, pressed && { opacity: 0.7 }]}
+                onPress={() => router.push('/kuber/sammenlign' as any)}
+                accessibilityRole="button"
+                accessibilityLabel="Sammenlign kuber"
+              >
+                <Text style={styles.compareBtnText}>Sammenlign</Text>
+              </Pressable>
+            )}
+            <Pressable
+              style={({ pressed }) => [styles.compareBtn, { backgroundColor: Colors.mid + '20' }, pressed && { opacity: 0.7 }]}
+              onPress={() => router.push('/kuber/sesongsammenligning' as any)}
+              accessibilityRole="button"
+              accessibilityLabel="Sesong-sammenligning"
+            >
+              <Text style={[styles.compareBtnText, { color: Colors.mid }]}>📊 År-over-år</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
 
@@ -153,13 +175,22 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'baseline',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 8,
   },
   title: { fontSize: 28, fontWeight: '800', color: Colors.dark },
   count: { fontSize: 14, color: Colors.mid },
+  compareBtn: {
+    backgroundColor: Colors.honey + '18',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.honey + '40',
+  },
+  compareBtnText: { fontSize: 13, fontWeight: '600', color: Colors.honey },
   list: { padding: 20, gap: 12, paddingBottom: 100 },
   emptyList: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },

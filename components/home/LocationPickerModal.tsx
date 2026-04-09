@@ -43,16 +43,23 @@ async function reverseGeocode(lat: number, lng: number, token: string): Promise<
   }
 }
 
-async function forwardGeocode(query: string, token: string): Promise<SearchResult[]> {
-  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&country=NO&language=no&types=place,locality,municipality,region&limit=6`;
-  const res = await fetch(url);
-  const json = await res.json();
-  return (json.features ?? []).map((f: Record<string, unknown>) => ({
-    id: f.id as string,
-    name: f.place_name as string,
-    lat: (f.center as number[])[1],
-    lng: (f.center as number[])[0],
-  }));
+async function forwardGeocode(query: string): Promise<SearchResult[]> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=no&format=json&limit=6&accept-language=no`;
+    const res = await fetch(url, { headers: { 'User-Agent': 'BiVokter/1.0' } });
+    if (!res.ok) return [];
+    const json: Record<string, unknown>[] = await res.json().catch(() => []);
+    return json
+      .filter((f) => f.lat && f.lon)
+      .map((f) => ({
+        id: String(f.place_id),
+        name: f.display_name as string,
+        lat: parseFloat(f.lat as string),
+        lng: parseFloat(f.lon as string),
+      }));
+  } catch {
+    return [];
+  }
 }
 
 export function LocationPickerModal({ visible, onClose, onPick }: LocationPickerModalProps) {
@@ -79,7 +86,7 @@ export function LocationPickerModal({ visible, onClose, onPick }: LocationPicker
     }
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
-      const found = await forwardGeocode(query, token);
+      const found = await forwardGeocode(query);
       setResults(found);
       setSearching(false);
     }, 350);

@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as ImagePicker from 'expo-image-picker';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Colors } from '@/constants/colors';
+import { Colors, Shadows } from '@/constants/colors';
 import { HiveTypeChip } from '@/components/hive/HiveTypeChip';
-import { fetchHive, updateHive } from '@/services/hive';
+import { fetchHive, updateHive, uploadHivePhoto } from '@/services/hive';
+import { supabase } from '@/lib/supabase';
+import { useToastStore } from '@/store/toast';
 import { BeeBreed, HiveType } from '@/types';
 
 const BEE_BREEDS: { value: BeeBreed; label: string; kg: number }[] = [
@@ -18,9 +21,11 @@ const BEE_BREEDS: { value: BeeBreed; label: string; kg: number }[] = [
 
 const HIVE_TYPES: HiveType[] = ['langstroth', 'warre', 'toppstang', 'annet'];
 
+
 export default function RedigerKube() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const showToast = useToastStore((s) => s.show);
 
   const { data: hive } = useQuery({
     queryKey: ['hive', id],
@@ -33,6 +38,8 @@ export default function RedigerKube() {
   const [locationName, setLocationName] = useState('');
   const [notes, setNotes] = useState('');
   const [nameError, setNameError] = useState('');
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoIsLocal, setPhotoIsLocal] = useState(false);
   const initialized = useRef(false);
 
   useEffect(() => {
@@ -43,12 +50,50 @@ export default function RedigerKube() {
       setBeeBreed(hive.beeBreed ?? 'annet');
       setLocationName(hive.locationName ?? '');
       setNotes(hive.notes ?? '');
+      setPhotoUri(hive.photoUrl ?? null);
+      setPhotoIsLocal(false);
     }
   }, [hive]);
 
+  const handlePickPhoto = () => {
+    Alert.alert('Bytt bilde', 'Velg kilde', [
+      { text: 'Kamera', onPress: () => pickImage('camera') },
+      { text: 'Galleri', onPress: () => pickImage('library') },
+      { text: 'Avbryt', style: 'cancel' },
+    ]);
+  };
+
+  const pickImage = async (source: 'camera' | 'library') => {
+    const fn = source === 'camera'
+      ? ImagePicker.launchCameraAsync
+      : ImagePicker.launchImageLibraryAsync;
+    const result = await fn({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.7,
+    });
+    if (!result.canceled) {
+      setPhotoUri(result.assets[0].uri);
+      setPhotoIsLocal(true);
+    }
+  };
+
   const mutation = useMutation({
-    mutationFn: (data: Parameters<typeof updateHive>[1]) => updateHive(id, data),
-    onSuccess: (updated) => {
+    mutationFn: async (data: Parameters<typeof updateHive>[1] & { localPhotoUri?: string }) => {
+      const { localPhotoUri, ...hiveData } = data;
+      if (localPhotoUri) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) hiveData.photoUrl = await uploadHivePhoto(localPhotoUri, user.id);
+        } catch {
+          showToast('Bildet ble ikke lastet opp — endringer lagres uten nytt bilde.', 'error');
+        }
+      }
+      return updateHive(id, hiveData);
+    },
+    onError: (error: Error) => showToast(error.message ?? 'Kunne ikke lagre endringer', 'error'),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hive', id] });
       queryClient.invalidateQueries({ queryKey: ['hives'] });
       router.back();
@@ -67,6 +112,7 @@ export default function RedigerKube() {
       beeBreed,
       locationName: locationName.trim() || undefined,
       notes: notes.trim() || undefined,
+      ...(photoIsLocal && photoUri ? { localPhotoUri: photoUri } : {}),
     });
   };
 
@@ -80,6 +126,32 @@ export default function RedigerKube() {
           <Text style={styles.serverError}>
             Kunne ikke lagre endringer. Prøv igjen.
           </Text>
+        )}
+
+        {/* Bilde */}
+        {photoUri ? (
+          <Pressable
+            style={({ pressed }) => [styles.photoHeroWrapper, pressed && { opacity: 0.85 }]}
+            onPress={handlePickPhoto}
+            accessibilityRole="button"
+            accessibilityLabel="Bytt bilde av kuben"
+          >
+            <Image source={{ uri: photoUri }} style={styles.photoHero} resizeMode="cover" />
+            <View style={styles.photoEditBadge}>
+              <Text style={styles.photoEditText}>Trykk for å bytte</Text>
+            </View>
+          </Pressable>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [styles.photoHeroAdd, pressed && { opacity: 0.7 }]}
+            onPress={handlePickPhoto}
+            accessibilityRole="button"
+            accessibilityLabel="Legg til bilde av kuben"
+          >
+            <Text style={styles.photoAddIcon}>📷</Text>
+            <Text style={styles.photoAddText}>Legg til bilde av kuben</Text>
+            <Text style={styles.photoAddSub}>Velg fra galleri eller ta et nytt bilde</Text>
+          </Pressable>
         )}
 
         <Input
@@ -146,6 +218,7 @@ export default function RedigerKube() {
           onPress={handleSave}
           loading={mutation.isPending}
         />
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -223,4 +296,43 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     textAlignVertical: 'top',
   },
+  photoHeroAdd: {
+    height: 160,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: Colors.honey + '50',
+    borderStyle: 'dashed',
+    backgroundColor: Colors.honey + '08',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  photoHeroWrapper: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 4,
+    position: 'relative',
+  },
+  photoHero: {
+    width: '100%',
+    height: 160,
+  },
+  photoEditBadge: {
+    position: 'absolute',
+    bottom: 10,
+    right: 12,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  photoEditText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  photoAddIcon: { fontSize: 36 },
+  photoAddText: { fontSize: 15, color: Colors.honey, fontWeight: '700' },
+  photoAddSub: { fontSize: 12, color: Colors.mid },
 });
