@@ -104,8 +104,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 72,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    height: 80,
+    backgroundColor: 'rgba(0,0,0,0.55)',
   },
   photoMeta: {
     position: 'absolute',

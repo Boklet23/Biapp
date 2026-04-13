@@ -72,9 +72,10 @@ export default function NyKube() {
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) hiveData.photoUrl = await uploadHivePhoto(localPhotoUri, user.id);
-        } catch {
+        } catch (e) {
           // Non-fatal: lagre kube uten bilde
-          showToast('Bildet ble ikke lastet opp — kuben lagres uten bilde.', 'error');
+          const msg = e instanceof Error ? e.message : 'Ukjent feil';
+          showToast(`Bildet ble ikke lastet opp (${msg}) — kuben lagres uten bilde.`, 'error');
         }
       }
       return createHive(hiveData);
