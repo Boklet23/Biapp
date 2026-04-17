@@ -52,11 +52,10 @@ function RootLayoutNav() {
         setSession(null); // Force isLoading=false even if getSession() fails
       });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
-        const profile = await fetchProfile();
-        setProfile(profile);
+        fetchProfile().then(setProfile).catch(() => setProfile(null));
       } else {
         setProfile(null);
       }

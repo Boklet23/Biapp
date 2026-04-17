@@ -23,10 +23,9 @@ export default function KuberOversikt() {
   const profile = useAuthStore((s) => s.profile);
   const isStarter = (profile?.subscriptionTier ?? 'starter') === 'starter';
 
-  const { data: hives = [], isLoading, refetch } = useQuery({
+  const { data: hives = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['hives'],
     queryFn: fetchHives,
-    meta: { onError: () => showToast('Kunne ikke laste kuber', 'error') },
   });
 
   const deleteMutation = useMutation({
@@ -61,6 +60,23 @@ export default function KuberOversikt() {
       <Screen>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Colors.honey} />
+        </View>
+      </Screen>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Screen>
+        <View style={styles.centered}>
+          <Text style={styles.emptyTitle}>Kunne ikke laste kuber</Text>
+          <Text style={[styles.emptyText, { marginBottom: 24 }]}>Sjekk internettforbindelsen og prøv igjen</Text>
+          <Pressable
+            onPress={() => refetch()}
+            style={({ pressed }) => [styles.compareBtn, pressed && { opacity: 0.7 }]}
+          >
+            <Text style={styles.compareBtnText}>Prøv igjen</Text>
+          </Pressable>
         </View>
       </Screen>
     );

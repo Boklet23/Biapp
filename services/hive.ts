@@ -42,13 +42,20 @@ export interface UpdateHiveData extends Partial<CreateHiveData> {
   isActive?: boolean;
 }
 
+const FETCH_TIMEOUT_MS = 10_000;
+
 export async function fetchHives(): Promise<Hive[]> {
-  const { data, error } = await supabase
+  const query = supabase
     .from('hives')
     .select('*')
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Tidsavbrudd – prøv igjen')), FETCH_TIMEOUT_MS)
+  );
+
+  const { data, error } = await Promise.race([query, timeout]) as Awaited<typeof query>;
   if (error) throw error;
   return data.map(mapHive);
 }
