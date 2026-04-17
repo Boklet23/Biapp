@@ -18,17 +18,17 @@ function mapProfile(row: Record<string, unknown>): User {
 }
 
 export async function fetchProfile(): Promise<User | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return null;
 
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', user.id)
+    .eq('id', session.user.id)
     .single();
 
   if (error) return null;
-  return mapProfile({ ...data, email: user.email ?? '' });
+  return mapProfile({ ...data, email: session.user.email ?? '' });
 }
 
 export interface UpdateProfileData {
@@ -37,8 +37,8 @@ export interface UpdateProfileData {
 }
 
 export async function updateProfile(data: UpdateProfileData): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Ikke innlogget');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) throw new Error('Ikke innlogget');
 
   const { error } = await supabase
     .from('profiles')
@@ -46,7 +46,7 @@ export async function updateProfile(data: UpdateProfileData): Promise<void> {
       display_name: data.displayName,
       experience_level: data.experienceLevel,
     })
-    .eq('id', user.id);
+    .eq('id', session.user.id);
 
   if (error) throw error;
 }

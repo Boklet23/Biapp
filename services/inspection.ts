@@ -77,14 +77,14 @@ export async function fetchInspection(id: string): Promise<Inspection> {
 }
 
 export async function createInspection(input: CreateInspectionData): Promise<Inspection> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Ikke innlogget');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) throw new Error('Ikke innlogget');
 
   const { data, error } = await supabase
     .from('inspections')
     .insert({
       hive_id: input.hiveId,
-      user_id: user.id,
+      user_id: session.user.id,
       inspected_at: input.inspectedAt,
       weather_temp: input.weatherTemp ?? null,
       weather_condition: input.weatherCondition ?? null,

@@ -36,13 +36,13 @@ export async function fetchCalendarEvents(): Promise<CalendarEvent[]> {
 }
 
 export async function createCalendarEvent(input: CreateCalendarEventData): Promise<CalendarEvent> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Ikke innlogget');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) throw new Error('Ikke innlogget');
 
   const { data, error } = await supabase
     .from('calendar_events')
     .insert({
-      user_id: user.id,
+      user_id: session.user.id,
       title: input.title,
       event_date: input.eventDate,
       notes: input.notes ?? null,

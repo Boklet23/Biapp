@@ -23,13 +23,13 @@ export async function fetchHarvests(): Promise<HarvestRecord[]> {
 }
 
 export async function createHarvest(input: CreateHarvestData): Promise<HarvestRecord> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Ikke innlogget');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) throw new Error('Ikke innlogget');
 
   const { data, error } = await supabase
     .from('harvest_records')
     .insert({
-      user_id: user.id,
+      user_id: session.user.id,
       hive_id: input.hiveId,
       harvested_at: input.harvestedAt,
       quantity_kg: input.quantityKg,

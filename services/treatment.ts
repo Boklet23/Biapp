@@ -36,14 +36,14 @@ export async function fetchTreatments(hiveId: string): Promise<Treatment[]> {
 }
 
 export async function createTreatment(input: CreateTreatmentData): Promise<Treatment> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Ikke innlogget');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) throw new Error('Ikke innlogget');
 
   const { data, error } = await supabase
     .from('treatments')
     .insert({
       hive_id: input.hiveId,
-      user_id: user.id,
+      user_id: session.user.id,
       treated_at: input.treatedAt,
       product: input.product,
       dose: input.dose ?? null,

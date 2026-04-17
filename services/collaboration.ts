@@ -40,8 +40,8 @@ export async function fetchCollaborators(hiveId: string): Promise<Collaborator[]
 }
 
 export async function addCollaboratorByEmail(hiveId: string, email: string): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Ikke innlogget');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) throw new Error('Ikke innlogget');
 
   // Look up the user by email in profiles
   const { data: profiles, error: lookupError } = await supabase
@@ -54,13 +54,13 @@ export async function addCollaboratorByEmail(hiveId: string, email: string): Pro
     throw new Error('Fant ingen bruker med den e-postadressen. De må registrere seg i BiVokter først.');
   }
 
-  if (profiles.id === user.id) {
+  if (profiles.id === session.user.id) {
     throw new Error('Du kan ikke legge til deg selv som samarbeidspartner.');
   }
 
   const { error } = await supabase.from('hive_collaborators').insert({
     hive_id: hiveId,
-    owner_id: user.id,
+    owner_id: session.user.id,
     collaborator_id: profiles.id,
   });
 

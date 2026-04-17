@@ -20,14 +20,14 @@ export async function fetchWeights(hiveId: string): Promise<HiveWeight[]> {
 }
 
 export async function createWeight(input: CreateWeightData): Promise<HiveWeight> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Ikke innlogget');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) throw new Error('Ikke innlogget');
 
   const { data, error } = await supabase
     .from('hive_weights')
     .insert({
       hive_id: input.hiveId,
-      user_id: user.id,
+      user_id: session.user.id,
       weighed_at: input.weighedAt,
       weight_kg: input.weightKg,
       notes: input.notes ?? null,

@@ -58,11 +58,11 @@ export async function fetchOfferings(): Promise<PurchasesPackage[]> {
 
 /** Oppdater subscription_tier i Supabase etter et kjøp. */
 export async function syncTierToSupabase(tier: SubscriptionTier): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
   if (!user) return;
 
   await supabase
     .from('profiles')
     .update({ subscription_tier: tier })
-    .eq('id', user.id);
+    .eq('id', session.user.id);
 }

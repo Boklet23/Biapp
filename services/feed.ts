@@ -16,7 +16,7 @@ function mapPost(row: Record<string, unknown>): FeedPost {
 }
 
 export async function fetchFeedPosts(limit = 20): Promise<FeedPost[]> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
 
   const { data, error } = await supabase
     .from('feed_posts')
@@ -32,7 +32,7 @@ export async function fetchFeedPosts(limit = 20): Promise<FeedPost[]> {
     const { data: likeData } = await supabase
       .from('feed_likes')
       .select('post_id')
-      .eq('user_id', user.id);
+      .eq('user_id', session.user.id);
     if (likeData) myLikedIds = new Set((likeData as { post_id: string }[]).map((l) => l.post_id));
   }
 
@@ -56,15 +56,15 @@ export async function createPost(content: string, imageUrl?: string): Promise<Fe
 }
 
 export async function toggleLike(postId: string, likedByMe: boolean): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Ikke innlogget');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) throw new Error('Ikke innlogget');
 
   if (likedByMe) {
-    await supabase.from('feed_likes').delete().eq('post_id', postId).eq('user_id', user.id);
+    await supabase.from('feed_likes').delete().eq('post_id', postId).eq('user_id', session.user.id);
     const { count } = await supabase.from('feed_likes').select('*', { count: 'exact', head: true }).eq('post_id', postId);
     await supabase.from('feed_posts').update({ likes: count ?? 0 }).eq('id', postId);
   } else {
-    await supabase.from('feed_likes').insert({ post_id: postId, user_id: user.id });
+    await supabase.from('feed_likes').insert({ post_id: postId, user_id: session.user.id });
     const { count } = await supabase.from('feed_likes').select('*', { count: 'exact', head: true }).eq('post_id', postId);
     await supabase.from('feed_posts').update({ likes: count ?? 0 }).eq('id', postId);
   }

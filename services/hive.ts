@@ -72,13 +72,13 @@ export async function fetchHive(id: string): Promise<Hive> {
 }
 
 export async function createHive(input: CreateHiveData): Promise<Hive> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Ikke innlogget');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) throw new Error('Ikke innlogget');
 
   const { data, error } = await supabase
     .from('hives')
     .insert({
-      user_id: user.id,
+      user_id: session.user.id,
       name: input.name,
       type: input.type,
       bee_breed: input.beeBreed ?? null,

@@ -265,10 +265,10 @@ export async function registerPushToken(): Promise<void> {
 
     const { getExpoPushTokenAsync } = await import('expo-notifications');
     const { data: token } = await getExpoPushTokenAsync({ projectId });
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
     if (!user) return;
 
-    await supabase.from('profiles').update({ push_token: token }).eq('id', user.id);
+    await supabase.from('profiles').update({ push_token: token }).eq('id', session.user.id);
   } catch {
     // Push-token er nice-to-have — appen fungerer uten
   }

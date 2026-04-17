@@ -48,13 +48,13 @@ export async function fetchSwarmReports(): Promise<SwarmReport[]> {
 }
 
 export async function createSwarmReport(input: CreateSwarmReportData): Promise<SwarmReport> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Ikke innlogget');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) throw new Error('Ikke innlogget');
 
   const { data, error } = await supabase
     .from('swarm_reports')
     .insert({
-      user_id: user.id,
+      user_id: session.user.id,
       lat: input.lat,
       lng: input.lng,
       description: input.description ?? null,
