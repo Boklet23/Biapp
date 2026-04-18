@@ -79,7 +79,7 @@ export default function Feed() {
   return (
     <Screen style={styles.screen}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={Colors.honey} />}
       >
         <View style={styles.headerRow}>
@@ -116,7 +116,7 @@ export default function Feed() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: 20, gap: 12, paddingBottom: 60 },
+  scrollContent: { padding: 20, gap: 12, paddingBottom: 60 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   header: { fontSize: 28, fontWeight: '800', color: Colors.dark },
   newBtn: { backgroundColor: Colors.honey, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 },

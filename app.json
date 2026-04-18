@@ -85,6 +85,15 @@
       ],
       "expo-sharing"
     ],
+    "updates": {
+      "url": "https://u.expo.dev/d0d6e766-5012-43bb-b14b-903b9794281a",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "experiments": {
       "typedRoutes": true
     },

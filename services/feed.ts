@@ -28,7 +28,7 @@ export async function fetchFeedPosts(limit = 20): Promise<FeedPost[]> {
 
   // Fetch likes for current user in one go
   let myLikedIds = new Set<string>();
-  if (user) {
+  if (session?.user) {
     const { data: likeData } = await supabase
       .from('feed_likes')
       .select('post_id')

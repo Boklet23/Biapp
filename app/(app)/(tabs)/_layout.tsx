@@ -75,6 +75,7 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="feed/index" options={{ href: null }} />
     </Tabs>
   );
 }
