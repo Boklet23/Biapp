@@ -71,7 +71,7 @@ export default function NyKube() {
       if (localPhotoUri) {
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          if (user) hiveData.photoUrl = await uploadHivePhoto(localPhotoUri, session.user.id);
+          if (session?.user) hiveData.photoUrl = await uploadHivePhoto(localPhotoUri, session.user.id);
         } catch (e) {
           // Non-fatal: lagre kube uten bilde
           const msg = e instanceof Error ? e.message : 'Ukjent feil';
