@@ -83,7 +83,7 @@
           "sounds": []
         }
       ],
-      "@sentry/react-native"
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true
