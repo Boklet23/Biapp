@@ -1,27 +1,58 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Hive, Inspection } from '@/types';
-import { Colors, Shadows } from '@/constants/colors';
-import { HiveTypeChip } from './HiveTypeChip';
+import { Hive, Inspection, HiveWeight } from '@/types';
+import { Colors } from '@/constants/colors';
+import { HealthRing } from '@/components/ui/HealthRing';
+
+const BREED_LABELS: Record<string, string> = {
+  norsk_landbee: 'Norsk landbee',
+  buckfast: 'Buckfast',
+  carniolan: 'Carnica',
+  annet: 'Annet',
+};
+
+const TYPE_COLORS: Record<string, string> = {
+  langstroth: Colors.honey,
+  warre: Colors.success,
+  toppstang: Colors.info,
+  annet: Colors.muted,
+};
 
 function daysSince(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const days = Math.floor(diff / 86400000);
   if (days === 0) return 'i dag';
   if (days === 1) return 'i går';
-  return `${days} dager siden`;
+  return `${days} d siden`;
+}
+
+function computeHealthScore(insp: Inspection | undefined): number {
+  if (!insp) return 50;
+  const varroa = insp.varroaCount ?? 0;
+  if (varroa === 0) return 95;
+  if (varroa <= 1) return 88;
+  if (varroa <= 2) return 78;
+  if (varroa <= 3) return 65;
+  if (varroa <= 5) return 48;
+  return 32;
 }
 
 interface HiveCardProps {
   hive: Hive;
   lastInspection?: Inspection;
+  lastWeight?: HiveWeight;
   onPress: () => void;
 }
 
-export function HiveCard({ hive, lastInspection, onPress }: HiveCardProps) {
+export function HiveCard({ hive, lastInspection, lastWeight, onPress }: HiveCardProps) {
   const totalFrames =
     (lastInspection?.numFramesBrood ?? 0) +
     (lastInspection?.numFramesHoney ?? 0) +
     (lastInspection?.numFramesEmpty ?? 0);
+
+  const healthScore = computeHealthScore(lastInspection);
+  const varroa = lastInspection?.varroaCount;
+  const varroaBad = varroa != null && varroa > 3;
+  const weightKg = lastWeight?.weightKg ?? null;
 
   return (
     <Pressable
@@ -30,48 +61,57 @@ export function HiveCard({ hive, lastInspection, onPress }: HiveCardProps) {
       accessibilityRole="button"
       accessibilityLabel={`Kube: ${hive.name}`}
     >
-      {/* Topp: bilde med navn-overlay ELLER enkel header */}
-      {hive.photoUrl ? (
-        <View style={styles.photoWrapper}>
+      {/* Top row: thumbnail · info · health ring */}
+      <View style={styles.top}>
+        {hive.photoUrl ? (
           <Image
             source={{ uri: hive.photoUrl }}
-            style={styles.photo}
+            style={styles.thumbnail}
             resizeMode="cover"
             accessibilityLabel={`Bilde av ${hive.name}`}
           />
-          {/* Mørk gradient-overlay nederst i bildet */}
-          <View style={styles.photoOverlay} />
-          <View style={styles.photoMeta}>
-            <Text style={styles.photoName} numberOfLines={1}>{hive.name}</Text>
-            <HiveTypeChip type={hive.type} light />
+        ) : (
+          <View style={[styles.thumbnail, { backgroundColor: TYPE_COLORS[hive.type] ?? Colors.muted }]}>
+            <Text style={styles.thumbnailInitial}>{hive.name.charAt(0).toUpperCase()}</Text>
           </View>
-        </View>
-      ) : (
-        <View style={styles.header}>
+        )}
+
+        <View style={styles.info}>
           <Text style={styles.name} numberOfLines={1}>{hive.name}</Text>
-          <HiveTypeChip type={hive.type} />
-        </View>
-      )}
-
-      {/* Bunninformasjon */}
-      <View style={styles.body}>
-        {hive.locationName ? (
-          <Text style={styles.location}>📍 {hive.locationName}</Text>
-        ) : null}
-
-        <View style={styles.footer}>
-          {lastInspection ? (
-            <>
-              <Text style={styles.meta}>
-                Inspisert {daysSince(lastInspection.inspectedAt)}
-              </Text>
-              {totalFrames > 0 && (
-                <Text style={styles.meta}>{totalFrames} rammer</Text>
-              )}
-            </>
-          ) : (
-            <Text style={styles.noInspection}>Ikke inspisert ennå</Text>
+          {hive.beeBreed && (
+            <Text style={styles.breed}>{BREED_LABELS[hive.beeBreed] ?? hive.beeBreed}</Text>
           )}
+          <Text style={styles.meta}>
+            {lastInspection
+              ? `Sjekket ${daysSince(lastInspection.inspectedAt)}`
+              : 'Ikke inspisert'}
+          </Text>
+        </View>
+
+        <View style={styles.ringWrapper}>
+          <HealthRing score={healthScore} size={58} stroke={5} showLabel={false} />
+          <Text style={[styles.ringScore, { color: Colors.ink }]}>{healthScore}</Text>
+          <Text style={styles.ringLabel}>HELSE</Text>
+        </View>
+      </View>
+
+      {/* Bottom stats strip */}
+      <View style={styles.stats}>
+        <View style={[styles.stat, styles.statBorder]}>
+          <Text style={styles.statKey}>VEKT</Text>
+          <Text style={styles.statVal}>
+            {weightKg != null ? `${weightKg} kg` : '–'}
+          </Text>
+        </View>
+        <View style={[styles.stat, styles.statBorder]}>
+          <Text style={styles.statKey}>VARROA</Text>
+          <Text style={[styles.statVal, varroaBad && styles.statValBad]}>
+            {varroa != null ? varroa : '–'}
+          </Text>
+        </View>
+        <View style={styles.stat}>
+          <Text style={styles.statKey}>RAMMER</Text>
+          <Text style={styles.statVal}>{totalFrames > 0 ? totalFrames : '–'}</Text>
         </View>
       </View>
     </Pressable>
@@ -81,88 +121,110 @@ export function HiveCard({ hive, lastInspection, onPress }: HiveCardProps) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.hair,
     overflow: 'hidden',
-    ...Shadows.card,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   pressed: {
-    opacity: 0.85,
+    opacity: 0.88,
     transform: [{ scale: 0.99 }],
   },
 
-  /* Med bilde */
-  photoWrapper: {
-    position: 'relative',
-    height: 140,
-  },
-  photo: {
-    width: '100%',
-    height: 140,
-  },
-  photoOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 80,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
-  photoMeta: {
-    position: 'absolute',
-    bottom: 10,
-    left: 14,
-    right: 14,
+  top: {
     flexDirection: 'row',
+    padding: 12,
+    gap: 12,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
   },
-  photoName: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FFFFFF',
+  thumbnail: {
+    width: 76,
+    height: 76,
+    borderRadius: 12,
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thumbnailInitial: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.white,
   },
 
-  /* Uten bilde */
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 4,
-    gap: 8,
+  info: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: 3,
   },
   name: {
-    flex: 1,
-    fontSize: 17,
-    fontWeight: '700',
-    color: Colors.dark,
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.ink,
+    letterSpacing: -0.2,
   },
-
-  /* Felles bunn */
-  body: {
-    paddingHorizontal: 18,
-    paddingTop: 10,
-    paddingBottom: 14,
-    gap: 6,
-  },
-  location: {
-    fontSize: 13,
-    color: Colors.mid,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  breed: {
+    fontSize: 12,
+    color: Colors.muted,
   },
   meta: {
-    fontSize: 13,
-    color: Colors.mid,
+    fontSize: 12,
+    color: Colors.muted,
   },
-  noInspection: {
+
+  ringWrapper: {
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 0,
+  },
+  ringScore: {
+    position: 'absolute',
+    fontSize: 18,
+    fontWeight: '600',
+    lineHeight: 20,
+    top: 16,
+  },
+  ringLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.muted,
+    letterSpacing: 1,
+    marginTop: 58,
+  },
+
+  stats: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: Colors.hair,
+  },
+  stat: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  statBorder: {
+    borderRightWidth: 1,
+    borderRightColor: Colors.hair,
+  },
+  statKey: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: Colors.muted,
+    marginBottom: 2,
+  },
+  statVal: {
     fontSize: 13,
-    color: Colors.warning,
-    fontStyle: 'italic',
+    fontWeight: '700',
+    color: Colors.ink,
+  },
+  statValBad: {
+    color: Colors.error,
   },
 });

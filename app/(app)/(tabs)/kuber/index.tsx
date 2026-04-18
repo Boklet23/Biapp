@@ -8,17 +8,31 @@ import { BeeParticles } from '@/components/animations/BeeParticles';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { Colors } from '@/constants/colors';
 import { fetchHives, deleteHive } from '@/services/hive';
-import { fetchInspections } from '@/services/inspection';
+import { fetchInspections, fetchLastInspectionPerHive } from '@/services/inspection';
 import { useAuthStore } from '@/store/auth';
 import { useToastStore } from '@/store/toast';
-import { Hive } from '@/types';
+import { Hive, Inspection } from '@/types';
 
 const STARTER_HIVE_LIMIT = 3;
+
+type Filter = 'alle' | 'friske' | 'varsel';
+
+function computeHealthScore(insp: Inspection | undefined): number {
+  if (!insp) return 50;
+  const varroa = insp.varroaCount ?? 0;
+  if (varroa === 0) return 95;
+  if (varroa <= 1) return 88;
+  if (varroa <= 2) return 78;
+  if (varroa <= 3) return 65;
+  if (varroa <= 5) return 48;
+  return 32;
+}
 
 export default function KuberOversikt() {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
+  const [filter, setFilter] = useState<Filter>('alle');
   const showToast = useToastStore((s) => s.show);
   const profile = useAuthStore((s) => s.profile);
   const isStarter = (profile?.subscriptionTier ?? 'starter') === 'starter';
@@ -26,6 +40,12 @@ export default function KuberOversikt() {
   const { data: hives = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['hives'],
     queryFn: fetchHives,
+  });
+
+  const { data: lastInspectionByHive = {} } = useQuery({
+    queryKey: ['last-inspection-per-hive'],
+    queryFn: fetchLastInspectionPerHive,
+    staleTime: 5 * 60 * 1000,
   });
 
   const deleteMutation = useMutation({
@@ -55,6 +75,22 @@ export default function KuberOversikt() {
     );
   };
 
+  const activeHives = hives.filter((h) => h.isActive);
+  const hivesWithScore = activeHives.map((h) => ({
+    hive: h,
+    score: computeHealthScore(lastInspectionByHive[h.id]),
+  }));
+  const freskeCount = hivesWithScore.filter((x) => x.score >= 70).length;
+  const varselCount = hivesWithScore.filter((x) => x.score < 70).length;
+
+  const filtered = hivesWithScore
+    .filter((x) => {
+      if (filter === 'friske') return x.score >= 70;
+      if (filter === 'varsel') return x.score < 70;
+      return true;
+    })
+    .map((x) => x.hive);
+
   if (isLoading) {
     return (
       <Screen>
@@ -73,9 +109,9 @@ export default function KuberOversikt() {
           <Text style={[styles.emptyText, { marginBottom: 24 }]}>Sjekk internettforbindelsen og prøv igjen</Text>
           <Pressable
             onPress={() => refetch()}
-            style={({ pressed }) => [styles.compareBtn, pressed && { opacity: 0.7 }]}
+            style={({ pressed }) => [styles.chip, { backgroundColor: Colors.honey }, pressed && { opacity: 0.7 }]}
           >
-            <Text style={styles.compareBtnText}>Prøv igjen</Text>
+            <Text style={[styles.chipText, { color: Colors.dark }]}>Prøv igjen</Text>
           </Pressable>
         </View>
       </Screen>
@@ -84,40 +120,53 @@ export default function KuberOversikt() {
 
   return (
     <Screen>
+      {/* Header */}
       <View style={styles.headerWrap}>
         <BeeParticles height={70} />
         <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Mine Kuber</Text>
-            <Text style={styles.count}>{hives.length} {hives.length === 1 ? 'kube' : 'kuber'}</Text>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {hives.length >= 2 && (
-              <Pressable
-                style={({ pressed }) => [styles.compareBtn, pressed && { opacity: 0.7 }]}
-                onPress={() => router.push('/kuber/sammenlign' as any)}
-                accessibilityRole="button"
-                accessibilityLabel="Sammenlign kuber"
-              >
-                <Text style={styles.compareBtnText}>Sammenlign</Text>
-              </Pressable>
-            )}
+          <Text style={styles.kicker}>Bigård</Text>
+          <Text style={styles.title}>Mine Kuber</Text>
+          <Text style={styles.summary}>
+            <Text style={styles.summaryStrong}>{activeHives.length}</Text>
+            <Text style={styles.summaryMid}> totalt · </Text>
+            <Text style={[styles.summaryStrong, { color: Colors.success }]}>{freskeCount}</Text>
+            <Text style={styles.summaryMid}> friske · </Text>
+            <Text style={[styles.summaryStrong, { color: Colors.error }]}>{varselCount}</Text>
+            <Text style={styles.summaryMid}> varsel</Text>
+          </Text>
+        </View>
+
+        {/* Filter chips */}
+        <View style={styles.chips}>
+          {([
+            { id: 'alle',   label: 'Alle',   count: activeHives.length },
+            { id: 'friske', label: 'Friske', count: freskeCount },
+            { id: 'varsel', label: 'Varsel', count: varselCount },
+          ] as { id: Filter; label: string; count: number }[]).map((f) => (
             <Pressable
-              style={({ pressed }) => [styles.compareBtn, { backgroundColor: Colors.mid + '20' }, pressed && { opacity: 0.7 }]}
-              onPress={() => router.push('/kuber/sesongsammenligning' as any)}
-              accessibilityRole="button"
-              accessibilityLabel="Sesong-sammenligning"
+              key={f.id}
+              onPress={() => setFilter(f.id)}
+              style={({ pressed }) => [
+                styles.chip,
+                filter === f.id && styles.chipActive,
+                pressed && { opacity: 0.8 },
+              ]}
             >
-              <Text style={[styles.compareBtnText, { color: Colors.mid }]}>📊 År-over-år</Text>
+              <Text style={[styles.chipText, filter === f.id && styles.chipTextActive]}>
+                {f.label}
+              </Text>
+              <Text style={[styles.chipCount, filter === f.id && styles.chipCountActive]}>
+                {f.count}
+              </Text>
             </Pressable>
-          </View>
+          ))}
         </View>
       </View>
 
       <FlatList
-        data={hives}
+        data={filtered}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.list, hives.length === 0 && styles.emptyList]}
+        contentContainerStyle={[styles.list, filtered.length === 0 && styles.emptyList]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.honey} />
         }
@@ -131,14 +180,17 @@ export default function KuberOversikt() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>🐝</Text>
-            <Text style={styles.emptyTitle}>Ingen kuber ennå</Text>
-            <Text style={styles.emptyText}>
-              Trykk + for å legge til din første bikube
+            <Text style={styles.emptyTitle}>
+              {filter === 'alle' ? 'Ingen kuber ennå' : 'Ingen kuber i denne kategorien'}
             </Text>
+            {filter === 'alle' && (
+              <Text style={styles.emptyText}>Trykk + for å legge til din første bikube</Text>
+            )}
           </View>
         }
       />
 
+      {/* FAB */}
       <Pressable
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
         onPress={() => {
@@ -185,28 +237,78 @@ function HiveWithInspection({
 
 const styles = StyleSheet.create({
   headerWrap: {
-    position: 'relative',
+    backgroundColor: Colors.creamDeep,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     overflow: 'hidden',
+    paddingBottom: 16,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 8,
+    paddingBottom: 10,
   },
-  title: { fontSize: 28, fontWeight: '800', color: Colors.dark },
-  count: { fontSize: 14, color: Colors.mid },
-  compareBtn: {
-    backgroundColor: Colors.honey + '18',
+  kicker: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+    color: Colors.muted,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '500',
+    color: Colors.ink,
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  summary: {
+    fontSize: 13,
+    color: Colors.inkSoft,
+  },
+  summaryStrong: {
+    fontWeight: '700',
+    color: Colors.ink,
+  },
+  summaryMid: {
+    color: Colors.muted,
+  },
+
+  chips: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 6,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.honey + '40',
+    borderRadius: 99,
+    backgroundColor: Colors.white,
   },
-  compareBtnText: { fontSize: 13, fontWeight: '600', color: Colors.honey },
+  chipActive: {
+    backgroundColor: Colors.dark,
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.inkSoft,
+  },
+  chipTextActive: {
+    color: Colors.white,
+  },
+  chipCount: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: Colors.muted,
+  },
+  chipCountActive: {
+    color: Colors.honey,
+  },
+
   list: { padding: 20, gap: 12, paddingBottom: 100 },
   emptyList: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -214,6 +316,7 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 56 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: Colors.dark },
   emptyText: { fontSize: 14, color: Colors.mid, textAlign: 'center', lineHeight: 20, maxWidth: 260 },
+
   fab: {
     position: 'absolute',
     bottom: 24,
@@ -224,14 +327,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.honey,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: Colors.honeyDeep,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.45,
     shadowRadius: 12,
     elevation: 8,
-    borderWidth: 1,
-    borderColor: Colors.honeyDark + '20',
   },
   fabPressed: { transform: [{ scale: 0.92 }], opacity: 0.85 },
-  fabText: { fontSize: 28, color: Colors.white, fontWeight: '400', lineHeight: 32 },
+  fabText: { fontSize: 28, color: Colors.dark, fontWeight: '400', lineHeight: 32 },
 });
