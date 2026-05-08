@@ -9,11 +9,13 @@ export const FontFamily = {
 } as const;
 
 export const Typography = {
-  h1:         { fontSize: 28, fontWeight: '800', fontFamily: FontFamily.extrabold },
-  h2:         { fontSize: 24, fontWeight: '700', fontFamily: FontFamily.bold },
-  h3:         { fontSize: 18, fontWeight: '700', fontFamily: FontFamily.bold },
-  body:       { fontSize: 16, fontWeight: '400', fontFamily: FontFamily.regular },
-  bodyStrong: { fontSize: 16, fontWeight: '600', fontFamily: FontFamily.semibold },
+  heroTitle:      { fontSize: 32, fontWeight: '800', fontFamily: FontFamily.extrabold, letterSpacing: -0.5 },
+  h1:             { fontSize: 28, fontWeight: '800', fontFamily: FontFamily.extrabold },
+  h2:             { fontSize: 24, fontWeight: '700', fontFamily: FontFamily.bold },
+  sectionHeading: { fontSize: 22, fontWeight: '700', fontFamily: FontFamily.bold, letterSpacing: -0.3 },
+  h3:             { fontSize: 18, fontWeight: '700', fontFamily: FontFamily.bold },
+  body:           { fontSize: 16, fontWeight: '400', fontFamily: FontFamily.regular },
+  bodyStrong:     { fontSize: 16, fontWeight: '600', fontFamily: FontFamily.semibold },
   label: {
     fontSize: 13,
     fontWeight: '700',

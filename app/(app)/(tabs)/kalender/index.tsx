@@ -6,7 +6,7 @@ import { Screen } from '@/components/ui/Screen';
 import { MonthView } from '@/components/calendar/MonthView';
 import { SeasonGuide } from '@/components/calendar/SeasonGuide';
 import { AddEventModal } from '@/components/calendar/AddEventModal';
-import { Colors } from '@/constants/colors';
+import { Colors, SeasonColors, Shadows } from '@/constants/colors';
 import { FontFamily } from '@/constants/typography';
 import { POLLEN_BY_MONTH } from '@/constants/pollenCalendar';
 import { SeasonChecklist } from '@/components/calendar/SeasonChecklist';
@@ -24,10 +24,10 @@ const MONTH_NAMES = [
 
 /** Sesongfarge — brukes som en farget stripe øverst i kalenderen */
 const SEASON_COLOR: Record<number, string> = {
-  1: '#D6EAF8', 2: '#D6EAF8', 3: '#D5F5E3',  // vinter → tidligsommar
-  4: '#D5F5E3', 5: '#D5F5E3', 6: '#FEF9E7',  // vår → sommer
-  7: '#FEF9E7', 8: '#FEF9E7', 9: '#FDEBD0',  // sommer → høst
-  10: '#FDEBD0', 11: '#D6EAF8', 12: '#D6EAF8', // høst → vinter
+  1: SeasonColors.winter,  2: SeasonColors.winter,  3: SeasonColors.spring,
+  4: SeasonColors.spring,  5: SeasonColors.spring,  6: SeasonColors.summer,
+  7: SeasonColors.summer,  8: SeasonColors.summer,  9: SeasonColors.autumn,
+  10: SeasonColors.autumn, 11: SeasonColors.winter, 12: SeasonColors.winter,
 };
 
 function formatTime(iso: string): string {
@@ -417,11 +417,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     paddingHorizontal: 20,
     paddingVertical: 14,
-    shadowColor: Colors.honey,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
+    ...Shadows.fab,
   },
   fabPressed: { transform: [{ scale: 0.96 }], opacity: 0.9 },
   fabText: { fontSize: 15, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.white },

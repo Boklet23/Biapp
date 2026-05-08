@@ -27,13 +27,13 @@ RN 0.83 · Expo SDK 55 (New Arch alltid på) · expo-router v3 · Supabase (eu-w
 | `services/report.ts` | PDF-generering med `esc()` HTML-escaping |
 | `services/subscription.ts` | RevenueCat-integrasjon + `syncTierToSupabase()` |
 | `supabase/functions/revenuecat-webhook/` | Edge Function: syncer tier ved kansellering/utløp |
-| `constants/colors.ts` | Colors.honey · .dark · .mid · .white · .error · .success · .info · .warning |
+| `constants/colors.ts` | Colors · Shadows · Radii · SeasonColors — bruk alltid disse fremfor inline verdier |
 
 ## Services
 `hive` · `inspection` · `swarmReport` · `calendarEvent` · `notifications` · `weather` (Yr.no, TTL 1t) · `profile` · `treatment` · `weight` · `harvest` · `queen` · `report` · `subscription` · `collaboration` (DB-only, ingen UI)
 
-## DB-migrasjoner (0001–0011 kjørt)
-0006 treatments · 0007 hive_weights · 0008 hive_collaborators (ingen UI) · 0009 queens · 0010 marketplace (ingen UI) · 0011 feed (ingen UI)
+## DB-migrasjoner (0001–0014 kjørt)
+0006 treatments · 0007 hive_weights · 0008 hive_collaborators (ingen UI) · 0009 queens · 0010 marketplace (ingen UI) · 0011 feed (ingen UI) · 0012 get_latest_inspections_per_hive (RPC) · 0013 hive_starter_limit (INSERT policy) · 0014 hive_update_policy (UPDATE policy)
 
 ## Bygg
 ```

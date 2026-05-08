@@ -1,6 +1,6 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Hive, Inspection, HiveWeight } from '@/types';
-import { Colors } from '@/constants/colors';
+import { Colors, Radii, Shadows } from '@/constants/colors';
 import { FontFamily } from '@/constants/typography';
 import { HealthRing } from '@/components/ui/HealthRing';
 import { computeHealthScore } from '@/utils/health';
@@ -116,15 +116,11 @@ export function HiveCard({ hive, lastInspection, lastWeight, onPress }: HiveCard
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.white,
-    borderRadius: 18,
+    borderRadius: Radii.lg,
     borderWidth: 1,
     borderColor: Colors.hair,
     overflow: 'hidden',
-    shadowColor: Colors.dark,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 3,
+    ...Shadows.card,
   },
   pressed: {
     opacity: 0.88,
@@ -140,7 +136,7 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: 76,
     height: 76,
-    borderRadius: 12,
+    borderRadius: Radii.sm,
     flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',

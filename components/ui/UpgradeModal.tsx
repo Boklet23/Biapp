@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, Shadows } from '@/constants/colors';
 import { fetchOfferings, purchasePackage, restorePurchases, mapEntitlementToTier, syncTierToSupabase } from '@/services/subscription';
 import { useAuthStore } from '@/store/auth';
@@ -145,13 +145,15 @@ export function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
             </View>
           ))}
 
-          <Pressable style={styles.restoreBtn} onPress={handleRestore} disabled={!!purchasing}>
-            {purchasing === 'restore' ? (
-              <ActivityIndicator color={Colors.mid} size="small" />
-            ) : (
-              <Text style={styles.restoreText}>Gjenopprett tidligere kjøp</Text>
-            )}
-          </Pressable>
+          {Platform.OS === 'android' && (
+            <Pressable style={styles.restoreBtn} onPress={handleRestore} disabled={!!purchasing}>
+              {purchasing === 'restore' ? (
+                <ActivityIndicator color={Colors.mid} size="small" />
+              ) : (
+                <Text style={styles.restoreText}>Gjenopprett tidligere kjøp</Text>
+              )}
+            </Pressable>
+          )}
 
           <Text style={styles.legal}>
             Abonnementet fornyes automatisk. Avbestill i Google Play → Abonnementer.

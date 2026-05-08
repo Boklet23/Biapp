@@ -59,4 +59,37 @@ export const Shadows = {
     shadowRadius: 12,
     elevation: 5,
   },
+  fab: {
+    shadowColor: '#D98B0E',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  light: {
+    shadowColor: '#1A1A2E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+} as const;
+
+// Consistent border-radius scale
+export const Radii = {
+  xs: 8,
+  sm: 12,
+  md: 16,
+  lg: 18,
+  xl: 24,
+  hero: 28,
+  pill: 999,
+} as const;
+
+// Season colors for calendar
+export const SeasonColors = {
+  winter: '#D6EAF8',
+  spring: '#D5F5E3',
+  summer: '#FEF9E7',
+  autumn: '#FDEBD0',
 } as const;

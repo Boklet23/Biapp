@@ -7,7 +7,7 @@ import { Screen } from '@/components/ui/Screen';
 import { HiveCard } from '@/components/hive/HiveCard';
 import { BeeParticles } from '@/components/animations/BeeParticles';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
-import { Colors } from '@/constants/colors';
+import { Colors, Shadows } from '@/constants/colors';
 import { FontFamily } from '@/constants/typography';
 import { fetchHives, deleteHive } from '@/services/hive';
 import { fetchInspections, fetchLastInspectionPerHive } from '@/services/inspection';
@@ -364,11 +364,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.honey,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.honeyDeep,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 12,
-    elevation: 8,
+    ...Shadows.fab,
   },
   fabPressed: { transform: [{ scale: 0.92 }], opacity: 0.85 },
   fabText: { fontSize: 28, fontFamily: FontFamily.bold, color: Colors.dark, fontWeight: '700', lineHeight: 32 },
