@@ -23,3 +23,5 @@ as $$
   where user_id = auth.uid()
   order by hive_id, inspected_at desc;
 $$;
+
+grant execute on function get_latest_inspections_per_hive() to authenticated;
