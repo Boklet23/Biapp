@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -7,6 +7,7 @@ import { MonthView } from '@/components/calendar/MonthView';
 import { SeasonGuide } from '@/components/calendar/SeasonGuide';
 import { AddEventModal } from '@/components/calendar/AddEventModal';
 import { Colors } from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 import { POLLEN_BY_MONTH } from '@/constants/pollenCalendar';
 import { SeasonChecklist } from '@/components/calendar/SeasonChecklist';
 import { fetchAllInspections } from '@/services/inspection';
@@ -44,15 +45,23 @@ export default function Kalender() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
-  const { data: allInspections = [] } = useQuery({
+  const { data: allInspections = [], error: inspError } = useQuery({
     queryKey: ['all-inspections'],
     queryFn: fetchAllInspections,
   });
 
-  const { data: allEvents = [] } = useQuery({
+  const { data: allEvents = [], error: eventsError } = useQuery({
     queryKey: ['calendar-events'],
     queryFn: fetchCalendarEvents,
   });
+
+  useEffect(() => {
+    if (inspError) showToast('Kunne ikke laste inspeksjoner', 'error');
+  }, [inspError]);
+
+  useEffect(() => {
+    if (eventsError) showToast('Kunne ikke laste hendelser', 'error');
+  }, [eventsError]);
 
   const createMutation = useMutation({
     mutationFn: async (args: { title: string; date: string; notes: string }) => {
@@ -315,12 +324,12 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   seasonStripe: { height: 4 },
   content: { padding: 20, paddingTop: 12, gap: 16, paddingBottom: 100 },
-  header: { fontSize: 28, fontWeight: '800', color: Colors.dark },
+  header: { fontSize: 28, fontWeight: '800', fontFamily: FontFamily.extrabold, color: Colors.dark },
 
   monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   navBtn: { padding: 8 },
   navBtnText: { fontSize: 28, color: Colors.honey, fontWeight: '300' },
-  monthTitle: { fontSize: 18, fontWeight: '700', color: Colors.dark },
+  monthTitle: { fontSize: 18, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark },
 
   calendarCard: {
     backgroundColor: Colors.white,
@@ -336,11 +345,11 @@ const styles = StyleSheet.create({
   legend: { flexDirection: 'row', gap: 16, marginTop: -8 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontSize: 12, color: Colors.mid },
+  legendText: { fontSize: 12, fontFamily: FontFamily.regular, color: Colors.mid },
 
   section: { gap: 0 },
   sectionTitle: {
-    fontSize: 13, fontWeight: '700', color: Colors.mid,
+    fontSize: 13, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.mid,
     textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8,
   },
 
@@ -358,9 +367,9 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   eventContent: { flex: 1 },
-  eventTitle: { fontSize: 15, fontWeight: '600', color: Colors.dark },
-  eventNotes: { fontSize: 12, color: Colors.mid, marginTop: 2 },
-  editHint: { fontSize: 11, color: Colors.mid + '80' },
+  eventTitle: { fontSize: 15, fontWeight: '600', fontFamily: FontFamily.semibold, color: Colors.dark },
+  eventNotes: { fontSize: 12, fontFamily: FontFamily.regular, color: Colors.mid, marginTop: 2 },
+  editHint: { fontSize: 11, fontFamily: FontFamily.regular, color: Colors.mid + '80' },
 
   inspRow: {
     flexDirection: 'row',
@@ -372,12 +381,12 @@ const styles = StyleSheet.create({
   },
   rowPressed: { opacity: 0.6 },
   inspLeft: { gap: 2 },
-  inspTime: { fontSize: 15, fontWeight: '600', color: Colors.dark },
-  inspSub: { fontSize: 12, color: Colors.mid },
+  inspTime: { fontSize: 15, fontWeight: '600', fontFamily: FontFamily.semibold, color: Colors.dark },
+  inspSub: { fontSize: 12, fontFamily: FontFamily.regular, color: Colors.mid },
   inspRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   moodEmoji: { fontSize: 18 },
   chevron: { fontSize: 20, color: Colors.mid },
-  emptyText: { fontSize: 14, color: Colors.mid, paddingVertical: 8 },
+  emptyText: { fontSize: 14, fontFamily: FontFamily.regular, color: Colors.mid, paddingVertical: 8 },
 
   pollenCard: {
     backgroundColor: Colors.white,
@@ -386,8 +395,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     gap: 8,
   },
-  pollenTitle: { fontSize: 15, fontWeight: '700', color: Colors.dark },
-  pollenSub: { fontSize: 12, color: Colors.mid, marginTop: -4 },
+  pollenTitle: { fontSize: 15, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark },
+  pollenSub: { fontSize: 12, fontFamily: FontFamily.regular, color: Colors.mid, marginTop: -4 },
   pollenList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   pollenItem: {
     flexDirection: 'row',
@@ -399,7 +408,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   pollenIcon: { fontSize: 16 },
-  pollenPlant: { fontSize: 13, color: Colors.dark, fontWeight: '500' },
+  pollenPlant: { fontSize: 13, fontFamily: FontFamily.medium, color: Colors.dark, fontWeight: '500' },
 
   fab: {
     position: 'absolute',
@@ -415,5 +424,5 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   fabPressed: { transform: [{ scale: 0.96 }], opacity: 0.9 },
-  fabText: { fontSize: 15, fontWeight: '700', color: Colors.white },
+  fabText: { fontSize: 15, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.white },
 });

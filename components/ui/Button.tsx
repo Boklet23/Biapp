@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -88,6 +89,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: FontFamily.semibold,
   },
   primaryLabel: {
     color: Colors.white,

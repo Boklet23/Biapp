@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
@@ -7,26 +8,17 @@ import { HiveCard } from '@/components/hive/HiveCard';
 import { BeeParticles } from '@/components/animations/BeeParticles';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { Colors } from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 import { fetchHives, deleteHive } from '@/services/hive';
 import { fetchInspections, fetchLastInspectionPerHive } from '@/services/inspection';
 import { useAuthStore } from '@/store/auth';
 import { useToastStore } from '@/store/toast';
 import { Hive, Inspection } from '@/types';
+import { computeHealthScore } from '@/utils/health';
 
 const STARTER_HIVE_LIMIT = 3;
 
 type Filter = 'alle' | 'friske' | 'varsel';
-
-function computeHealthScore(insp: Inspection | undefined): number {
-  if (!insp) return 50;
-  const varroa = insp.varroaCount ?? 0;
-  if (varroa === 0) return 95;
-  if (varroa <= 1) return 88;
-  if (varroa <= 2) return 78;
-  if (varroa <= 3) return 65;
-  if (varroa <= 5) return 48;
-  return 32;
-}
 
 export default function KuberOversikt() {
   const queryClient = useQueryClient();
@@ -119,7 +111,8 @@ export default function KuberOversikt() {
   }
 
   return (
-    <Screen>
+    <Screen style={{ backgroundColor: Colors.dark }}>
+      <StatusBar style="light" />
       {/* Header */}
       <View style={styles.headerWrap}>
         <BeeParticles height={70} />
@@ -160,6 +153,22 @@ export default function KuberOversikt() {
               </Text>
             </Pressable>
           ))}
+        </View>
+
+        {/* Analysis shortcuts */}
+        <View style={styles.tools}>
+          <Pressable
+            onPress={() => router.push('/kuber/sammenlign' as any)}
+            style={({ pressed }) => [styles.toolBtn, pressed && { opacity: 0.65 }]}
+          >
+            <Text style={styles.toolText}>📊 Sammenlign</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/kuber/sesongsammenligning' as any)}
+            style={({ pressed }) => [styles.toolBtn, pressed && { opacity: 0.65 }]}
+          >
+            <Text style={styles.toolText}>📈 Sesong</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -237,9 +246,9 @@ function HiveWithInspection({
 
 const styles = StyleSheet.create({
   headerWrap: {
-    backgroundColor: Colors.creamDeep,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    backgroundColor: Colors.dark,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
     overflow: 'hidden',
     paddingBottom: 16,
   },
@@ -251,34 +260,57 @@ const styles = StyleSheet.create({
   kicker: {
     fontSize: 11,
     fontWeight: '800',
+    fontFamily: FontFamily.extrabold,
     letterSpacing: 1.4,
-    color: Colors.muted,
+    color: Colors.honey,
     textTransform: 'uppercase',
     marginBottom: 2,
   },
   title: {
     fontSize: 32,
-    fontWeight: '500',
-    color: Colors.ink,
+    fontWeight: '800',
+    fontFamily: FontFamily.extrabold,
+    color: Colors.white,
     letterSpacing: -0.5,
     marginBottom: 6,
   },
   summary: {
     fontSize: 13,
-    color: Colors.inkSoft,
+    fontFamily: FontFamily.regular,
+    color: 'rgba(255,255,255,0.65)',
   },
   summaryStrong: {
     fontWeight: '700',
-    color: Colors.ink,
+    fontFamily: FontFamily.bold,
+    color: Colors.white,
   },
   summaryMid: {
-    color: Colors.muted,
+    color: 'rgba(255,255,255,0.45)',
   },
 
   chips: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     gap: 6,
+  },
+  tools: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    gap: 8,
+  },
+  toolBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 99,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  toolText: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: FontFamily.semibold,
+    color: 'rgba(255,255,255,0.70)',
   },
   chip: {
     flexDirection: 'row',
@@ -287,26 +319,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 99,
-    backgroundColor: Colors.white,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   chipActive: {
-    backgroundColor: Colors.dark,
+    backgroundColor: Colors.honey,
+    borderColor: Colors.honey,
   },
   chipText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.inkSoft,
+    fontFamily: FontFamily.semibold,
+    color: 'rgba(255,255,255,0.70)',
   },
   chipTextActive: {
-    color: Colors.white,
+    color: Colors.dark,
   },
   chipCount: {
     fontSize: 10,
     fontWeight: '800',
-    color: Colors.muted,
+    fontFamily: FontFamily.extrabold,
+    color: 'rgba(255,255,255,0.45)',
   },
   chipCountActive: {
-    color: Colors.honey,
+    color: Colors.dark,
   },
 
   list: { padding: 20, gap: 12, paddingBottom: 100 },
@@ -314,8 +351,8 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 80 },
   emptyEmoji: { fontSize: 56 },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: Colors.dark },
-  emptyText: { fontSize: 14, color: Colors.mid, textAlign: 'center', lineHeight: 20, maxWidth: 260 },
+  emptyTitle: { fontSize: 20, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark },
+  emptyText: { fontSize: 14, fontFamily: FontFamily.regular, color: Colors.mid, textAlign: 'center', lineHeight: 20, maxWidth: 260 },
 
   fab: {
     position: 'absolute',
@@ -334,5 +371,5 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   fabPressed: { transform: [{ scale: 0.92 }], opacity: 0.85 },
-  fabText: { fontSize: 28, color: Colors.dark, fontWeight: '400', lineHeight: 32 },
+  fabText: { fontSize: 28, fontFamily: FontFamily.bold, color: Colors.dark, fontWeight: '700', lineHeight: 32 },
 });

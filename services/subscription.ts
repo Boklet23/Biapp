@@ -5,6 +5,7 @@ import Purchases, {
 } from 'react-native-purchases';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 import { SubscriptionTier } from '@/types';
 
@@ -27,6 +28,9 @@ export async function initPurchases(userId: string): Promise<CustomerInfo> {
 
 /** Hent oppdatert CustomerInfo uten å re-initialisere. */
 export async function getCustomerInfo(): Promise<CustomerInfo> {
+  if (Platform.OS !== 'android') {
+    return { entitlements: { active: {} } } as unknown as CustomerInfo;
+  }
   return Purchases.getCustomerInfo();
 }
 
@@ -41,17 +45,24 @@ export function mapEntitlementToTier(customerInfo: CustomerInfo): SubscriptionTi
 
 /** Kjøp en pakke og returner oppdatert CustomerInfo. */
 export async function purchasePackage(pkg: PurchasesPackage): Promise<CustomerInfo> {
+  if (Platform.OS !== 'android') {
+    return { entitlements: { active: {} } } as unknown as CustomerInfo;
+  }
   const { customerInfo } = await Purchases.purchasePackage(pkg);
   return customerInfo;
 }
 
 /** Gjenopprett tidligere kjøp (f.eks. etter reinstallasjon). */
 export async function restorePurchases(): Promise<CustomerInfo> {
+  if (Platform.OS !== 'android') {
+    return { entitlements: { active: {} } } as unknown as CustomerInfo;
+  }
   return Purchases.restorePurchases();
 }
 
 /** Hent tilgjengelige pakker fra RevenueCat Offerings. */
 export async function fetchOfferings(): Promise<PurchasesPackage[]> {
+  if (Platform.OS !== 'android') return [];
   const offerings = await Purchases.getOfferings();
   return offerings.current?.availablePackages ?? [];
 }
@@ -61,8 +72,13 @@ export async function syncTierToSupabase(tier: SubscriptionTier): Promise<void> 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return;
 
-  await supabase
+  const { error } = await supabase
     .from('profiles')
     .update({ subscription_tier: tier })
     .eq('id', session.user.id);
+
+  if (error) {
+    Sentry.captureException(error, { extra: { tier, context: 'syncTierToSupabase' } });
+    throw error;
+  }
 }

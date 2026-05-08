@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AssociationCard } from '@/components/samfunn/AssociationCard';
 import { Colors } from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 import { BEE_ASSOCIATIONS } from '@/constants/beeAssociations';
 import { BEE_EQUIPMENT_VENDORS } from '@/constants/beeEquipmentVendors';
 
@@ -117,7 +118,7 @@ export default function Samfunn() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.light },
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 0 },
-  title: { fontSize: 28, fontWeight: '800', color: Colors.dark, marginBottom: 12 },
+  title: { fontSize: 28, fontWeight: '800', fontFamily: FontFamily.extrabold, color: Colors.dark, marginBottom: 12 },
   tabs: {
     flexDirection: 'row',
     backgroundColor: Colors.white,
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   tabActive: { backgroundColor: Colors.honey },
-  tabText: { fontSize: 12, fontWeight: '600', color: Colors.mid },
+  tabText: { fontSize: 12, fontWeight: '600', fontFamily: FontFamily.semibold, color: Colors.mid },
   tabTextActive: { color: Colors.white },
   content: { padding: 16, paddingTop: 14, gap: 12, paddingBottom: 32 },
   sub: { fontSize: 14, color: Colors.mid, marginBottom: 2 },
@@ -165,7 +166,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   vendorInfo: { flex: 1 },
-  vendorName: { fontSize: 15, fontWeight: '700', color: Colors.dark, marginBottom: 3 },
-  vendorDesc: { fontSize: 13, color: Colors.mid, lineHeight: 18 },
+  vendorName: { fontSize: 15, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark, marginBottom: 3 },
+  vendorDesc: { fontSize: 13, fontFamily: FontFamily.regular, color: Colors.mid, lineHeight: 18 },
   vendorLink: { fontSize: 22, marginLeft: 12 },
 });

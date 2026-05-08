@@ -16,10 +16,10 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.honey,
-        tabBarInactiveTintColor: Colors.mid,
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.40)',
         tabBarStyle: {
-          backgroundColor: Colors.white,
-          borderTopColor: Colors.mid + '15',
+          backgroundColor: Colors.dark,
+          borderTopColor: 'rgba(255,255,255,0.06)',
           height: 72,
           paddingBottom: 10,
           paddingTop: 8,
@@ -75,7 +75,7 @@ export default function TabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="feed/index" options={{ href: null }} />
+      <Tabs.Screen name="feed" options={{ href: null }} />
     </Tabs>
   );
 }

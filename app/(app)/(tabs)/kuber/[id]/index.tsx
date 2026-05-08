@@ -14,6 +14,7 @@ import { QueenSection } from '@/components/hive/QueenSection';
 import { TreatmentRecommendationSection } from '@/components/hive/TreatmentRecommendationSection';
 import { fetchTreatments } from '@/services/treatment';
 import { Colors, Shadows } from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 import { MOOD_EMOJI } from '@/constants/ui';
 import { fetchHive } from '@/services/hive';
 import { fetchInspections } from '@/services/inspection';
@@ -327,7 +328,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   scroll: { padding: 20, gap: 0, paddingBottom: 100 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  editBtn: { fontSize: 16, color: Colors.honey, fontWeight: '600' },
+  editBtn: { fontSize: 16, fontWeight: '600', fontFamily: FontFamily.semibold, color: Colors.honey },
 
   hiveHeader: {
     flexDirection: 'row',
@@ -336,12 +337,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     flexWrap: 'wrap',
   },
-  location: { fontSize: 14, color: Colors.mid },
+  location: { fontSize: 14, fontFamily: FontFamily.regular, color: Colors.mid },
 
   section: { marginBottom: 24 },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
+    fontFamily: FontFamily.bold,
     color: Colors.mid,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -354,7 +356,7 @@ const styles = StyleSheet.create({
     padding: 16,
     ...Shadows.card,
   },
-  lastInspDate: { fontSize: 15, fontWeight: '600', color: Colors.dark, marginBottom: 10 },
+  lastInspDate: { fontSize: 15, fontWeight: '600', fontFamily: FontFamily.semibold, color: Colors.dark, marginBottom: 10 },
   lastInspRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
   statChip: {
     alignItems: 'center',
@@ -366,13 +368,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.mid + '12',
   },
-  statValue: { fontSize: 20, fontWeight: '700', color: Colors.dark },
-  statLabel: { fontSize: 10, color: Colors.mid, marginTop: 4, fontWeight: '500' },
+  statValue: { fontSize: 20, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark },
+  statLabel: { fontSize: 10, fontWeight: '500', fontFamily: FontFamily.medium, color: Colors.mid, marginTop: 4 },
   queenBadge: {
     marginTop: 10,
     fontSize: 13,
-    color: Colors.success,
     fontWeight: '600',
+    fontFamily: FontFamily.semibold,
+    color: Colors.success,
   },
 
   inspRow: {
@@ -385,11 +388,11 @@ const styles = StyleSheet.create({
   },
   inspRowPressed: { opacity: 0.6 },
   inspLeft: { gap: 2 },
-  inspDate: { fontSize: 15, color: Colors.dark, fontWeight: '500' },
-  inspSub: { fontSize: 12, color: Colors.mid },
+  inspDate: { fontSize: 15, fontWeight: '500', fontFamily: FontFamily.medium, color: Colors.dark },
+  inspSub: { fontSize: 12, fontFamily: FontFamily.regular, color: Colors.mid },
   inspRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   moodEmoji: { fontSize: 18 },
-  varroaText: { fontSize: 13, color: Colors.mid },
+  varroaText: { fontSize: 13, fontFamily: FontFamily.regular, color: Colors.mid },
   chevron: { fontSize: 20, color: Colors.mid, fontWeight: '300' },
 
   trendCard: {
@@ -405,12 +408,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  trendTitle: { fontSize: 13, fontWeight: '700', color: Colors.mid, textTransform: 'uppercase', letterSpacing: 0.8 },
+  trendTitle: { fontSize: 13, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.mid, textTransform: 'uppercase', letterSpacing: 0.8 },
   trendSvg: { marginTop: 6 },
   trendLegend: { flexDirection: 'row', gap: 16 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontSize: 11, color: Colors.mid },
+  legendText: { fontSize: 11, fontFamily: FontFamily.regular, color: Colors.mid },
 
   emptyInspection: {
     alignItems: 'center',
@@ -418,10 +421,10 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   emptyEmoji: { fontSize: 36 },
-  emptyTitle: { fontSize: 15, fontWeight: '700', color: Colors.dark },
-  emptyHint: { fontSize: 13, color: Colors.mid, textAlign: 'center' },
-  emptyText: { fontSize: 14, color: Colors.mid },
-  notesText: { fontSize: 14, color: Colors.dark, lineHeight: 21 },
+  emptyTitle: { fontSize: 15, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark },
+  emptyHint: { fontSize: 13, fontFamily: FontFamily.regular, color: Colors.mid, textAlign: 'center' },
+  emptyText: { fontSize: 14, fontFamily: FontFamily.regular, color: Colors.mid },
+  notesText: { fontSize: 14, fontFamily: FontFamily.regular, color: Colors.dark, lineHeight: 21 },
 
   fab: {
     position: 'absolute',
@@ -438,5 +441,5 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   fabPressed: { transform: [{ scale: 0.96 }], opacity: 0.9 },
-  fabText: { fontSize: 16, fontWeight: '700', color: Colors.white },
+  fabText: { fontSize: 16, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.white },
 });

@@ -25,27 +25,22 @@ export async function fetchInspections(hiveId: string): Promise<Inspection[]> {
     .from('inspections')
     .select('*')
     .eq('hive_id', hiveId)
-    .order('inspected_at', { ascending: false });
+    .order('inspected_at', { ascending: false })
+    .limit(200);
 
   if (error) throw error;
   return data.map(mapInspection);
 }
 
-/** Fetch only the latest inspection per hive — fast, minimal payload, used for home screen UI. */
+/** Fetch only the latest inspection per hive — uses DB DISTINCT ON for correctness at scale. */
 export async function fetchLastInspectionPerHive(): Promise<Record<string, Inspection>> {
-  const { data, error } = await supabase
-    .from('inspections')
-    .select('id, hive_id, user_id, inspected_at, varroa_count, queen_seen, queen_cells_found, mood_score')
-    .order('inspected_at', { ascending: false });
+  const { data, error } = await supabase.rpc('get_latest_inspections_per_hive');
 
   if (error) throw error;
 
   const map: Record<string, Inspection> = {};
   for (const row of data as Record<string, unknown>[]) {
-    const hiveId = row.hive_id as string;
-    if (!map[hiveId]) {
-      map[hiveId] = mapInspection(row);
-    }
+    map[row.hive_id as string] = mapInspection(row);
   }
   return map;
 }

@@ -1,18 +1,14 @@
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HiveScene } from '@/components/animations/HiveScene';
 import { Colors } from '@/constants/colors';
 import { ONBOARDING_KEY } from './onboarding';
 
 async function goToApp() {
   const done = await AsyncStorage.getItem(ONBOARDING_KEY).catch(() => null);
-  if (!done) {
-    router.replace('/(app)/onboarding' as any);
-  } else {
-    router.replace('/(app)/(tabs)/hjem' as any);
-  }
+  router.replace(done ? '/(app)/(tabs)/hjem' : '/(app)/onboarding' as any);
 }
 
 export default function SplashScreen() {

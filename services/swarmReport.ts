@@ -37,11 +37,16 @@ function mapReport(row: Record<string, unknown>): SwarmReport {
 }
 
 export async function fetchSwarmReports(): Promise<SwarmReport[]> {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
   const { data, error } = await supabase
     .from('swarm_reports')
     .select('*')
     .eq('status', 'open')
-    .order('reported_at', { ascending: false });
+    .gte('reported_at', thirtyDaysAgo.toISOString())
+    .order('reported_at', { ascending: false })
+    .limit(100);
 
   if (error) throw error;
   return data.map(mapReport);

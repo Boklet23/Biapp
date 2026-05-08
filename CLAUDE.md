@@ -7,7 +7,7 @@ RN 0.83 · Expo SDK 55 (New Arch alltid på) · expo-router v3 · Supabase (eu-w
 - `as any` på alle dynamiske Expo Router-ruter
 - Skia-animasjoner: ALLTID Reanimated SharedValue — aldri setState/rAF
 - `swarm_reports.status`: `'open'` | `'resolved'` (IKKE 'active')
-- `uploadHivePhoto`: bruker `Uint8Array.from(binaryString, c => c.charCodeAt(0))`
+- `uploadHivePhoto`: bruker `FileSystem.uploadAsync` (native binary upload — ikke atob/Uint8Array)
 - RevenueCat: guard med `Constants.appOwnership === 'expo'` — krasjer i Expo Go
 - iOS RevenueCat: returnerer mock starter-tier (ikke konfigurert ennå)
 - `mapX()` kaster ved manglende required fields — nullable felt: `typeof row.x === 'string' ? row.x : null`

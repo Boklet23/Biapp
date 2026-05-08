@@ -1,6 +1,7 @@
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
+import { queryClient } from '@/lib/queryClient';
 import { User } from '@/types';
 
 interface AuthState {
@@ -31,6 +32,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   signOut: async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    queryClient.clear();
     set({ session: null, supabaseUser: null, profile: null });
   },
 }));

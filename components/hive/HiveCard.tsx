@@ -1,7 +1,9 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Hive, Inspection, HiveWeight } from '@/types';
 import { Colors } from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 import { HealthRing } from '@/components/ui/HealthRing';
+import { computeHealthScore } from '@/utils/health';
 
 const BREED_LABELS: Record<string, string> = {
   norsk_landbee: 'Norsk landbee',
@@ -25,16 +27,6 @@ function daysSince(dateStr: string): string {
   return `${days} d siden`;
 }
 
-function computeHealthScore(insp: Inspection | undefined): number {
-  if (!insp) return 50;
-  const varroa = insp.varroaCount ?? 0;
-  if (varroa === 0) return 95;
-  if (varroa <= 1) return 88;
-  if (varroa <= 2) return 78;
-  if (varroa <= 3) return 65;
-  if (varroa <= 5) return 48;
-  return 32;
-}
 
 interface HiveCardProps {
   hive: Hive;
@@ -81,7 +73,10 @@ export function HiveCard({ hive, lastInspection, lastWeight, onPress }: HiveCard
           {hive.beeBreed && (
             <Text style={styles.breed}>{BREED_LABELS[hive.beeBreed] ?? hive.beeBreed}</Text>
           )}
-          <Text style={styles.meta}>
+          <Text style={[
+            styles.meta,
+            lastInspection == null && styles.metaAlert,
+          ]}>
             {lastInspection
               ? `Sjekket ${daysSince(lastInspection.inspectedAt)}`
               : 'Ikke inspisert'}
@@ -126,10 +121,10 @@ const styles = StyleSheet.create({
     borderColor: Colors.hair,
     overflow: 'hidden',
     shadowColor: Colors.dark,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 3,
   },
   pressed: {
     opacity: 0.88,
@@ -153,6 +148,7 @@ const styles = StyleSheet.create({
   thumbnailInitial: {
     fontSize: 28,
     fontWeight: '700',
+    fontFamily: FontFamily.bold,
     color: Colors.white,
   },
 
@@ -164,16 +160,22 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: FontFamily.semibold,
     color: Colors.ink,
     letterSpacing: -0.2,
   },
   breed: {
     fontSize: 12,
+    fontFamily: FontFamily.regular,
     color: Colors.muted,
   },
   meta: {
     fontSize: 12,
-    color: Colors.muted,
+    fontFamily: FontFamily.medium,
+    color: Colors.honey,
+  },
+  metaAlert: {
+    color: Colors.error,
   },
 
   ringWrapper: {
@@ -186,12 +188,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: FontFamily.semibold,
     lineHeight: 20,
     top: 16,
   },
   ringLabel: {
     fontSize: 9,
     fontWeight: '700',
+    fontFamily: FontFamily.bold,
     color: Colors.muted,
     letterSpacing: 1,
     marginTop: 58,
@@ -201,6 +205,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderTopWidth: 1,
     borderTopColor: Colors.hair,
+    backgroundColor: Colors.light,
   },
   stat: {
     flex: 1,
@@ -215,6 +220,7 @@ const styles = StyleSheet.create({
   statKey: {
     fontSize: 9,
     fontWeight: '800',
+    fontFamily: FontFamily.extrabold,
     letterSpacing: 1,
     color: Colors.muted,
     marginBottom: 2,
@@ -222,6 +228,7 @@ const styles = StyleSheet.create({
   statVal: {
     fontSize: 13,
     fontWeight: '700',
+    fontFamily: FontFamily.bold,
     color: Colors.ink,
   },
   statValBad: {

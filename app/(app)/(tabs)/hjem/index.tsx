@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
@@ -7,6 +8,7 @@ import { Screen } from '@/components/ui/Screen';
 import { LocationPickerModal, PickedLocation } from '@/components/home/LocationPickerModal';
 import { SeasonGuide } from '@/components/calendar/SeasonGuide';
 import { Colors } from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 import { fetchHives } from '@/services/hive';
 import { fetchAllInspections, fetchLastInspectionPerHive } from '@/services/inspection';
 import { fetchHarvests } from '@/services/harvest';
@@ -17,6 +19,7 @@ import { useAuthStore } from '@/store/auth';
 import { useToastStore } from '@/store/toast';
 import { scheduleInspectionReminderDeduped, checkNearbySwarmAlerts } from '@/services/notifications';
 import { Hive, Inspection } from '@/types';
+import { computeHealthScore } from '@/utils/health';
 
 const VARROA_ALERT_THRESHOLD = 3;
 const INSPECTION_OVERDUE_DAYS = 14;
@@ -46,17 +49,6 @@ function initials(profile: { displayName: string | null; email: string } | null)
 
 function daysSince(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
-}
-
-function computeHealthScore(insp: Inspection | undefined): number {
-  if (!insp) return 50;
-  const varroa = insp.varroaCount ?? 0;
-  if (varroa === 0) return 95;
-  if (varroa <= 1) return 88;
-  if (varroa <= 2) return 78;
-  if (varroa <= 3) return 65;
-  if (varroa <= 5) return 48;
-  return 32;
 }
 
 interface Alert {
@@ -136,12 +128,6 @@ export default function Hjem() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: allInspections = [] } = useQuery({
-    queryKey: ['all-inspections'],
-    queryFn: fetchAllInspections,
-    staleTime: 5 * 60 * 1000,
-  });
-
   const { data: harvests = [] } = useQuery({
     queryKey: ['harvests'],
     queryFn: fetchHarvests,
@@ -211,7 +197,7 @@ export default function Hjem() {
     setReportLoading(true);
     try {
       const [reportInspections, treatments] = await Promise.all([
-        allInspections.length > 0 ? Promise.resolve(allInspections) : fetchAllInspections(),
+        fetchAllInspections(),
         fetchAllTreatments(),
       ]);
       await generateAndShareReport({
@@ -228,7 +214,7 @@ export default function Hjem() {
     } finally {
       setReportLoading(false);
     }
-  }, [currentYear, hives, allInspections, harvests, profile, showToast]);
+  }, [currentYear, hives, harvests, profile, showToast]);
 
   const handleLocationPick = async (loc: PickedLocation) => {
     setSavedLocation(loc);
@@ -241,11 +227,13 @@ export default function Hjem() {
   const flyDay = todayForecast?.goodForInspection;
 
   return (
-    <Screen>
+    <Screen style={{ backgroundColor: Colors.dark }}>
+      <StatusBar style="light" />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* ─── Hero (navy) ─── */}
         <View style={styles.hero}>
+
           {/* Greeting row */}
           <View style={styles.greetingRow}>
             <View>
@@ -317,26 +305,26 @@ export default function Hjem() {
               ))}
             </View>
           )}
-        </View>
 
-        {/* ─── Stats strip ─── */}
-        <View style={styles.stats}>
-          <View style={[styles.statCard, styles.statCardBorder]}>
-            <Text style={styles.statKey}>KUBER</Text>
-            <Text style={styles.statVal}>{activeHives.length}</Text>
-            <Text style={styles.statSub}>aktive</Text>
-          </View>
-          <View style={[styles.statCard, styles.statCardBorder]}>
-            <Text style={styles.statKey}>SNITT</Text>
-            <Text style={[styles.statVal, { color: avgHealth >= 80 ? Colors.success : Colors.honey }]}>
-              {hivesLoading ? '–' : avgHealth}
-            </Text>
-            <Text style={styles.statSub}>helse</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statKey}>KG</Text>
-            <Text style={styles.statVal}>{harvestedKgThisYear || '–'}</Text>
-            <Text style={styles.statSub}>sesong</Text>
+          {/* ─── Stats strip (inside hero) ─── */}
+          <View style={styles.heroStats}>
+            <View style={styles.heroStatCard}>
+              <Text style={styles.heroStatKey}>KUBER</Text>
+              <Text style={styles.heroStatVal}>{activeHives.length}</Text>
+              <Text style={styles.heroStatSub}>aktive</Text>
+            </View>
+            <View style={styles.heroStatCard}>
+              <Text style={styles.heroStatKey}>SNITT</Text>
+              <Text style={[styles.heroStatVal, { color: avgHealth >= 80 ? Colors.success : Colors.honey }]}>
+                {hivesLoading ? '–' : avgHealth}
+              </Text>
+              <Text style={styles.heroStatSub}>helse</Text>
+            </View>
+            <View style={styles.heroStatCard}>
+              <Text style={styles.heroStatKey}>KG</Text>
+              <Text style={styles.heroStatVal}>{harvestedKgThisYear || '–'}</Text>
+              <Text style={styles.heroStatSub}>sesong</Text>
+            </View>
           </View>
         </View>
 
@@ -473,13 +461,15 @@ const styles = StyleSheet.create({
   heroDate: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: FontFamily.semibold,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
     color: 'rgba(255,255,255,0.55)',
   },
   heroGreeting: {
     fontSize: 26,
-    fontWeight: '500',
+    fontWeight: '800',
+    fontFamily: FontFamily.extrabold,
     color: Colors.white,
     letterSpacing: -0.3,
     marginTop: 2,
@@ -492,7 +482,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontSize: 15, fontWeight: '700', color: Colors.white },
+  avatarText: { fontSize: 15, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.white },
 
   // Weather
   weatherRow: {
@@ -525,11 +515,12 @@ const styles = StyleSheet.create({
   weatherTemp: {
     fontSize: 30,
     fontWeight: '500',
+    fontFamily: FontFamily.medium,
     color: Colors.white,
     lineHeight: 32,
   },
-  weatherCity: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
-  weatherCond: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+  weatherCity: { fontSize: 12, fontFamily: FontFamily.regular, color: 'rgba(255,255,255,0.6)' },
+  weatherCond: { fontSize: 12, fontFamily: FontFamily.regular, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
   flyDayBtn: {
     width: 80,
     backgroundColor: Colors.honey,
@@ -544,11 +535,12 @@ const styles = StyleSheet.create({
   flyDayLabel: {
     fontSize: 9,
     fontWeight: '800',
+    fontFamily: FontFamily.extrabold,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
     color: Colors.dark,
   },
-  flyDayStatus: { fontSize: 9, fontWeight: '600', color: Colors.dark, opacity: 0.7 },
+  flyDayStatus: { fontSize: 9, fontWeight: '600', fontFamily: FontFamily.semibold, color: Colors.dark, opacity: 0.7 },
   weatherSetup: {
     backgroundColor: 'rgba(255,255,255,0.07)',
     borderRadius: 18,
@@ -556,7 +548,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.10)',
   },
-  weatherSetupText: { color: 'rgba(255,255,255,0.55)', fontSize: 13, textAlign: 'center' },
+  weatherSetupText: { fontFamily: FontFamily.regular, color: 'rgba(255,255,255,0.55)', fontSize: 13, textAlign: 'center' },
 
   // 5-day forecast
   forecast: {
@@ -579,21 +571,20 @@ const styles = StyleSheet.create({
   forecastDayName: {
     fontSize: 10,
     fontWeight: '700',
+    fontFamily: FontFamily.bold,
     letterSpacing: 1,
     textTransform: 'uppercase',
     color: 'rgba(255,255,255,0.55)',
   },
   forecastEmoji: { fontSize: 18 },
-  forecastTemp: { fontSize: 13, fontWeight: '600', color: Colors.white },
+  forecastTemp: { fontSize: 13, fontWeight: '600', fontFamily: FontFamily.semibold, color: Colors.white },
 
-  // ── Stats strip ──
-  stats: {
+  // ── Stats inside hero ──
+  heroStats: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingTop: 20,
     gap: 10,
   },
-  statCard: {
+  heroStatCard: {
     flex: 1,
     backgroundColor: Colors.white,
     borderRadius: 14,
@@ -602,22 +593,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.hair,
   },
-  statCardBorder: {},
-  statKey: {
+  heroStatKey: {
     fontSize: 9,
     fontWeight: '800',
+    fontFamily: FontFamily.extrabold,
     letterSpacing: 1.2,
     color: Colors.muted,
     textTransform: 'uppercase',
   },
-  statVal: {
+  heroStatVal: {
     fontSize: 26,
     fontWeight: '600',
+    fontFamily: FontFamily.semibold,
     color: Colors.ink,
     lineHeight: 30,
     marginTop: 2,
   },
-  statSub: { fontSize: 11, color: Colors.muted, marginTop: 1 },
+  heroStatSub: {
+    fontSize: 11,
+    fontFamily: FontFamily.regular,
+    color: Colors.muted,
+    marginTop: 1,
+  },
 
   // ── Alerts ──
   alertBanner: {
@@ -641,10 +638,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
-  alertExclamation: { fontSize: 18, fontWeight: '800', color: Colors.white },
+  alertExclamation: { fontSize: 18, fontWeight: '800', fontFamily: FontFamily.extrabold, color: Colors.white },
   alertBody: { flex: 1 },
-  alertTitle: { fontSize: 13, fontWeight: '700', color: Colors.error },
-  alertNames: { fontSize: 12, color: Colors.inkSoft, marginTop: 1 },
+  alertTitle: { fontSize: 13, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.error },
+  alertNames: { fontSize: 12, fontFamily: FontFamily.regular, color: Colors.inkSoft, marginTop: 1 },
   alertChevron: { fontSize: 20, color: Colors.error, fontWeight: '300' },
 
   // ── Section header ──
@@ -656,6 +653,7 @@ const styles = StyleSheet.create({
   sectionKicker: {
     fontSize: 11,
     fontWeight: '700',
+    fontFamily: FontFamily.bold,
     letterSpacing: 1.6,
     color: Colors.muted,
     textTransform: 'uppercase',
@@ -663,7 +661,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 22,
-    fontWeight: '500',
+    fontWeight: '700',
+    fontFamily: FontFamily.bold,
     color: Colors.ink,
     letterSpacing: -0.3,
   },
@@ -700,8 +699,8 @@ const styles = StyleSheet.create({
   taskHexUrgent: { backgroundColor: Colors.errorSoft },
   taskHexIcon: { fontSize: 20 },
   taskText: { flex: 1 },
-  taskName: { fontSize: 14, fontWeight: '600', color: Colors.ink, letterSpacing: -0.1 },
-  taskSub: { fontSize: 12, color: Colors.muted, marginTop: 2 },
+  taskName: { fontSize: 14, fontWeight: '600', fontFamily: FontFamily.semibold, color: Colors.ink, letterSpacing: -0.1 },
+  taskSub: { fontSize: 12, fontFamily: FontFamily.regular, color: Colors.muted, marginTop: 2 },
   taskSubUrgent: { color: Colors.warning },
   urgentChip: {
     backgroundColor: Colors.error,
@@ -712,6 +711,7 @@ const styles = StyleSheet.create({
   urgentChipText: {
     fontSize: 10,
     fontWeight: '800',
+    fontFamily: FontFamily.extrabold,
     color: Colors.white,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
@@ -737,19 +737,22 @@ const styles = StyleSheet.create({
   reportKicker: {
     fontSize: 10,
     fontWeight: '800',
+    fontFamily: FontFamily.extrabold,
     letterSpacing: 1.4,
     color: 'rgba(26,26,46,0.6)',
     textTransform: 'uppercase',
   },
   reportTitle: {
     fontSize: 22,
-    fontWeight: '500',
+    fontWeight: '700',
+    fontFamily: FontFamily.bold,
     color: Colors.dark,
     marginTop: 6,
     letterSpacing: -0.3,
   },
   reportSub: {
     fontSize: 13,
+    fontFamily: FontFamily.regular,
     color: 'rgba(26,26,46,0.75)',
     marginTop: 6,
   },
@@ -764,6 +767,7 @@ const styles = StyleSheet.create({
   reportBtnText: {
     fontSize: 14,
     fontWeight: '700',
+    fontFamily: FontFamily.bold,
     color: Colors.white,
   },
 });

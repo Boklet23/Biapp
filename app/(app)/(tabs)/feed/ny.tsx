@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Colors } from '@/constants/colors';
 import { createPost } from '@/services/feed';
 import { uploadHivePhoto } from '@/services/hive';
+import { supabase } from '@/lib/supabase';
 
 export default function NyttInnlegg() {
   const queryClient = useQueryClient();
@@ -32,7 +33,9 @@ export default function NyttInnlegg() {
     if (!result.canceled && result.assets[0]) {
       setUploading(true);
       try {
-        const url = await uploadHivePhoto(result.assets[0].uri, `feed_${Date.now()}`);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) throw new Error('Ikke innlogget');
+        const url = await uploadHivePhoto(result.assets[0].uri, session.user.id, session.access_token);
         setImageUri(url);
       } catch (e) {
         Alert.alert('Bildeopplasting feilet', (e as Error).message);

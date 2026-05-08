@@ -74,7 +74,11 @@ export default function ProfilModal() {
       'Er du sikker på at du vil logge ut?',
       [
         { text: 'Avbryt', style: 'cancel' },
-        { text: 'Logg ut', style: 'destructive', onPress: () => signOut() },
+        {
+          text: 'Logg ut',
+          style: 'destructive',
+          onPress: () => signOut().catch((e: Error) => showToast(e.message ?? 'Kunne ikke logge ut', 'error')),
+        },
       ]
     );
   };

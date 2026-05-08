@@ -85,7 +85,7 @@ export default function RedigerKube() {
       if (localPhotoUri) {
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user) hiveData.photoUrl = await uploadHivePhoto(localPhotoUri, session.user.id);
+          if (session?.user) hiveData.photoUrl = await uploadHivePhoto(localPhotoUri, session.user.id, session.access_token);
         } catch {
           showToast('Bildet ble ikke lastet opp — endringer lagres uten nytt bilde.', 'error');
         }

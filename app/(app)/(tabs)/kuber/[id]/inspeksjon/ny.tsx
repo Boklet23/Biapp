@@ -12,7 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { StepIndicator } from '@/components/inspection/StepIndicator';
@@ -21,10 +21,12 @@ import { HiveScene } from '@/components/animations/HiveScene';
 import { INSPECTION_STEP_SCENE } from '@/constants/hiveScene';
 import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 import { MOOD_EMOJIS } from '@/constants/ui';
 import { fetchHive } from '@/services/hive';
 import { createInspection } from '@/services/inspection';
 import { fetchWeather } from '@/services/weather';
+import { useToastStore } from '@/store/toast';
 
 const STEP_LABELS = ['Grunninfo', 'Kubestatus', 'Helse', 'Notater'];
 const VARROA_METHODS = ['vaskemetode', 'sukkerpuder', 'limbunn'];
@@ -50,7 +52,30 @@ interface Step1Props {
 }
 
 function Step1({ inspectedAt, setInspectedAt, weatherTemp, setWeatherTemp, weatherCondition, setWeatherCondition, weatherLoading }: Step1Props) {
-  const [showPicker, setShowPicker] = useState(false);
+  const [showPicker, setShowPicker] = useState(false); // iOS only
+
+  const handleOpenPicker = () => {
+    if (Platform.OS === 'android') {
+      // Imperative API avoids the dismiss-of-undefined crash on New Architecture
+      DateTimePickerAndroid.open({
+        value: inspectedAt,
+        mode: 'date',
+        onChange: (event, selectedDate) => {
+          if (event.type !== 'set' || !selectedDate) return;
+          DateTimePickerAndroid.open({
+            value: selectedDate,
+            mode: 'time',
+            is24Hour: true,
+            onChange: (timeEvent, dateTime) => {
+              if (timeEvent.type === 'set' && dateTime) setInspectedAt(dateTime);
+            },
+          });
+        },
+      });
+    } else {
+      setShowPicker(true);
+    }
+  };
 
   return (
     <View style={styles.stepContent}>
@@ -60,19 +85,18 @@ function Step1({ inspectedAt, setInspectedAt, weatherTemp, setWeatherTemp, weath
         <Text style={styles.label}>Dato og tid</Text>
         <Pressable
           style={styles.input}
-          onPress={() => setShowPicker(true)}
+          onPress={handleOpenPicker}
           accessibilityRole="button"
           accessibilityLabel="Velg dato og tid"
         >
           <Text style={styles.inputText}>{formatDateForDisplay(inspectedAt)}</Text>
         </Pressable>
-        {showPicker && (
+        {showPicker && Platform.OS === 'ios' && (
           <DateTimePicker
             value={inspectedAt}
             mode="datetime"
-            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            display="inline"
             onChange={(_, date) => {
-              if (Platform.OS === 'android') setShowPicker(false);
               if (date) setInspectedAt(date);
             }}
           />
@@ -282,6 +306,7 @@ function Step4({ notes, setNotes, moodScore, setMoodScore }: Step4Props) {
 export default function NyInspeksjon() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const showToast = useToastStore((s) => s.show);
 
   const [step, setStep] = useState(1);
 
@@ -331,8 +356,11 @@ export default function NyInspeksjon() {
 
   const mutation = useMutation({
     mutationFn: createInspection,
+    onError: (error: Error) => showToast(error.message ?? 'Kunne ikke lagre inspeksjon', 'error'),
     onSuccess: (insp) => {
       queryClient.invalidateQueries({ queryKey: ['inspections', id] });
+      queryClient.invalidateQueries({ queryKey: ['last-inspection-per-hive'] });
+      queryClient.invalidateQueries({ queryKey: ['all-inspections'] });
       router.replace({ pathname: '/kuber/[id]/inspeksjon/[inspId]', params: { id, inspId: insp.id } });
     },
   });
@@ -471,6 +499,7 @@ const styles = StyleSheet.create({
   stepHeading: {
     fontSize: 22,
     fontWeight: '800',
+    fontFamily: FontFamily.extrabold,
     color: Colors.dark,
     marginBottom: 20,
   },
@@ -480,6 +509,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: FontFamily.semibold,
     color: Colors.dark,
     marginBottom: 6,
   },
@@ -489,12 +519,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
+    fontFamily: FontFamily.regular,
     color: Colors.dark,
     borderWidth: 1,
     borderColor: Colors.mid + '20',
   },
   inputText: {
     fontSize: 15,
+    fontFamily: FontFamily.regular,
     color: Colors.dark,
   },
   notesInput: {
@@ -510,7 +542,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.mid + '15',
   },
-  toggleLabel: { fontSize: 15, color: Colors.dark, fontWeight: '500' },
+  toggleLabel: { fontSize: 15, fontFamily: FontFamily.medium, color: Colors.dark, fontWeight: '500' },
 
   methodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   methodChip: {
@@ -525,8 +557,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.honey,
     borderColor: Colors.honey,
   },
-  methodChipText: { fontSize: 13, color: Colors.dark },
-  methodChipTextSelected: { color: Colors.white, fontWeight: '600' },
+  methodChipText: { fontSize: 13, fontFamily: FontFamily.regular, color: Colors.dark },
+  methodChipTextSelected: { fontFamily: FontFamily.semibold, color: Colors.white, fontWeight: '600' },
 
   moodRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
   moodBtn: {
@@ -542,7 +574,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.amber,
   },
   moodEmoji: { fontSize: 24 },
-  moodLabel: { fontSize: 12, color: Colors.mid, marginTop: 4 },
+  moodLabel: { fontSize: 12, fontFamily: FontFamily.regular, color: Colors.mid, marginTop: 4 },
 
   navBar: {
     flexDirection: 'row',
@@ -567,7 +599,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.mid + '30',
   },
   navBtnPressed: { opacity: 0.7 },
-  navBtnBackText: { fontSize: 15, color: Colors.mid, fontWeight: '600' },
+  navBtnBackText: { fontSize: 15, fontFamily: FontFamily.semibold, color: Colors.mid, fontWeight: '600' },
   navBtnNext: { flex: 1 },
 
   labelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
@@ -580,5 +612,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 16,
     fontSize: 14,
+    fontFamily: FontFamily.regular,
   },
 });

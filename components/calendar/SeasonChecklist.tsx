@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Shadows } from '@/constants/colors';
@@ -15,6 +15,20 @@ interface SeasonChecklistProps {
 export function SeasonChecklist({ month, year }: SeasonChecklistProps) {
   const checklist = SEASON_CHECKLISTS.find((c) => c.month === month);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!checklist) return;
+    const load = async () => {
+      const entries = await Promise.all(
+        checklist.items.map(async (item) => {
+          const val = await AsyncStorage.getItem(storageKey(month, year, item.id));
+          return [item.id, val === '1'] as [string, boolean];
+        })
+      );
+      setChecked(Object.fromEntries(entries));
+    };
+    load().catch(() => {});
+  }, [month, year, checklist]);
 
   const toggle = useCallback(async (id: string) => {
     const key = storageKey(month, year, id);

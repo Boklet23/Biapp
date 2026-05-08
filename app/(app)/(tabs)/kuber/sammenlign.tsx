@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
 import { Colors, Shadows } from '@/constants/colors';
@@ -21,11 +21,12 @@ interface Row {
 }
 
 export default function SammenlignKuber() {
-  const { data: hives = [] } = useQuery({ queryKey: ['hives'], queryFn: fetchHives });
-  const { data: allInspections = [] } = useQuery({
+  const { data: hives = [], isLoading: hivesLoading } = useQuery({ queryKey: ['hives'], queryFn: fetchHives });
+  const { data: allInspections = [], isLoading: inspLoading } = useQuery({
     queryKey: ['all-inspections'],
     queryFn: fetchAllInspections,
   });
+  const isLoading = hivesLoading || inspLoading;
 
   const lastByHive = allInspections.reduce<Record<string, Inspection>>((acc, insp) => {
     const existing = acc[insp.hiveId];
@@ -41,6 +42,16 @@ export default function SammenlignKuber() {
       const dB = b.last?.inspectedAt ?? '';
       return dA < dB ? -1 : dA > dB ? 1 : 0;
     });
+
+  if (isLoading) {
+    return (
+      <Screen>
+        <View style={styles.empty}>
+          <ActivityIndicator size="large" color={Colors.honey} />
+        </View>
+      </Screen>
+    );
+  }
 
   if (rows.length === 0) {
     return (

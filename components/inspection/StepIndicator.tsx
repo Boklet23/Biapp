@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Colors } from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 
 interface StepIndicatorProps {
   current: number;
@@ -70,6 +71,7 @@ const styles = StyleSheet.create({
   number: {
     fontSize: 13,
     fontWeight: '600',
+    fontFamily: FontFamily.semibold,
     color: Colors.mid,
   },
   activeNumber: {
@@ -78,10 +80,12 @@ const styles = StyleSheet.create({
   checkmark: {
     fontSize: 13,
     fontWeight: '700',
+    fontFamily: FontFamily.bold,
     color: Colors.white,
   },
   label: {
     fontSize: 11,
+    fontFamily: FontFamily.regular,
     color: Colors.mid,
     marginLeft: 4,
     marginRight: 4,
@@ -89,6 +93,7 @@ const styles = StyleSheet.create({
   activeLabel: {
     color: Colors.honey,
     fontWeight: '600',
+    fontFamily: FontFamily.semibold,
   },
   line: {
     width: 24,

@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Redirect, router, Stack } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { useAuthStore } from '@/store/auth';
 import { GlobalToast } from '@/components/ui/Toast';
 import { Colors } from '@/constants/colors';
 import { requestNotificationPermission, registerPushToken } from '@/services/notifications';
+import { ONBOARDING_KEY } from './onboarding';
 
 const isExpoGo = Constants.appOwnership === 'expo';
 
@@ -13,10 +15,12 @@ export default function AppLayout() {
   const { session, isLoading } = useAuthStore();
 
   useEffect(() => {
-    if (session) {
-      requestNotificationPermission();
-      registerPushToken();
-    }
+    if (!session) return;
+    requestNotificationPermission();
+    registerPushToken();
+    AsyncStorage.getItem(ONBOARDING_KEY).then((done) => {
+      if (!done) router.replace('/(app)/onboarding' as any);
+    }).catch(() => {});
   }, [session]);
 
   useEffect(() => {

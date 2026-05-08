@@ -13,26 +13,41 @@ export interface CreateHiveData {
   photoUrl?: string;
 }
 
-/**
- * Last opp et lokalt bilde til Supabase Storage (hive-photos-bucket).
- * Returnerer public URL som kan lagres i hives.photo_url.
- */
-export async function uploadHivePhoto(localUri: string, userId: string): Promise<string> {
-  const ext = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+export async function uploadHivePhoto(
+  localUri: string,
+  userId: string,
+  accessToken: string,
+): Promise<string> {
+  // Android gallery can return content:// URIs — FileSystem.uploadAsync requires file://
+  let uploadUri = localUri;
+  if (localUri.startsWith('content://')) {
+    const srcExt = localUri.split('.').pop()?.toLowerCase();
+    const tmpExt = srcExt && ['jpg', 'jpeg', 'png'].includes(srcExt) ? srcExt : 'jpg';
+    const tmp = `${FileSystem.cacheDirectory}hive_upload_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${tmpExt}`;
+    await FileSystem.copyAsync({ from: localUri, to: tmp });
+    uploadUri = tmp;
+  }
+
+  const ext = uploadUri.split('.').pop()?.toLowerCase() ?? 'jpg';
   const safeExt = ['jpg', 'jpeg', 'png'].includes(ext) ? ext : 'jpg';
   const contentType = safeExt === 'png' ? 'image/png' : 'image/jpeg';
   const fileName = `${userId}/${Date.now()}.${safeExt}`;
 
-  const base64 = await FileSystem.readAsStringAsync(localUri, { encoding: 'base64' });
+  const uploadUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/hive-photos/${fileName}`;
 
-  const binaryString = atob(base64);
-  const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
+  const response = await FileSystem.uploadAsync(uploadUrl, uploadUri, {
+    httpMethod: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': contentType,
+      apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
+    },
+    uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+  });
 
-  const { error } = await supabase.storage
-    .from('hive-photos')
-    .upload(fileName, bytes, { contentType, upsert: false });
-
-  if (error) throw error;
+  if (response.status < 200 || response.status >= 300) {
+    throw new Error(`Opplasting feilet (HTTP ${response.status}): ${response.body}`);
+  }
 
   const { data } = supabase.storage.from('hive-photos').getPublicUrl(fileName);
   return data.publicUrl;

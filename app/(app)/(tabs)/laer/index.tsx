@@ -9,6 +9,7 @@ import { HoneyForecastChart } from '@/components/info/HoneyForecastChart';
 import { HarvestLogModal } from '@/components/info/HarvestLogModal';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { Colors } from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 import { GUIDE_ARTICLES } from '@/constants/beginnerGuide';
 import { DISEASES } from '@/constants/diseases';
 import { fetchHives } from '@/services/hive';
@@ -163,10 +164,11 @@ export default function Info() {
 
 const styles = StyleSheet.create({
   content: { padding: 20, paddingTop: 12, gap: 12, paddingBottom: 32 },
-  header: { fontSize: 28, fontWeight: '800', color: Colors.dark, marginBottom: 4 },
+  header: { fontSize: 28, fontWeight: '800', fontFamily: FontFamily.extrabold, color: Colors.dark, marginBottom: 4 },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
+    fontFamily: FontFamily.bold,
     color: Colors.mid,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -174,16 +176,17 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   articleScroll: { gap: 12, paddingBottom: 4, paddingRight: 4 },
-  sub: { fontSize: 13, color: Colors.mid, marginTop: -6, marginBottom: 4 },
+  sub: { fontSize: 13, fontFamily: FontFamily.regular, color: Colors.mid, marginTop: -6, marginBottom: 4 },
   search: {
     backgroundColor: Colors.white,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
+    fontFamily: FontFamily.regular,
     color: Colors.dark,
     borderWidth: 1,
     borderColor: Colors.mid + '20',
   },
-  empty: { fontSize: 14, color: Colors.mid, textAlign: 'center', marginTop: 12 },
+  empty: { fontSize: 14, fontFamily: FontFamily.regular, color: Colors.mid, textAlign: 'center', marginTop: 12 },
 });
