@@ -663,7 +663,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     fontFamily: FontFamily.bold,
-    color: Colors.ink,
+    color: Colors.white,
     letterSpacing: -0.3,
   },
 

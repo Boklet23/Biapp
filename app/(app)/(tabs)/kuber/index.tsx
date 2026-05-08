@@ -351,8 +351,8 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 80 },
   emptyEmoji: { fontSize: 56 },
-  emptyTitle: { fontSize: 20, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark },
-  emptyText: { fontSize: 14, fontFamily: FontFamily.regular, color: Colors.mid, textAlign: 'center', lineHeight: 20, maxWidth: 260 },
+  emptyTitle: { fontSize: 20, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.white },
+  emptyText: { fontSize: 14, fontFamily: FontFamily.regular, color: 'rgba(255,255,255,0.65)', textAlign: 'center', lineHeight: 20, maxWidth: 260 },
 
   fab: {
     position: 'absolute',
