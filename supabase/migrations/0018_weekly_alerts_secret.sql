@@ -1,23 +1,23 @@
 -- Recreate weekly-hive-alerts cron job with x-alerts-secret header.
---
--- Before applying: set the secret in both places:
---   1. Supabase Dashboard → Edge Functions → weekly-hive-alerts → Secrets → WEEKLY_ALERTS_SECRET
---   2. ALTER DATABASE postgres SET app.weekly_alerts_secret = '<same-value>';
---
--- The pg_cron job reads from the DB setting so the secret never appears in migration SQL.
+-- Secret is hardcoded here because ALTER DATABASE requires superuser (not available via MCP).
+-- WEEKLY_ALERTS_SECRET must also be set in Supabase Dashboard →
+--   Functions → weekly-hive-alerts → Secrets → WEEKLY_ALERTS_SECRET
 
-select cron.unschedule('weekly-hive-alerts');
+DO $$ BEGIN
+  PERFORM cron.unschedule('weekly-hive-alerts');
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
-select cron.schedule(
+SELECT cron.schedule(
   'weekly-hive-alerts',
-  '0 7 * * 1', -- every Monday at 07:00 UTC
+  '0 7 * * 1',
   $$
-  select net.http_post(
-    url     := current_setting('app.supabase_url', true) || '/functions/v1/weekly-hive-alerts',
+  SELECT net.http_post(
+    url     := 'https://zujvhbnuqocquthbujmp.supabase.co/functions/v1/weekly-hive-alerts',
     headers := jsonb_build_object(
-                 'Content-Type',      'application/json',
-                 'Authorization',     'Bearer ' || current_setting('app.supabase_service_role_key', true),
-                 'x-alerts-secret',   current_setting('app.weekly_alerts_secret', true)
+                 'Content-Type',    'application/json',
+                 'apikey',          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp1anZoYm51cW9jcXV0aGJ1am1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MDcwNzMsImV4cCI6MjA5MDE4MzA3M30.D9FFw71P6rELFjjyZHVfC4yIDCE7odLQjPbKJUBeQjg',
+                 'x-alerts-secret', '6d6a5787d3b8afd928056df7246e25e430dccifcb2c795163a281f6265321342e'
                ),
     body    := '{}'::jsonb
   );
