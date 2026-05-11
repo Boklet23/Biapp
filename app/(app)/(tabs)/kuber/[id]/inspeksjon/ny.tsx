@@ -29,6 +29,8 @@ import { fetchHive } from '@/services/hive';
 import { createInspection, analyzeVarroa } from '@/services/inspection';
 import { fetchWeather } from '@/services/weather';
 import { useToastStore } from '@/store/toast';
+import { useEffectiveTier } from '@/hooks/useEffectiveTier';
+import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import type { VarroaAnalysis } from '@/types';
 
 const STEP_LABELS = ['Grunninfo', 'Kubestatus', 'Helse', 'Notater'];
@@ -204,12 +206,14 @@ interface Step3Props {
   treatmentProduct: string;
   setTreatmentProduct: (v: string) => void;
   onAiResult: (r: VarroaAnalysis) => void;
+  isAiLocked: boolean;
+  onOpenUpgrade: () => void;
 }
 
 function Step3({
   varroaCount, setVarroaCount, varroaMethod, setVarroaMethod,
   treatmentApplied, setTreatmentApplied, treatmentProduct, setTreatmentProduct,
-  onAiResult,
+  onAiResult, isAiLocked, onOpenUpgrade,
 }: Step3Props) {
   const [analyzing, setAnalyzing]   = useState(false);
   const [aiResult, setAiResult]     = useState<VarroaAnalysis | null>(null);
@@ -272,18 +276,29 @@ function Step3({
 
       {/* AI Varroa analyse */}
       <View style={styles.aiSection}>
-        <Pressable
-          style={({ pressed }) => [styles.aiBtn, pressed && { opacity: 0.75 }]}
-          onPress={handleAiAnalyze}
-          disabled={analyzing}
-          accessibilityLabel="Analyser varroabilde med AI"
-        >
-          {analyzing ? (
-            <ActivityIndicator color={Colors.white} size="small" />
-          ) : (
-            <Text style={styles.aiBtnText}>🔬  Analyser klisterplate med AI</Text>
-          )}
-        </Pressable>
+        {isAiLocked ? (
+          <Pressable
+            style={styles.aiBtnLocked}
+            onPress={onOpenUpgrade}
+            accessibilityLabel="AI-analyse krever Hobbyist-abonnement"
+          >
+            <Text style={styles.aiBtnText}>🔒  Analyser klisterplate med AI</Text>
+            <Text style={styles.aiBtnLockedSub}>Krever Hobbyist eller høyere</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [styles.aiBtn, pressed && { opacity: 0.75 }]}
+            onPress={handleAiAnalyze}
+            disabled={analyzing}
+            accessibilityLabel="Analyser varroabilde med AI"
+          >
+            {analyzing ? (
+              <ActivityIndicator color={Colors.white} size="small" />
+            ) : (
+              <Text style={styles.aiBtnText}>🔬  Analyser klisterplate med AI</Text>
+            )}
+          </Pressable>
+        )}
 
         {aiResult && severity && (
           <View style={[styles.aiCard, { borderLeftColor: severity.color }]}>
@@ -413,6 +428,9 @@ export default function NyInspeksjon() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
   const showToast = useToastStore((s) => s.show);
+  const effectiveTier = useEffectiveTier();
+  const isAiLocked = effectiveTier === 'starter';
+  const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
 
   const [step, setStep] = useState(1);
 
@@ -571,6 +589,8 @@ export default function NyInspeksjon() {
             treatmentProduct={treatmentProduct}
             setTreatmentProduct={setTreatmentProduct}
             onAiResult={setVarroaAiResult}
+            isAiLocked={isAiLocked}
+            onOpenUpgrade={() => setUpgradeModalVisible(true)}
           />
         )}
         {step === 4 && (
@@ -598,6 +618,7 @@ export default function NyInspeksjon() {
           style={styles.navBtnNext}
         />
       </View>
+      <UpgradeModal visible={upgradeModalVisible} onClose={() => setUpgradeModalVisible(false)} />
     </KeyboardAvoidingView>
   );
 }
@@ -737,6 +758,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 46,
+  },
+  aiBtnLocked: {
+    backgroundColor: Colors.mid + '44',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 46,
+    gap: 2,
+  },
+  aiBtnLockedSub: {
+    fontSize: 11,
+    color: Colors.dark + 'AA',
   },
   aiBtnText: {
     fontSize: 14,

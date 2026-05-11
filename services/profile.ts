@@ -12,6 +12,7 @@ function mapProfile(row: Record<string, unknown>): User {
     municipalityId: typeof row.municipality_id === 'number' ? row.municipality_id : null,
     experienceLevel: (row.experience_level as ExperienceLevel | null) ?? null,
     subscriptionTier: (row.subscription_tier as SubscriptionTier) ?? 'starter',
+    trialExpiresAt: typeof row.trial_expires_at === 'string' ? row.trial_expires_at : null,
     teamId: typeof row.team_id === 'string' ? row.team_id : null,
     createdAt: row.created_at,
   };

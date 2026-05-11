@@ -13,6 +13,7 @@ export interface User {
   municipalityId: number | null;
   experienceLevel: ExperienceLevel | null;
   subscriptionTier: SubscriptionTier;
+  trialExpiresAt: string | null;
   teamId: string | null;
   createdAt: string;
 }

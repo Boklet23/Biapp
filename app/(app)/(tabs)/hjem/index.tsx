@@ -17,6 +17,8 @@ import { fetchForecast, fetchWeather, ForecastDay } from '@/services/weather';
 import { generateAndShareReport } from '@/services/report';
 import { useAuthStore } from '@/store/auth';
 import { useToastStore } from '@/store/toast';
+import { useTrialDaysLeft } from '@/hooks/useEffectiveTier';
+import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { scheduleInspectionReminderDeduped, checkNearbySwarmAlerts } from '@/services/notifications';
 import { Hive, Inspection } from '@/types';
 import { computeHealthScore } from '@/utils/health';
@@ -102,11 +104,13 @@ function weatherEmoji(symbol: string): string {
 export default function Hjem() {
   const profile = useAuthStore((s) => s.profile);
   const showToast = useToastStore((s) => s.show);
+  const trialDaysLeft = useTrialDaysLeft();
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
   const [locationPickerVisible, setLocationPickerVisible] = useState(false);
   const [savedLocation, setSavedLocation] = useState<PickedLocation | null>(null);
+  const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(WEATHER_LOCATION_KEY).then((raw) => {
@@ -328,6 +332,20 @@ export default function Hjem() {
           </View>
         </View>
 
+        {/* ─── Trial banner ─── */}
+        {trialDaysLeft !== null && (
+          <Pressable
+            style={styles.trialBanner}
+            onPress={() => setUpgradeModalVisible(true)}
+            accessibilityRole="button"
+          >
+            <Text style={styles.trialBannerText}>
+              ⏳  {trialDaysLeft} dag{trialDaysLeft !== 1 ? 'er' : ''} igjen av gratis Hobbyist-prøveperiode
+            </Text>
+            <Text style={styles.trialBannerCta}>Oppgrader →</Text>
+          </Pressable>
+        )}
+
         {/* ─── Urgent alerts ─── */}
         {alerts.length > 0 && (
           <Pressable
@@ -436,6 +454,7 @@ export default function Hjem() {
         onClose={() => setLocationPickerVisible(false)}
         onPick={handleLocationPick}
       />
+      <UpgradeModal visible={upgradeModalVisible} onClose={() => setUpgradeModalVisible(false)} />
     </Screen>
   );
 }
@@ -643,6 +662,31 @@ const styles = StyleSheet.create({
   alertTitle: { fontSize: 13, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.error },
   alertNames: { fontSize: 12, fontFamily: FontFamily.regular, color: Colors.inkSoft, marginTop: 1 },
   alertChevron: { fontSize: 20, color: Colors.error, fontWeight: '300' },
+
+  trialBanner: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    backgroundColor: Colors.honey + '18',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.honey + '44',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  trialBannerText: {
+    fontSize: 13,
+    color: Colors.dark,
+    flex: 1,
+  },
+  trialBannerCta: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.honey,
+    marginLeft: 8,
+  },
 
   // ── Section header ──
   sectionHeader: {
