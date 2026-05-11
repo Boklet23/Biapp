@@ -405,75 +405,97 @@
       <div class="completed-item"><span>🔄</span> EAS Workflow YAML (auto-bygg ved push)</div>
       <div class="completed-item"><span>📦</span> Subscription-script klar (scripts/create-play-subscriptions.js)</div>
       <div class="completed-item"><span>🛡️</span> Migrasjoner 0001–0018 kjørt</div>
+      <div class="completed-item"><span>🔑</span> REVENUECAT_WEBHOOK_SECRET satt i Supabase</div>
+      <div class="completed-item"><span>🏷️</span> RevenueCat entitlements konfigurert (hobbyist, profesjonell, lag)</div>
+      <div class="completed-item"><span>🎁</span> RevenueCat default offering + 6 pakker opprettet via API</div>
+      <div class="completed-item"><span>🖼️</span> Splash screen generert (1284×2778 PNG) og committet</div>
     </div>
   </div>
 
   <!-- Progress overview — kun gjenstående -->
   <div class="progress-bar">
-    <div class="progress-step critical"><span>🔗</span>RevenueCat Webhook</div>
+    <div class="progress-step critical"><span>🔗</span>RC Dashboard</div>
     <div class="progress-step critical"><span>🔑</span>Service Account</div>
     <div class="progress-step high"><span>📤</span>Første AAB</div>
     <div class="progress-step high"><span>📦</span>Produkter</div>
-    <div class="progress-step medium"><span>🖼️</span>Splash</div>
     <div class="progress-step medium"><span>🚀</span>Prod-build</div>
   </div>
 
 
   <!-- ══════════════════════════════════════════
-       OPPGAVE 1 — REVENUECAT WEBHOOK
+       OPPGAVE 1 — REVENUECAT DASHBOARD (3 STEG)
   ═══════════════════════════════════════════ -->
   <div class="section" id="revenuecat">
     <div class="section-header">
       <div class="section-num num-critical">1</div>
       <div class="section-title-wrap">
-        <h2>RevenueCat webhook</h2>
-        <p>Synkroniserer abonnementsstatus ved kansellering, fornyelse og utløp</p>
+        <h2>RevenueCat Dashboard — 3 manuelle steg</h2>
+        <p>API-et støtter ikke disse operasjonene — må gjøres i nettleseren</p>
       </div>
       <span class="priority-badge badge-critical">Kritisk — gjør nå</span>
     </div>
 
+    <div class="info-card success">
+      <div class="info-card-header">✅ Allerede gjort via API</div>
+      <p>REVENUECAT_WEBHOOK_SECRET er satt i Supabase. 3 entitlements (hobbyist, profesjonell, lag) er opprettet med produkter tilknyttet. Default offering med 6 pakker er opprettet.</p>
+    </div>
+
     <div class="info-card danger">
-      <div class="info-card-header">⚠️ Ingen REST API</div>
-      <p>RevenueCat tilbyr ingen API for webhook-konfigurasjon — dette må gjøres i dashboardet. Bekreftet av RevenueCat support.</p>
+      <div class="info-card-header">⚠️ Kritisk feil: Feil pakkenavn i RevenueCat</div>
+      <p>RevenueCat-appen er registrert med pakkenavn <code>no.Biapp</code> i stedet for <code>no.biapp.app</code>. Alle kjøp vil feile validering mot Play Store. Dette <strong>må</strong> rettes manuelt — API returnerer 405 på PATCH/PUT.</p>
     </div>
 
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>
         <div class="step-body">
-          <strong>Legg inn REVENUECAT_WEBHOOK_SECRET i Supabase</strong>
-          <p>Generer et nytt tilfeldig token:</p>
-          <div class="code-block">node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"</div>
-          <p>Gå til <strong>supabase.com/dashboard</strong> → prosjekt <code>zujvhbnuqocquthbujmp</code><br>
-          → <strong>Edge Functions</strong> → <strong>revenuecat-webhook</strong> → <strong>Secrets</strong> → <strong>Add new secret</strong></p>
-          <table>
-            <tr><th>Felt</th><th>Verdi</th></tr>
-            <tr><td>Name</td><td><code>REVENUECAT_WEBHOOK_SECRET</code></td></tr>
-            <tr><td>Value</td><td>tokenet du genererte ovenfor</td></tr>
-          </table>
-          <p>Klikk <strong>Save</strong>. Ta vare på tokenet — du bruker det i neste steg.</p>
+          <strong>Fiks pakkenavn: no.Biapp → no.biapp.app</strong>
+          <p>Gå til <strong>app.revenuecat.com</strong> → ditt prosjekt → <strong>Apps</strong><br>
+          → klikk på <strong>Biapp (Play Store)</strong><br>
+          → endre <strong>Package Name</strong> fra <code>no.Biapp</code> til <code>no.biapp.app</code><br>
+          → klikk <strong>Save changes</strong></p>
+          <div class="info-card danger">
+            <div class="info-card-header">🚫 Uten denne endringen vil alle kjøp feile</div>
+            <p>Play Store sender <code>no.biapp.app</code> i alle kjøpsvalideringer. RevenueCat med feil pakkenavn vil avvise dem.</p>
+          </div>
         </div>
       </div>
 
       <div class="step">
         <div class="step-num">2</div>
         <div class="step-body">
-          <strong>Konfigurer webhook i RevenueCat Dashboard</strong>
-          <p>Gå til <strong>app.revenuecat.com</strong> → ditt prosjekt → <strong>Integrations</strong> → <strong>Webhooks</strong> → <strong>Add webhook</strong></p>
+          <strong>Koble produkter til pakker i default offering</strong>
+          <p>Gå til <strong>app.revenuecat.com</strong> → <strong>Offerings</strong> → <strong>default</strong><br>
+          → klikk på hver pakke nedenfor → velg tilhørende produkt under <strong>Products</strong>:</p>
           <table>
-            <tr><th>Felt</th><th>Verdi</th></tr>
-            <tr><td>Webhook URL</td><td><code>https://zujvhbnuqocquthbujmp.supabase.co/functions/v1/revenuecat-webhook</code></td></tr>
-            <tr><td>Authorization header</td><td><code>Bearer &lt;REVENUECAT_WEBHOOK_SECRET&gt;</code></td></tr>
+            <tr><th>Pakke</th><th>Produkt som skal kobles til</th></tr>
+            <tr><td><code>hobbyist_monthly</code></td><td>hobbyist_monthly (Google Play)</td></tr>
+            <tr><td><code>hobbyist_annual</code></td><td>hobbyist_annual (Google Play)</td></tr>
+            <tr><td><code>profesjonell_monthly</code></td><td>profesjonell_monthly (Google Play)</td></tr>
+            <tr><td><code>profesjonell_annual</code></td><td>profesjonell_annual (Google Play)</td></tr>
+            <tr><td><code>lag_monthly</code></td><td>lag_monthly (Google Play)</td></tr>
+            <tr><td><code>lag_annual</code></td><td>lag_annual (Google Play)</td></tr>
           </table>
-          <p>Aktiver disse events: <code>INITIAL_PURCHASE</code>, <code>RENEWAL</code>, <code>CANCELLATION</code>, <code>EXPIRATION</code>, <code>BILLING_ISSUE</code></p>
+          <p>NB: Produktene i RevenueCat bruker format <code>hobbyist_monthly:base</code> (subscriptionId:basePlanId).</p>
         </div>
       </div>
 
       <div class="step">
         <div class="step-num">3</div>
         <div class="step-body">
-          <strong>Test webhook</strong>
-          <p>Klikk <strong>Test</strong>-knappen i RevenueCat. Gå til Supabase Dashboard → <strong>Edge Functions</strong> → <strong>Logs</strong> og bekreft at du ser HTTP 200.</p>
+          <strong>Konfigurer webhook-URL i RevenueCat</strong>
+          <p>Gå til <strong>app.revenuecat.com</strong> → ditt prosjekt → <strong>Integrations</strong> → <strong>Webhooks</strong> → <strong>Add webhook</strong></p>
+          <table>
+            <tr><th>Felt</th><th>Verdi</th></tr>
+            <tr><td>Webhook URL</td><td><code>https://zujvhbnuqocquthbujmp.supabase.co/functions/v1/revenuecat-webhook</code></td></tr>
+            <tr><td>Authorization header</td><td><code>Bearer ca323f8f4b3710305fa44fcadd9c8b11436ad5867a0bfa7369c64c65293068cb</code></td></tr>
+          </table>
+          <p>Aktiver disse events: <code>INITIAL_PURCHASE</code>, <code>RENEWAL</code>, <code>CANCELLATION</code>, <code>EXPIRATION</code>, <code>BILLING_ISSUE</code></p>
+          <div class="info-card success">
+            <div class="info-card-header">✅ Secret er allerede satt i Supabase</div>
+            <p>REVENUECAT_WEBHOOK_SECRET er konfigurert. Kopier nøyaktig verdien fra Authorization-feltet over.</p>
+          </div>
+          <p style="margin-top:12px;">Test: klikk <strong>Test</strong>-knappen i RevenueCat → bekreft HTTP 200 i Supabase Dashboard → Edge Functions → Logs.</p>
         </div>
       </div>
     </div>
@@ -598,16 +620,21 @@
   <hr>
 
   <!-- ══════════════════════════════════════════
-       OPPGAVE 4 — ABONNEMENTSPRODUKTER
+       OPPGAVE 4 — ABONNEMENTSPRODUKTER (GOOGLE PLAY)
   ═══════════════════════════════════════════ -->
   <div class="section" id="products">
     <div class="section-header">
       <div class="section-num num-high">4</div>
       <div class="section-title-wrap">
-        <h2>Abonnementsprodukter — Google Play + RevenueCat</h2>
-        <p>Opprett 6 produkter og koble til RevenueCat entitlements</p>
+        <h2>Abonnementsprodukter — Google Play</h2>
+        <p>Opprett 6 produkter via scriptet etter at service account er på plass</p>
       </div>
       <span class="priority-badge badge-high">Høy — etter steg 2 og 3</span>
+    </div>
+
+    <div class="info-card success">
+      <div class="info-card-header">✅ RevenueCat er ferdig konfigurert</div>
+      <p>3 entitlements (hobbyist, profesjonell, lag) + default offering med 6 pakker er allerede opprettet via API. Gjenstår kun produktkobling (steg 1 over) og Google Play-produkter nedenfor.</p>
     </div>
 
     <div class="steps">
@@ -615,42 +642,22 @@
         <div class="step-num">1</div>
         <div class="step-body">
           <strong>Kjør subscription-scriptet</strong>
-          <p>Dette oppretter automatisk alle 6 produkter via Google Play Developer API:</p>
+          <p>Etter at <code>google-play-service-account.json</code> finnes i rotmappen:</p>
           <div class="code-block"><span class="comment"># Forhåndsvisning uten å opprette noe:</span>
 node scripts/create-play-subscriptions.js --dry-run
 
-<span class="comment"># Opprett alle 6 produkter:</span>
+<span class="comment"># Opprett alle 6 produkter i Google Play:</span>
 node scripts/create-play-subscriptions.js</div>
           <p>Scriptet håndterer duplikater (HTTP 409 = allerede opprettet, telles som OK).</p>
-          <div class="info-card success">
-            <div class="info-card-header">✅ Produktene som opprettes</div>
-            <table style="margin:0">
-              <tr><th>Product ID</th><th>Pris</th><th>Periode</th></tr>
-              <tr><td><code>hobbyist_monthly</code></td><td>NOK 49</td><td>1 måned</td></tr>
-              <tr><td><code>hobbyist_annual</code></td><td>NOK 399</td><td>1 år</td></tr>
-              <tr><td><code>profesjonell_monthly</code></td><td>NOK 149</td><td>1 måned</td></tr>
-              <tr><td><code>profesjonell_annual</code></td><td>NOK 1 190</td><td>1 år</td></tr>
-              <tr><td><code>lag_monthly</code></td><td>NOK 499</td><td>1 måned</td></tr>
-              <tr><td><code>lag_annual</code></td><td>NOK 3 990</td><td>1 år</td></tr>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-body">
-          <strong>Konfigurer produktene i RevenueCat Dashboard</strong>
-          <p>Gå til <strong>app.revenuecat.com</strong> → <strong>Products</strong> → <strong>Google Play</strong><br>
-          → importer produktene (eller legg til manuelt med samme Product ID-er)</p>
-          <p>Under <strong>Entitlements</strong>:</p>
           <table>
-            <tr><th>Entitlement ID</th><th>Produkter som hører til</th></tr>
-            <tr><td><code>hobbyist</code></td><td>hobbyist_monthly, hobbyist_annual</td></tr>
-            <tr><td><code>profesjonell</code></td><td>profesjonell_monthly, profesjonell_annual</td></tr>
-            <tr><td><code>lag</code></td><td>lag_monthly, lag_annual</td></tr>
+            <tr><th>Product ID</th><th>Pris</th><th>Periode</th></tr>
+            <tr><td><code>hobbyist_monthly</code></td><td>NOK 49</td><td>1 måned</td></tr>
+            <tr><td><code>hobbyist_annual</code></td><td>NOK 399</td><td>1 år</td></tr>
+            <tr><td><code>profesjonell_monthly</code></td><td>NOK 149</td><td>1 måned</td></tr>
+            <tr><td><code>profesjonell_annual</code></td><td>NOK 1 190</td><td>1 år</td></tr>
+            <tr><td><code>lag_monthly</code></td><td>NOK 499</td><td>1 måned</td></tr>
+            <tr><td><code>lag_annual</code></td><td>NOK 3 990</td><td>1 år</td></tr>
           </table>
-          <p>Under <strong>Offerings</strong>: opprett ett offering kalt <code>default</code> og legg til packages.</p>
         </div>
       </div>
     </div>
@@ -659,60 +666,11 @@ node scripts/create-play-subscriptions.js</div>
   <hr>
 
   <!-- ══════════════════════════════════════════
-       OPPGAVE 5 — SPLASH SCREEN
-  ═══════════════════════════════════════════ -->
-  <div class="section" id="splash">
-    <div class="section-header">
-      <div class="section-num num-medium">5</div>
-      <div class="section-title-wrap">
-        <h2>Splash screen</h2>
-        <p>App-ikon er klar — splash screen-bildet mangler fortsatt</p>
-      </div>
-      <span class="priority-badge badge-medium">Medium — før prod-build</span>
-    </div>
-
-    <div class="info-card success">
-      <div class="info-card-header">✅ App-ikon er ferdig</div>
-      <p><code>assets/icon.png</code> (1024×1024) og <code>assets/android-icon-foreground.png</code> er generert og committet.</p>
-    </div>
-
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-body">
-          <strong>Lag splash screen-bildet</strong>
-          <p>Eksporter fra Figma, Canva eller generer med samme SVG-stil som ikonet.</p>
-          <table>
-            <tr><th>Fil</th><th>Størrelse</th><th>Format</th></tr>
-            <tr><td><code>assets/splash-icon.png</code></td><td>1284 × 2778 px</td><td>PNG (samme navy-bakgrunn som ikon)</td></tr>
-          </table>
-          <div class="info-card">
-            <div class="info-card-header" style="color:#6b7280;">ℹ️ Bakgrunnsfarge</div>
-            <p>Expo bruker <code>backgroundColor: "#1A1A2E"</code> fra <code>app.json</code> mens splashen lastes. Bruk samme navy-farge på bildet for sømløs overgang.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-body">
-          <strong>Erstatt filen og commit</strong>
-          <div class="code-block">git add assets/splash-icon.png
-git commit -m "feat: splash screen-bilde"
-git push origin master</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <hr>
-
-  <!-- ══════════════════════════════════════════
-       OPPGAVE 6 — PRODUKSJONS-BUILD
+       OPPGAVE 5 — PRODUKSJONS-BUILD
   ═══════════════════════════════════════════ -->
   <div class="section" id="prod-build">
     <div class="section-header">
-      <div class="section-num num-medium">6</div>
+      <div class="section-num num-medium">5</div>
       <div class="section-title-wrap">
         <h2>Produksjons-build og opplasting</h2>
         <p>Siste steg — gjøres kun etter at alt over er på plass</p>
@@ -723,10 +681,11 @@ git push origin master</div>
     <div class="info-card danger">
       <div class="info-card-header">⛔ Ikke bygg produksjon før</div>
       <ul>
-        <li>Splash screen er ferdig (steg 5)</li>
-        <li>RevenueCat webhook fungerer (steg 1)</li>
-        <li>Abonnementsprodukter er aktive i Google Play + RevenueCat (steg 4)</li>
+        <li>RevenueCat pakkenavn er rettet til <code>no.biapp.app</code> (steg 1a)</li>
+        <li>RevenueCat pakker er koblet til produkter (steg 1b)</li>
+        <li>RevenueCat webhook er konfigurert (steg 1c)</li>
         <li>Google Service Account er satt opp (steg 2)</li>
+        <li>Abonnementsprodukter er aktive i Google Play (steg 4)</li>
       </ul>
     </div>
 
@@ -807,11 +766,38 @@ git push origin master</div>
       <span class="summary-badge badge-done">Ferdig</span>
     </div>
 
-    <div class="summary-row">
-      <span class="summary-icon">🔗</span>
+    <div class="summary-row done">
+      <span class="summary-icon">✅</span>
       <div class="summary-text">
-        <strong>RevenueCat webhook (steg 1)</strong>
-        <span>Secret i Supabase + URL i RevenueCat Dashboard + test</span>
+        <strong>REVENUECAT_WEBHOOK_SECRET satt i Supabase</strong>
+        <span>Edge Function secret konfigurert — trenger kun webhook-URL i RC dashboard</span>
+      </div>
+      <span class="summary-badge badge-done">Ferdig</span>
+    </div>
+
+    <div class="summary-row done">
+      <span class="summary-icon">✅</span>
+      <div class="summary-text">
+        <strong>RevenueCat entitlements + offerings konfigurert via API</strong>
+        <span>3 entitlements, default offering, 6 pakker opprettet — gjenstår produktkobling</span>
+      </div>
+      <span class="summary-badge badge-done">Ferdig</span>
+    </div>
+
+    <div class="summary-row done">
+      <span class="summary-icon">✅</span>
+      <div class="summary-text">
+        <strong>Splash screen generert og committet</strong>
+        <span>assets/splash-icon.png (1284×2778 PNG) med BiVokter-branding</span>
+      </div>
+      <span class="summary-badge badge-done">Ferdig</span>
+    </div>
+
+    <div class="summary-row">
+      <span class="summary-icon">⚠️</span>
+      <div class="summary-text">
+        <strong>RevenueCat Dashboard — 3 steg (steg 1)</strong>
+        <span>Fiks pakkenavn no.Biapp→no.biapp.app + koble pakker til produkter + webhook-URL</span>
       </div>
       <span class="summary-badge badge-critical">Kritisk</span>
     </div>
@@ -837,25 +823,16 @@ git push origin master</div>
     <div class="summary-row">
       <span class="summary-icon">📦</span>
       <div class="summary-text">
-        <strong>Abonnementsprodukter (steg 4)</strong>
-        <span>Kjør scriptet + koble til RevenueCat entitlements</span>
+        <strong>Google Play abonnementsprodukter (steg 4)</strong>
+        <span>Kjør create-play-subscriptions.js etter service account er klar</span>
       </div>
       <span class="summary-badge badge-high">Høy</span>
     </div>
 
     <div class="summary-row">
-      <span class="summary-icon">🖼️</span>
-      <div class="summary-text">
-        <strong>Splash screen (steg 5)</strong>
-        <span>1284×2778 PNG med navy-bakgrunn</span>
-      </div>
-      <span class="summary-badge badge-medium">Medium</span>
-    </div>
-
-    <div class="summary-row">
       <span class="summary-icon">🚀</span>
       <div class="summary-text">
-        <strong>Produksjons-build + auto-submit (steg 6)</strong>
+        <strong>Produksjons-build + auto-submit (steg 5)</strong>
         <span>eas build --auto-submit — gjøres sist</span>
       </div>
       <span class="summary-badge badge-medium">Siste</span>

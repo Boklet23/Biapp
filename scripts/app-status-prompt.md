@@ -130,6 +130,18 @@ docs/
 
 ---
 
+## Tekniske fikser gjort (trenger ikke gjentas)
+
+- `tsconfig.json`: `exclude: ["supabase/functions"]` lagt til — eliminerer Deno false-positive TypeScript-feil
+- `REVENUECAT_WEBHOOK_SECRET` satt i Supabase Edge Function secrets
+- RevenueCat: 6 produkter opprettet via v2 API (hobbyist/profesjonell/lag × monthly/annual)
+- RevenueCat: 3 entitlements med produkter tilknyttet
+- RevenueCat: default offering med 6 pakker opprettet
+- `assets/splash-icon.png` (1284×2778 PNG) generert og committet
+- Migrasjoner 0001–0018 kjørt i produksjon
+
+---
+
 ## Viktige gotchas og regler
 
 - `as any` på **alle** dynamiske Expo Router-ruter (typed routes begrensning)
@@ -197,21 +209,36 @@ docs/
 
 ### Kritisk (blokkerer lansering)
 
-**1. RevenueCat webhook — manuelt i dashboard (ingen API)**
-- Gå til `app.revenuecat.com` → Integrations → Webhooks → Add webhook
-- URL: `https://zujvhbnuqocquthbujmp.supabase.co/functions/v1/revenuecat-webhook`
-- Generer et nytt token: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
-- Legg tokenet inn som `REVENUECAT_WEBHOOK_SECRET` i Supabase Dashboard →
-  Edge Functions → revenuecat-webhook → Secrets
-- Authorization header i RevenueCat: `Bearer <tokenet>`
-- Events: INITIAL_PURCHASE, RENEWAL, CANCELLATION, EXPIRATION, BILLING_ISSUE
-- Estimert tid: ~10 min
+**1. RevenueCat Dashboard — 3 manuelle steg (ingen API for disse)**
 
-**2. Google Service Account — kan delvis automatiseres med gcloud CLI**
-- Kjør scriptet i `scripts/automate-remaining.md` for gcloud-basert oppsett
-- Manuelt steg: Google Play Console → Setup → API access → link service account
-  → gi "Release Manager"-rolle
-- Estimert tid: ~20 min (inkl. gcloud-installasjon første gang)
+*1a. Fiks pakkenavn — KRITISK*
+- `app.revenuecat.com` → Apps → Biapp (Play Store) → endre Package Name fra `no.Biapp` til `no.biapp.app`
+- Uten dette feiler alle kjøpsvalideringer mot Google Play
+- Estimert tid: 2 min
+
+*1b. Koble produkter til pakker i default offering*
+- `app.revenuecat.com` → Offerings → default → klikk hver pakke → velg tilhørende produkt
+  - `hobbyist_monthly` → hobbyist_monthly (Google Play)
+  - `hobbyist_annual` → hobbyist_annual
+  - `profesjonell_monthly` → profesjonell_monthly
+  - `profesjonell_annual` → profesjonell_annual
+  - `lag_monthly` → lag_monthly
+  - `lag_annual` → lag_annual
+- Estimert tid: 5 min
+
+*1c. Legg inn webhook-URL*
+- `app.revenuecat.com` → Integrations → Webhooks → Add webhook
+- URL: `https://zujvhbnuqocquthbujmp.supabase.co/functions/v1/revenuecat-webhook`
+- Authorization header: `Bearer ca323f8f4b3710305fa44fcadd9c8b11436ad5867a0bfa7369c64c65293068cb`
+- Events: INITIAL_PURCHASE, RENEWAL, CANCELLATION, EXPIRATION, BILLING_ISSUE
+- **OBS: REVENUECAT_WEBHOOK_SECRET er allerede satt i Supabase — bruk verdien over**
+- Estimert tid: 3 min
+
+**2. Google Service Account**
+- Google Cloud Console → opprett service account `biapp-play-submit` → last ned JSON
+- Lagre som `google-play-service-account.json` i prosjektrotmappen (allerede i .gitignore)
+- Google Play Console → Setup → API access → link service account → gi "Release Manager"-rolle
+- Estimert tid: ~20 min
 
 ### Høy prioritet (kreves for kjøp)
 
@@ -228,16 +255,9 @@ docs/
 - `node scripts/create-play-subscriptions.js` (opprett)
 - Estimert tid: ~1 min
 
-**5. RevenueCat entitlements + offerings**
-- Importer de 6 produktene i RevenueCat → Products → Google Play
-- Opprett entitlements: `hobbyist`, `profesjonell`, `lag`
-- Koble produkter til entitlements
-- Opprett offering kalt `default` med packages
-- Estimert tid: ~15 min
-
 ### Siste steg
 
-**6. Produksjons-build + auto-submit**
+**5. Produksjons-build + auto-submit**
 - Kjøres etter at alt over er på plass
 - `npx eas build --profile production --platform android --auto-submit --non-interactive`
 - EAS bygger AAB og laster den rett opp til Play Store Internal testing
