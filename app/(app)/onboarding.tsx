@@ -33,12 +33,18 @@ const SLIDES = [
   },
   {
     id: '3',
-    emoji: '📊',
-    title: 'Følg med på helsen',
-    body: 'Varroa-trender, svermvarsler, kubevekt og inspeksjonsplanlegger basert på været — all info du trenger for sunne bier.',
+    emoji: '🤖',
+    title: 'AI teller varroa for deg',
+    body: 'Ta et bilde av klisterplaten — BiVokter teller mitter automatisk og gir behandlingsanbefaling på sekunder.',
   },
   {
     id: '4',
+    emoji: '📊',
+    title: 'Følg med på helsen',
+    body: 'Varroa-trender, smarte push-varsler og inspeksjonsplanlegger — appen gir deg beskjed når en kube trenger oppmerksomhet.',
+  },
+  {
+    id: '5',
     emoji: '📄',
     title: 'Dokumentasjon på knappen',
     body: 'Generer årsrapport med inspeksjoner og behandlingslogg med ett trykk — oppfyller kravene til Mattilsynet.',
@@ -129,7 +135,7 @@ export default function OnboardingScreen() {
             style={({ pressed }) => [styles.trialBtn, pressed && { opacity: 0.85 }]}
             onPress={startTrial}
           >
-            <Text style={styles.trialBtnText}>Start 14 dager gratis Hobbyist</Text>
+            <Text style={styles.trialBtnText}>Start 30 dager gratis Hobbyist</Text>
             <Text style={styles.trialBtnSub}>Deretter 49 kr/mnd · Avbryt når som helst</Text>
           </Pressable>
           <Pressable onPress={completeOnboarding} hitSlop={12} style={styles.skipBtn}>
