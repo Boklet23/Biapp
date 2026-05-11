@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { Inspection } from '@/types';
+import { Inspection, VarroaAnalysis } from '@/types';
 
 export interface CreateInspectionData {
   hiveId: string;
@@ -13,6 +13,9 @@ export interface CreateInspectionData {
   queenCellsFound: boolean;
   varroaCount?: number;
   varroaMethod?: string;
+  varroaAiCount?: number;
+  varroaAiSeverity?: 'none' | 'low' | 'medium' | 'high';
+  varroaAiRecommendation?: string;
   diseaseObservations?: Record<string, boolean>;
   treatmentApplied: boolean;
   treatmentProduct?: string;
@@ -90,6 +93,9 @@ export async function createInspection(input: CreateInspectionData): Promise<Ins
       queen_cells_found: input.queenCellsFound,
       varroa_count: input.varroaCount ?? null,
       varroa_method: input.varroaMethod ?? null,
+      varroa_ai_count: input.varroaAiCount ?? null,
+      varroa_ai_severity: input.varroaAiSeverity ?? null,
+      varroa_ai_recommendation: input.varroaAiRecommendation ?? null,
       disease_observations: input.diseaseObservations ?? null,
       treatment_applied: input.treatmentApplied,
       treatment_product: input.treatmentProduct ?? null,
@@ -101,6 +107,28 @@ export async function createInspection(input: CreateInspectionData): Promise<Ins
 
   if (error) throw error;
   return mapInspection(data);
+}
+
+export async function analyzeVarroa(
+  imageBase64: string,
+  mediaType: 'image/jpeg' | 'image/png' | 'image/webp' = 'image/jpeg',
+): Promise<VarroaAnalysis> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Ikke innlogget');
+
+  const url = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/analyze-varroa`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ imageBase64, mediaType }),
+  });
+
+  const data = await res.json() as VarroaAnalysis & { error?: string };
+  if (!res.ok) throw new Error(data.error ?? 'Analyse feilet');
+  return data;
 }
 
 function mapInspection(row: Record<string, unknown>): Inspection {
@@ -122,6 +150,9 @@ function mapInspection(row: Record<string, unknown>): Inspection {
     queenCellsFound: row.queen_cells_found === true,
     varroaCount: typeof row.varroa_count === 'number' ? row.varroa_count : null,
     varroaMethod: typeof row.varroa_method === 'string' ? row.varroa_method : null,
+    varroaAiCount: typeof row.varroa_ai_count === 'number' ? row.varroa_ai_count : null,
+    varroaAiSeverity: typeof row.varroa_ai_severity === 'string' ? row.varroa_ai_severity as Inspection['varroaAiSeverity'] : null,
+    varroaAiRecommendation: typeof row.varroa_ai_recommendation === 'string' ? row.varroa_ai_recommendation : null,
     diseaseObservations: row.disease_observations != null ? row.disease_observations as Record<string, unknown> : null,
     treatmentApplied: row.treatment_applied === true,
     treatmentProduct: typeof row.treatment_product === 'string' ? row.treatment_product : null,

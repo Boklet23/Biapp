@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { StepIndicator } from '@/components/inspection/StepIndicator';
@@ -24,9 +26,10 @@ import { Colors } from '@/constants/colors';
 import { FontFamily } from '@/constants/typography';
 import { MOOD_EMOJIS } from '@/constants/ui';
 import { fetchHive } from '@/services/hive';
-import { createInspection } from '@/services/inspection';
+import { createInspection, analyzeVarroa } from '@/services/inspection';
 import { fetchWeather } from '@/services/weather';
 import { useToastStore } from '@/store/toast';
+import type { VarroaAnalysis } from '@/types';
 
 const STEP_LABELS = ['Grunninfo', 'Kubestatus', 'Helse', 'Notater'];
 const VARROA_METHODS = ['vaskemetode', 'sukkerpuder', 'limbunn'];
@@ -184,6 +187,13 @@ function Step2({ framesbrood, setFramesBrood, framesHoney, setFramesHoney, frame
 
 // ─── Step 3: Helse ──────────────────────────────────────────────────────────
 
+const SEVERITY_META: Record<string, { label: string; color: string; bg: string }> = {
+  none:   { label: 'Ingen',   color: Colors.success, bg: Colors.successSoft },
+  low:    { label: 'Lav',     color: '#D4891A',      bg: '#FEF3E2' },
+  medium: { label: 'Middels', color: '#E67E22',      bg: '#FEF3E2' },
+  high:   { label: 'Høy',     color: Colors.error,   bg: Colors.errorSoft },
+};
+
 interface Step3Props {
   varroaCount: string;
   setVarroaCount: (v: string) => void;
@@ -193,9 +203,57 @@ interface Step3Props {
   setTreatmentApplied: (v: boolean) => void;
   treatmentProduct: string;
   setTreatmentProduct: (v: string) => void;
+  onAiResult: (r: VarroaAnalysis) => void;
 }
 
-function Step3({ varroaCount, setVarroaCount, varroaMethod, setVarroaMethod, treatmentApplied, setTreatmentApplied, treatmentProduct, setTreatmentProduct }: Step3Props) {
+function Step3({
+  varroaCount, setVarroaCount, varroaMethod, setVarroaMethod,
+  treatmentApplied, setTreatmentApplied, treatmentProduct, setTreatmentProduct,
+  onAiResult,
+}: Step3Props) {
+  const [analyzing, setAnalyzing]   = useState(false);
+  const [aiResult, setAiResult]     = useState<VarroaAnalysis | null>(null);
+  const [imageUri, setImageUri]     = useState<string | null>(null);
+  const showToast = useToastStore((s) => s.show);
+
+  const handleAiAnalyze = async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Tillatelse nektet', 'Gi BiVokter tilgang til bilder i innstillingene.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.5,
+        base64: true,
+        exif: false,
+        allowsEditing: false,
+      });
+
+      if (result.canceled || !result.assets[0]?.base64) return;
+
+      const asset = result.assets[0];
+      setImageUri(asset.uri);
+      setAnalyzing(true);
+
+      const mimeType = asset.mimeType === 'image/png' ? 'image/png'
+                     : asset.mimeType === 'image/webp' ? 'image/webp'
+                     : 'image/jpeg';
+
+      const analysis = await analyzeVarroa(asset.base64!, mimeType);
+      setAiResult(analysis);
+      onAiResult(analysis);
+    } catch (err: unknown) {
+      showToast((err as Error).message ?? 'Analyse feilet', 'error');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const severity = aiResult ? (SEVERITY_META[aiResult.severity] ?? SEVERITY_META.low) : null;
+
   return (
     <View style={styles.stepContent}>
       <Text style={styles.stepHeading}>Helse</Text>
@@ -210,6 +268,54 @@ function Step3({ varroaCount, setVarroaCount, varroaMethod, setVarroaMethod, tre
           placeholder="Antall midd"
           placeholderTextColor={Colors.mid + '80'}
         />
+      </View>
+
+      {/* AI Varroa analyse */}
+      <View style={styles.aiSection}>
+        <Pressable
+          style={({ pressed }) => [styles.aiBtn, pressed && { opacity: 0.75 }]}
+          onPress={handleAiAnalyze}
+          disabled={analyzing}
+          accessibilityLabel="Analyser varroabilde med AI"
+        >
+          {analyzing ? (
+            <ActivityIndicator color={Colors.white} size="small" />
+          ) : (
+            <Text style={styles.aiBtnText}>🔬  Analyser klisterplate med AI</Text>
+          )}
+        </Pressable>
+
+        {aiResult && severity && (
+          <View style={[styles.aiCard, { borderLeftColor: severity.color }]}>
+            {imageUri && (
+              <Image source={{ uri: imageUri }} style={styles.aiThumb} resizeMode="cover" />
+            )}
+            <View style={styles.aiCardBody}>
+              <View style={styles.aiCardHeader}>
+                <Text style={styles.aiCount}>
+                  {aiResult.count >= 0 ? `${aiResult.count} mitter` : 'Uklar telling'}
+                </Text>
+                <View style={[styles.severityBadge, { backgroundColor: severity.bg }]}>
+                  <Text style={[styles.severityText, { color: severity.color }]}>
+                    {severity.label}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.aiRec}>{aiResult.recommendation}</Text>
+              {aiResult.count >= 0 && (
+                <Pressable
+                  style={styles.useResultBtn}
+                  onPress={() => setVarroaCount(String(aiResult.count))}
+                >
+                  <Text style={styles.useResultText}>Bruk {aiResult.count} som telleresultat</Text>
+                </Pressable>
+              )}
+              <Text style={styles.aiUsage}>
+                {aiResult.usageThisMonth} / {aiResult.monthlyLimit} analyser denne måneden
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
 
       <Text style={styles.label}>Metode</Text>
@@ -349,6 +455,7 @@ export default function NyInspeksjon() {
   const [varroaMethod, setVarroaMethod] = useState('');
   const [treatmentApplied, setTreatmentApplied] = useState(false);
   const [treatmentProduct, setTreatmentProduct] = useState('');
+  const [varroaAiResult, setVarroaAiResult] = useState<VarroaAnalysis | null>(null);
 
   // Step 4
   const [notes, setNotes] = useState('');
@@ -382,6 +489,9 @@ export default function NyInspeksjon() {
         queenCellsFound: queenCells,
         varroaCount: varroaCount ? Number(varroaCount) : undefined,
         varroaMethod: varroaMethod || undefined,
+        varroaAiCount: varroaAiResult?.count != null && varroaAiResult.count >= 0 ? varroaAiResult.count : undefined,
+        varroaAiSeverity: varroaAiResult?.severity,
+        varroaAiRecommendation: varroaAiResult?.recommendation,
         treatmentApplied,
         treatmentProduct: treatmentProduct.trim() || undefined,
         notes: notes.trim() || undefined,
@@ -460,6 +570,7 @@ export default function NyInspeksjon() {
             setTreatmentApplied={setTreatmentApplied}
             treatmentProduct={treatmentProduct}
             setTreatmentProduct={setTreatmentProduct}
+            onAiResult={setVarroaAiResult}
           />
         )}
         {step === 4 && (
@@ -613,5 +724,91 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontSize: 14,
     fontFamily: FontFamily.regular,
+  },
+
+  // AI Varroa analyse
+  aiSection: {
+    marginBottom: 16,
+  },
+  aiBtn: {
+    backgroundColor: Colors.info,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 46,
+  },
+  aiBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    color: Colors.white,
+    letterSpacing: 0.2,
+  },
+  aiCard: {
+    marginTop: 12,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderWidth: 1,
+    borderColor: Colors.mid + '20',
+    overflow: 'hidden',
+    flexDirection: 'row',
+  },
+  aiThumb: {
+    width: 80,
+    height: 80,
+    alignSelf: 'stretch',
+  },
+  aiCardBody: {
+    flex: 1,
+    padding: 12,
+    gap: 6,
+  },
+  aiCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  aiCount: {
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    color: Colors.dark,
+  },
+  severityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
+  severityText: {
+    fontSize: 11,
+    fontWeight: '800',
+    fontFamily: FontFamily.extrabold,
+    letterSpacing: 0.5,
+  },
+  aiRec: {
+    fontSize: 12,
+    fontFamily: FontFamily.regular,
+    color: Colors.mid,
+    lineHeight: 17,
+  },
+  useResultBtn: {
+    backgroundColor: Colors.honey,
+    borderRadius: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+  },
+  useResultText: {
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    color: Colors.dark,
+  },
+  aiUsage: {
+    fontSize: 10,
+    fontFamily: FontFamily.regular,
+    color: Colors.mid + 'AA',
   },
 });

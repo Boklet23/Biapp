@@ -54,11 +54,24 @@ export interface Inspection {
   queenCellsFound: boolean;
   varroaCount: number | null;
   varroaMethod: string | null;
+  varroaAiCount: number | null;
+  varroaAiSeverity: 'none' | 'low' | 'medium' | 'high' | null;
+  varroaAiRecommendation: string | null;
   diseaseObservations: Record<string, unknown> | null;
   treatmentApplied: boolean;
   treatmentProduct: string | null;
   notes: string | null;
   moodScore: number | null;
+}
+
+export interface VarroaAnalysis {
+  count: number;
+  type: 'sticky_board' | 'bees' | 'other';
+  severity: 'none' | 'low' | 'medium' | 'high';
+  recommendation: string;
+  confidence: 'high' | 'medium' | 'low';
+  usageThisMonth: number;
+  monthlyLimit: number;
 }
 
 export interface InspectionMedia {
