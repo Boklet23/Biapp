@@ -1,8 +1,10 @@
 import { lazy, Suspense, useLayoutEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { UpgradeModal } from '@/components/ui/UpgradeModal';
+import { useEffectiveTier } from '@/hooks/useEffectiveTier';
 import { Screen } from '@/components/ui/Screen';
 import { HiveTypeChip } from '@/components/hive/HiveTypeChip';
 import { LoadingCard } from '@/components/ui/LoadingCard';
@@ -162,8 +164,11 @@ function InspectionRow({ item, hiveId }: { item: Inspection; hiveId: string }) {
 export default function KubeProfil() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const navigation = useNavigation();
+  const queryClient = useQueryClient();
+  const effectiveTier = useEffectiveTier();
+  const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
 
-  const { data: hive, isLoading: hiveLoading } = useQuery({
+  const { data: hive, isLoading: hiveLoading, isError: hiveError } = useQuery({
     queryKey: ['hive', id],
     queryFn: () => fetchHive(id),
   });
@@ -193,11 +198,28 @@ export default function KubeProfil() {
     });
   }, [navigation, hive, id]);
 
-  if (hiveLoading || !hive) {
+  if (hiveLoading) {
     return (
       <Screen>
         <View style={styles.centered}>
           <LoadingCard />
+        </View>
+      </Screen>
+    );
+  }
+
+  if (hiveError || !hive) {
+    return (
+      <Screen>
+        <View style={styles.centered}>
+          <Text style={styles.emptyTitle}>Kunne ikke laste kuben</Text>
+          <Text style={styles.emptyHint}>Sjekk internettforbindelsen og prøv igjen.</Text>
+          <Pressable
+            style={({ pressed }) => [styles.retryBtn, pressed && { opacity: 0.7 }]}
+            onPress={() => queryClient.invalidateQueries({ queryKey: ['hive', id] })}
+          >
+            <Text style={styles.retryBtnText}>Prøv igjen</Text>
+          </Pressable>
         </View>
       </Screen>
     );
@@ -309,7 +331,33 @@ export default function KubeProfil() {
           </View>
         )}
 
+        {/* Samarbeid */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.collaborationRow,
+            effectiveTier !== 'lag' && styles.collaborationRowLocked,
+            pressed && { opacity: 0.7 },
+          ]}
+          onPress={() => {
+            if (effectiveTier === 'lag') {
+              router.push({ pathname: '/kuber/[id]/samarbeid' as any, params: { id } });
+            } else {
+              setUpgradeModalVisible(true);
+            }
+          }}
+        >
+          <Text style={styles.collaborationLabel}>
+            {effectiveTier === 'lag' ? '👥  Samarbeidspartnere' : '🔒  Samarbeid (Lag)'}
+          </Text>
+          <Text style={styles.collaborationChevron}>›</Text>
+        </Pressable>
+
       </ScrollView>
+
+      <UpgradeModal
+        visible={upgradeModalVisible}
+        onClose={() => setUpgradeModalVisible(false)}
+      />
 
       {/* New inspection FAB */}
       <Pressable
@@ -425,6 +473,31 @@ const styles = StyleSheet.create({
   emptyHint: { fontSize: 13, fontFamily: FontFamily.regular, color: Colors.mid, textAlign: 'center' },
   emptyText: { fontSize: 14, fontFamily: FontFamily.regular, color: Colors.mid },
   notesText: { fontSize: 14, fontFamily: FontFamily.regular, color: Colors.dark, lineHeight: 21 },
+
+  retryBtn: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 99,
+    backgroundColor: Colors.honey,
+  },
+  retryBtnText: { fontSize: 14, fontWeight: '700', color: Colors.dark },
+
+  collaborationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: Colors.mid + '15',
+  },
+  collaborationRowLocked: { opacity: 0.7 },
+  collaborationLabel: { fontSize: 15, fontWeight: '600', color: Colors.dark },
+  collaborationChevron: { fontSize: 20, color: Colors.mid, fontWeight: '300' },
 
   fab: {
     position: 'absolute',

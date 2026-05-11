@@ -157,8 +157,8 @@ export default function Hjem() {
     staleTime: 60 * 60 * 1000,
   });
 
-  const activeHives = hives.filter((h) => h.isActive);
-  const alerts = buildAlerts(hives, lastInspectionByHive);
+  const activeHives = useMemo(() => hives.filter((h) => h.isActive), [hives]);
+  const alerts = useMemo(() => buildAlerts(hives, lastInspectionByHive), [hives, lastInspectionByHive]);
 
   const urgentInspHives = useMemo(() =>
     [...activeHives].sort((a, b) => {
@@ -187,7 +187,7 @@ export default function Hjem() {
     overdueHives.forEach(({ hiveId, hiveName }) => {
       scheduleInspectionReminderDeduped(hiveId, hiveName).catch(() => {});
     });
-  }, [alerts.length]);
+  }, [alerts]);
 
   useEffect(() => {
     const lats = hives.filter((h) => h.locationLat && h.locationLng).map((h) => h.locationLat!);

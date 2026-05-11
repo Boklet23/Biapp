@@ -1,6 +1,12 @@
 import { supabase } from '@/lib/supabase';
 import { Inspection, VarroaAnalysis } from '@/types';
 
+const VALID_SEVERITIES = ['none', 'low', 'medium', 'high'] as const;
+type ValidSeverity = typeof VALID_SEVERITIES[number];
+function isValidSeverity(v: unknown): v is ValidSeverity {
+  return VALID_SEVERITIES.includes(v as ValidSeverity);
+}
+
 export interface CreateInspectionData {
   hiveId: string;
   inspectedAt: string;
@@ -151,7 +157,7 @@ function mapInspection(row: Record<string, unknown>): Inspection {
     varroaCount: typeof row.varroa_count === 'number' ? row.varroa_count : null,
     varroaMethod: typeof row.varroa_method === 'string' ? row.varroa_method : null,
     varroaAiCount: typeof row.varroa_ai_count === 'number' ? row.varroa_ai_count : null,
-    varroaAiSeverity: typeof row.varroa_ai_severity === 'string' ? row.varroa_ai_severity as Inspection['varroaAiSeverity'] : null,
+    varroaAiSeverity: isValidSeverity(row.varroa_ai_severity) ? row.varroa_ai_severity : null,
     varroaAiRecommendation: typeof row.varroa_ai_recommendation === 'string' ? row.varroa_ai_recommendation : null,
     diseaseObservations: row.disease_observations != null ? row.disease_observations as Record<string, unknown> : null,
     treatmentApplied: row.treatment_applied === true,

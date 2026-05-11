@@ -11,11 +11,14 @@ export function computeHealthScore(insp: Inspection | undefined): number {
   else if (varroa <= 5) score -= 52;
   else                  score -= 68;
 
-  if (insp.queenCellsFound) score -= 15;
+  if (insp.numFramesBrood === 0) score -= 20;
+
+  if (insp.queenCellsFound && !insp.queenSeen) score -= 15;
+  else if (insp.queenCellsFound) score -= 8;
 
   const days = Math.floor((Date.now() - new Date(insp.inspectedAt).getTime()) / 86400000);
   if (days > 21) score -= 10;
   if (days > 42) score -= 10;
 
-  return Math.max(15, score);
+  return Math.max(0, score);
 }

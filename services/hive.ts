@@ -1,6 +1,10 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
+import { FileSystemUploadType } from 'expo-file-system/legacy';
 import { supabase } from '@/lib/supabase';
 import { BeeBreed, Hive, HiveType } from '@/types';
+
+const VALID_HIVE_TYPES: HiveType[] = ['langstroth', 'warre', 'toppstang', 'annet'];
+const VALID_BEE_BREEDS: BeeBreed[] = ['norsk_landbee', 'buckfast', 'carniolan', 'annet'];
 
 export interface CreateHiveData {
   name: string;
@@ -23,7 +27,7 @@ export async function uploadHivePhoto(
   if (localUri.startsWith('content://')) {
     const srcExt = localUri.split('.').pop()?.toLowerCase();
     const tmpExt = srcExt && ['jpg', 'jpeg', 'png'].includes(srcExt) ? srcExt : 'jpg';
-    const tmp = `${FileSystem.cacheDirectory}hive_upload_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${tmpExt}`;
+    const tmp = `${FileSystem.cacheDirectory ?? ''}hive_upload_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${tmpExt}`;
     await FileSystem.copyAsync({ from: localUri, to: tmp });
     uploadUri = tmp;
   }
@@ -42,7 +46,7 @@ export async function uploadHivePhoto(
       'Content-Type': contentType,
       apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
     },
-    uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+    uploadType: FileSystemUploadType.BINARY_CONTENT,
   });
 
   if (response.status < 200 || response.status >= 300) {
@@ -147,12 +151,16 @@ function mapHive(row: Record<string, unknown>): Hive {
   if (typeof row.user_id !== 'string') throw new Error('Ugyldig hive: mangler user_id');
   if (typeof row.name !== 'string') throw new Error('Ugyldig hive: mangler name');
   if (typeof row.created_at !== 'string') throw new Error('Ugyldig hive: mangler created_at');
+  const rawType = row.type as string;
+  const type: HiveType = VALID_HIVE_TYPES.includes(rawType as HiveType) ? (rawType as HiveType) : 'annet';
+  const rawBreed = typeof row.bee_breed === 'string' ? row.bee_breed : null;
+  const beeBreed: BeeBreed | null = rawBreed && VALID_BEE_BREEDS.includes(rawBreed as BeeBreed) ? (rawBreed as BeeBreed) : null;
   return {
     id: row.id,
     userId: row.user_id,
     name: row.name,
-    type: row.type as HiveType,
-    beeBreed: typeof row.bee_breed === 'string' ? row.bee_breed as BeeBreed : null,
+    type,
+    beeBreed,
     locationLat: typeof row.location_lat === 'number' ? row.location_lat : null,
     locationLng: typeof row.location_lng === 'number' ? row.location_lng : null,
     locationName: typeof row.location_name === 'string' ? row.location_name : null,

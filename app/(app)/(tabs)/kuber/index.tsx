@@ -10,11 +10,12 @@ import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { Colors, Shadows } from '@/constants/colors';
 import { FontFamily } from '@/constants/typography';
 import { fetchHives, deleteHive } from '@/services/hive';
-import { fetchInspections, fetchLastInspectionPerHive } from '@/services/inspection';
+import { fetchLastInspectionPerHive } from '@/services/inspection';
 import { useAuthStore } from '@/store/auth';
 import { useToastStore } from '@/store/toast';
-import { Hive, Inspection } from '@/types';
+import { Hive } from '@/types';
 import { computeHealthScore } from '@/utils/health';
+
 
 const STARTER_HIVE_LIMIT = 3;
 
@@ -180,11 +181,13 @@ export default function KuberOversikt() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.honey} />
         }
         renderItem={({ item }) => (
-          <HiveWithInspection
-            hive={item}
-            onPress={() => router.push({ pathname: '/kuber/[id]' as any, params: { id: item.id } })}
-            onLongPress={() => handleDelete(item)}
-          />
+          <Pressable onLongPress={() => handleDelete(item)} delayLongPress={600}>
+            <HiveCard
+              hive={item}
+              lastInspection={lastInspectionByHive[item.id]}
+              onPress={() => router.push({ pathname: '/kuber/[id]' as any, params: { id: item.id } })}
+            />
+          </Pressable>
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -223,26 +226,6 @@ export default function KuberOversikt() {
   );
 }
 
-function HiveWithInspection({
-  hive,
-  onPress,
-  onLongPress,
-}: {
-  hive: Hive;
-  onPress: () => void;
-  onLongPress: () => void;
-}) {
-  const { data: inspections = [] } = useQuery({
-    queryKey: ['inspections', hive.id],
-    queryFn: () => fetchInspections(hive.id),
-  });
-
-  return (
-    <Pressable onLongPress={onLongPress} delayLongPress={600}>
-      <HiveCard hive={hive} lastInspection={inspections[0]} onPress={onPress} />
-    </Pressable>
-  );
-}
 
 const styles = StyleSheet.create({
   headerWrap: {

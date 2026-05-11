@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { Redirect, Stack } from 'expo-router';
+import { Redirect, Stack, router } from 'expo-router';
 import Constants from 'expo-constants';
 import { useAuthStore } from '@/store/auth';
 import { GlobalToast } from '@/components/ui/Toast';

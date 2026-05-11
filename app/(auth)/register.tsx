@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -17,12 +17,19 @@ export default function Register() {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsError, setTermsError] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState('');
 
   const handleRegister = async () => {
     setServerError('');
+    if (!termsAccepted) {
+      setTermsError(true);
+      return;
+    }
+    setTermsError(false);
     const result = registerSchema.safeParse({ displayName, email, password });
 
     if (!result.success) {
@@ -98,6 +105,23 @@ export default function Register() {
           error={errors.password}
         />
 
+        <Pressable style={styles.consentRow} onPress={() => { setTermsAccepted(!termsAccepted); setTermsError(false); }}>
+          <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}>
+            {termsAccepted && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <Text style={styles.consentText}>
+            Jeg godtar{' '}
+            <Text style={styles.consentLink} onPress={() => Linking.openURL('https://boklet23.github.io/biapp/terms')}>
+              vilkår for bruk
+            </Text>
+            {' '}og{' '}
+            <Text style={styles.consentLink} onPress={() => Linking.openURL('https://boklet23.github.io/biapp/privacy')}>
+              personvernerklæringen
+            </Text>
+          </Text>
+        </Pressable>
+        {termsError && <Text style={styles.termsError}>Du må godta vilkårene for å opprette konto.</Text>}
+
         <Button label="Opprett konto" onPress={handleRegister} loading={loading} />
 
         <View style={styles.footer}>
@@ -136,4 +160,21 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   footerText: { color: Colors.mid, fontSize: 14 },
   link: { color: Colors.honey, fontSize: 14, fontWeight: '600' },
+  consentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: Colors.mid + '60',
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  checkboxChecked: { backgroundColor: Colors.honey, borderColor: Colors.honey },
+  checkmark: { fontSize: 13, fontWeight: '700', color: Colors.white },
+  consentText: { flex: 1, fontSize: 13, color: Colors.mid, lineHeight: 20 },
+  consentLink: { color: Colors.honey, fontWeight: '600' },
+  termsError: { fontSize: 13, color: Colors.error, marginTop: -8 },
 });

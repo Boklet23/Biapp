@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import * as Sentry from '@sentry/react-native';
 import { ActivityIndicator, Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, Shadows } from '@/constants/colors';
 import { fetchOfferings, purchasePackage, restorePurchases, mapEntitlementToTier, syncTierToSupabase } from '@/services/subscription';
@@ -118,7 +119,7 @@ export function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
     try {
       const info = await purchasePackage(pkg);
       const tier = mapEntitlementToTier(info);
-      await syncTierToSupabase(tier).catch(() => {});
+      await syncTierToSupabase(tier).catch((e) => Sentry.captureException(e));
       if (profile) setProfile({ ...profile, subscriptionTier: tier });
       onClose();
     } catch (e: unknown) {
@@ -134,7 +135,7 @@ export function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
     try {
       const info = await restorePurchases();
       const tier = mapEntitlementToTier(info);
-      await syncTierToSupabase(tier).catch(() => {});
+      await syncTierToSupabase(tier).catch((e) => Sentry.captureException(e));
       if (profile) setProfile({ ...profile, subscriptionTier: tier });
       Alert.alert('Kjøp gjenopprettet', `Abonnement: ${tier}`);
       onClose();

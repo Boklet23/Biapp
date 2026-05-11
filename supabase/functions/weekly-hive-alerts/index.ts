@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-alerts-secret',
 };
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
@@ -22,9 +22,22 @@ interface PushMessage {
   body: string;
   data: Record<string, string>;
 }
+interface ExpoPushTicket {
+  status: 'ok' | 'error';
+  message?: string;
+  details?: { error?: string };
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+
+  // ── Auth check ──────────────────────────────────────────────────────────
+  const alertsSecret = Deno.env.get('WEEKLY_ALERTS_SECRET');
+  if (alertsSecret) {
+    if (req.headers.get('x-alerts-secret') !== alertsSecret) {
+      return new Response('Unauthorized', { status: 401, headers: CORS });
+    }
+  }
 
   try {
     const adminSupabase = createClient(
@@ -60,20 +73,24 @@ Deno.serve(async (req: Request) => {
 
     const hiveIds = (hives as HiveRow[]).map(h => h.id);
 
-    // ── 3. Recent inspections (last ~5 per hive) ─────────────────────────
+    // ── 3. Recent inspections — fetch more, then group per hive ─────────
     const { data: inspections, error: inspErr } = await adminSupabase
       .from('inspections')
       .select('hive_id, inspected_at, varroa_count, treatment_applied')
       .in('hive_id', hiveIds)
       .order('inspected_at', { ascending: false })
-      .limit(hiveIds.length * 5);
+      .limit(hiveIds.length * 10);
 
     if (inspErr) throw inspErr;
 
+    // Keep only the 3 most recent inspections per hive (results arrive newest-first)
     const inspByHive = new Map<string, InspRow[]>();
     for (const insp of (inspections ?? []) as InspRow[]) {
-      if (!inspByHive.has(insp.hive_id)) inspByHive.set(insp.hive_id, []);
-      inspByHive.get(insp.hive_id)!.push(insp);
+      const existing = inspByHive.get(insp.hive_id) ?? [];
+      if (existing.length < 3) {
+        existing.push(insp);
+        inspByHive.set(insp.hive_id, existing);
+      }
     }
 
     // ── 4. Generate alert messages ───────────────────────────────────────
@@ -86,7 +103,6 @@ Deno.serve(async (req: Request) => {
       const hivInsp = inspByHive.get(hive.id) ?? [];
       const latest = hivInsp[0];
 
-      // Overdue inspection
       const daysSince = latest
         ? Math.floor((now.getTime() - new Date(latest.inspected_at).getTime()) / DAY_MS)
         : 999;
@@ -101,7 +117,6 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      // Varroa rising trend across last 3 inspections
       const recent3 = hivInsp.slice(0, 3).filter(i => i.varroa_count != null);
       if (recent3.length === 3) {
         const [newest, mid, oldest] = recent3.map(i => i.varroa_count!);
@@ -116,7 +131,6 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      // High varroa, no treatment in last 30 days
       if (latest?.varroa_count != null && latest.varroa_count > 10) {
         const treatedRecently = hivInsp.some(
           i => i.treatment_applied &&
@@ -135,8 +149,10 @@ Deno.serve(async (req: Request) => {
 
     if (messages.length === 0) return Response.json({ sent: 0 }, { headers: CORS });
 
-    // ── 5. Send in batches of 100 ────────────────────────────────────────
+    // ── 5. Send in batches of 100, handle DeviceNotRegistered ────────────
     let sentCount = 0;
+    const invalidTokens: string[] = [];
+
     for (let i = 0; i < messages.length; i += 100) {
       const batch = messages.slice(i, i + 100);
       const res = await fetch(EXPO_PUSH_URL, {
@@ -144,10 +160,32 @@ Deno.serve(async (req: Request) => {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(batch),
       });
-      if (res.ok) sentCount += batch.length;
+
+      if (!res.ok) continue;
+
+      const json = await res.json() as { data?: ExpoPushTicket[] };
+      const tickets = json.data ?? [];
+      for (let j = 0; j < tickets.length; j++) {
+        const ticket = tickets[j];
+        if (ticket.status === 'ok') {
+          sentCount++;
+        } else if (ticket.details?.error === 'DeviceNotRegistered') {
+          invalidTokens.push(batch[j].to);
+        }
+      }
     }
 
-    console.log(`weekly-hive-alerts: sent ${sentCount}/${messages.length} notifications`);
+    // ── 6. Null out stale push tokens (best-effort) ──────────────────────
+    if (invalidTokens.length > 0) {
+      adminSupabase
+        .from('profiles')
+        .update({ push_token: null })
+        .in('push_token', invalidTokens)
+        .then(() => {})
+        .catch(() => {});
+    }
+
+    console.log(`weekly-hive-alerts: sent ${sentCount}/${messages.length} notifications, invalidated ${invalidTokens.length} tokens`);
     return Response.json({ sent: sentCount, total: messages.length }, { headers: CORS });
 
   } catch (err) {
