@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manuelt oppsett — BiVokter</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f1117;
+      color: #e8e4df;
+      line-height: 1.7;
+      padding: 0 16px 80px;
+    }
+
+    /* ── Header ── */
+    header {
+      border-bottom: 1px solid #1e2230;
+      padding: 28px 0 22px;
+      margin-bottom: 48px;
+    }
+    .header-inner {
+      max-width: 820px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo svg { width: 38px; height: 38px; }
+    .logo-text { font-size: 21px; font-weight: 700; color: #F5A623; }
+    .header-tag {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #4a5568;
+      background: #1a1d28;
+      border: 1px solid #2a2f40;
+      border-radius: 6px;
+      padding: 4px 10px;
+    }
+
+    /* ── Layout ── */
+    .container { max-width: 820px; margin: 0 auto; }
+
+    /* ── Page title ── */
+    .page-title { font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: -0.5px; }
+    .page-sub { font-size: 15px; color: #6b7280; margin-bottom: 48px; }
+
+    /* ── Progress bar ── */
+    .progress-bar {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      margin-bottom: 52px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .progress-step {
+      flex: 1;
+      min-width: 80px;
+      text-align: center;
+      padding: 10px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      border-top: 3px solid #1e2230;
+      color: #4a5568;
+      transition: border-color 0.2s;
+    }
+    .progress-step.critical { border-color: #ef4444; color: #ef4444; }
+    .progress-step.high     { border-color: #F5A623; color: #F5A623; }
+    .progress-step.medium   { border-color: #3b82f6; color: #3b82f6; }
+    .progress-step span { display: block; font-size: 18px; margin-bottom: 4px; }
+
+    /* ── Section ── */
+    .section {
+      margin-bottom: 56px;
+      scroll-margin-top: 24px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .section-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .num-critical { background: #2d1515; color: #ef4444; border: 1.5px solid #ef444430; }
+    .num-high     { background: #2a1f0a; color: #F5A623; border: 1.5px solid #F5A62330; }
+    .num-medium   { background: #0f1e35; color: #3b82f6; border: 1.5px solid #3b82f630; }
+
+    .section-title-wrap h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+    .section-title-wrap p {
+      font-size: 13px;
+      color: #6b7280;
+      margin: 0;
+    }
+    .priority-badge {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .badge-critical { background: #2d1515; color: #ef4444; border: 1px solid #ef444430; }
+    .badge-high     { background: #2a1f0a; color: #F5A623; border: 1px solid #F5A62330; }
+    .badge-medium   { background: #0f1e35; color: #3b82f6; border: 1px solid #3b82f630; }
+
+    /* ── Steps ── */
+    .steps { display: flex; flex-direction: column; gap: 12px; }
+
+    .step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #1a1d28;
+      border: 1.5px solid #2a2f40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #6b7280;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-body { flex: 1; }
+    .step-body strong {
+      display: block;
+      font-size: 15px;
+      font-weight: 700;
+      color: #e8e4df;
+      margin-bottom: 4px;
+    }
+    .step-body p {
+      font-size: 14px;
+      color: #9ca3af;
+      margin: 0 0 8px;
+      line-height: 1.6;
+    }
+    .step-body p:last-child { margin-bottom: 0; }
+
+    /* ── Code blocks ── */
+    .code-block {
+      background: #0a0c14;
+      border: 1px solid #1e2230;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 13px;
+      color: #a3e635;
+      line-height: 1.7;
+      overflow-x: auto;
+      margin: 8px 0;
+      position: relative;
+    }
+    .code-block .comment { color: #4a5568; }
+    .code-block .key { color: #60a5fa; }
+    .code-block .val { color: #f59e0b; }
+    .code-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #4a5568;
+      margin-bottom: 4px;
+    }
+
+    /* ── Info cards ── */
+    .info-card {
+      background: #13161f;
+      border: 1px solid #1e2230;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 12px 0;
+    }
+    .info-card.warn {
+      background: #1c1500;
+      border-color: #F5A62320;
+    }
+    .info-card.danger {
+      background: #150a0a;
+      border-color: #ef444420;
+    }
+    .info-card.success {
+      background: #0a1a10;
+      border-color: #22c55e20;
+    }
+
+    .info-card-header {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .info-card.warn .info-card-header    { color: #F5A623; }
+    .info-card.danger .info-card-header  { color: #ef4444; }
+    .info-card.success .info-card-header { color: #22c55e; }
+    .info-card p, .info-card li {
+      font-size: 13px;
+      color: #9ca3af;
+      margin: 0 0 4px;
+    }
+    .info-card ul { padding-left: 18px; }
+
+    /* ── Table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 14px;
+    }
+    th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #4a5568;
+      padding: 8px 12px;
+      border-bottom: 1px solid #1e2230;
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #13161f;
+      color: #c8c4c0;
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    td code {
+      font-family: 'SF Mono', monospace;
+      font-size: 12px;
+      background: #0a0c14;
+      border: 1px solid #1e2230;
+      border-radius: 4px;
+      padding: 2px 6px;
+      color: #a3e635;
+    }
+    td strong { color: #e8e4df; font-weight: 600; }
+
+    /* ── Divider ── */
+    hr {
+      border: none;
+      border-top: 1px solid #1e2230;
+      margin: 48px 0;
+    }
+
+    /* ── Summary table ── */
+    .summary-section { margin-top: 60px; }
+    .summary-section h2 {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 20px;
+    }
+    .summary-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: #13161f;
+      border: 1px solid #1e2230;
+      margin-bottom: 8px;
+    }
+    .summary-icon { font-size: 20px; flex-shrink: 0; }
+    .summary-text { flex: 1; }
+    .summary-text strong { font-size: 14px; color: #e8e4df; display: block; }
+    .summary-text span { font-size: 12px; color: #6b7280; }
+    .summary-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 5px;
+      white-space: nowrap;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 80px;
+      border-top: 1px solid #1e2230;
+      padding-top: 24px;
+      text-align: center;
+    }
+    footer p { font-size: 13px; color: #4a5568; }
+    footer a { color: #F5A623; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#F5A623"/>
+            <stop offset="100%" stop-color="#D4890A"/>
+          </linearGradient>
+        </defs>
+        <polygon points="50,5 93,27.5 93,72.5 50,95 7,72.5 7,27.5" fill="url(#g)"/>
+        <ellipse cx="50" cy="48" rx="10" ry="14" fill="#FFF3DC"/>
+        <rect x="41" y="46" width="18" height="3" fill="#D4890A" rx="1"/>
+        <rect x="41" y="51" width="18" height="3" fill="#D4890A" rx="1"/>
+        <ellipse cx="36" cy="39" rx="10" ry="5" fill="#FFF3DC" opacity="0.8" transform="rotate(-20 36 39)"/>
+        <ellipse cx="64" cy="39" rx="10" ry="5" fill="#FFF3DC" opacity="0.8" transform="rotate(20 64 39)"/>
+        <circle cx="50" cy="34" r="6" fill="#FFF3DC"/>
+      </svg>
+      <span class="logo-text">BiVokter</span>
+    </div>
+    <span class="header-tag">Intern — Ikke publiser</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <h1 class="page-title">Manuelt oppsett</h1>
+  <p class="page-sub">Alt som ikke kan gjøres i kode — steg for steg i riktig rekkefølge.</p>
+
+  <!-- Progress overview -->
+  <div class="progress-bar">
+    <div class="progress-step critical"><span>🔐</span>Alerts-secret</div>
+    <div class="progress-step critical"><span>🔗</span>RevenueCat</div>
+    <div class="progress-step high"><span>📄</span>GitHub Pages</div>
+    <div class="progress-step high"><span>🏪</span>Play Store</div>
+    <div class="progress-step medium"><span>🎨</span>App-ikon</div>
+    <div class="progress-step medium"><span>🚀</span>Prod-build</div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════
+       OPPGAVE 1 — WEEKLY ALERTS SECRET
+  ═══════════════════════════════════════════ -->
+  <div class="section" id="alerts-secret">
+    <div class="section-header">
+      <div class="section-num num-critical">1</div>
+      <div class="section-title-wrap">
+        <h2>weekly-hive-alerts — Sikkerhetsnøkkel</h2>
+        <p>Beskytter cron-jobben mot uautorisert tilgang</p>
+      </div>
+      <span class="priority-badge badge-critical">Kritisk — gjør nå</span>
+    </div>
+
+    <div class="info-card danger">
+      <div class="info-card-header">⚠️ Bakgrunn</div>
+      <p>Uten dette kan hvem som helst som kjenner URL-en utløse mass-push-varsler til alle brukere. Nøkkelen er nå satt opp i koden — du trenger bare å sette de faktiske verdiene.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Generer et tilfeldig token</strong>
+          <p>Kjør dette i terminalen (trykk <kbd>!</kbd> foran i Claude Code-terminalen):</p>
+          <div class="code-block">node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"</div>
+          <p>Du får en lang hex-streng. Kopier den og ta vare på den — du bruker den i steg 2, 3 og 4.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Legg inn i Supabase — Edge Function secret</strong>
+          <p>
+            Gå til <strong>supabase.com/dashboard</strong> → prosjekt <code>zujvhbnuqocquthbujmp</code><br>
+            → <strong>Edge Functions</strong> → <strong>weekly-hive-alerts</strong> → <strong>Secrets</strong>-fanen<br>
+            → <strong>Add new secret</strong>
+          </p>
+          <table>
+            <tr><th>Felt</th><th>Verdi</th></tr>
+            <tr><td>Name</td><td><code>WEEKLY_ALERTS_SECRET</code></td></tr>
+            <tr><td>Value</td><td>tokenet fra steg 1</td></tr>
+          </table>
+          <p>Klikk <strong>Save</strong>.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Legg inn i Postgres — databasekonfig</strong>
+          <p>Gå til <strong>SQL Editor</strong> og kjør disse tre kommandoene én etter én:</p>
+          <div class="code-label">Erstatt verdiene i &lt; &gt;</div>
+          <div class="code-block"><span class="comment">-- 1. Alerts-nøkkelen (fra steg 1)</span>
+ALTER DATABASE postgres SET app.weekly_alerts_secret = '<span class="val">ditt-token-her</span>';
+
+<span class="comment">-- 2. Supabase-URL</span>
+ALTER DATABASE postgres SET app.supabase_url = '<span class="val">https://zujvhbnuqocquthbujmp.supabase.co</span>';
+
+<span class="comment">-- 3. Service Role Key (Settings → API → service_role)</span>
+ALTER DATABASE postgres SET app.supabase_service_role_key = '<span class="val">din-service-role-key</span>';</div>
+          <div class="info-card warn">
+            <div class="info-card-header">🔑 Finn service_role key</div>
+            <p>Supabase Dashboard → <strong>Settings</strong> → <strong>API</strong> → <strong>Project API keys</strong> → <strong>service_role</strong> (klikk «Reveal»)</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Kjør migrasjon 0018</strong>
+          <p>Dette oppretter cron-jobben på nytt med <code>x-alerts-secret</code>-headeren:</p>
+          <div class="code-block">npx supabase db push</div>
+          <p>Alternativt: kopier innholdet fra <code>supabase/migrations/0018_weekly_alerts_secret.sql</code> og kjør det direkte i SQL Editor.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>Verifiser</strong>
+          <p>Test funksjonen manuelt fra Supabase Dashboard → Edge Functions → <strong>weekly-hive-alerts</strong> → <strong>Invoke</strong>. Legg til headeren <code>x-alerts-secret: &lt;ditt-token&gt;</code> — du skal få HTTP 200. Uten headeren skal du få HTTP 401.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ══════════════════════════════════════════
+       OPPGAVE 2 — REVENUECAT WEBHOOK
+  ═══════════════════════════════════════════ -->
+  <div class="section" id="revenuecat">
+    <div class="section-header">
+      <div class="section-num num-critical">2</div>
+      <div class="section-title-wrap">
+        <h2>RevenueCat webhook</h2>
+        <p>Automatisk synk av abonnementsstatus ved kansellering og fornyelse</p>
+      </div>
+      <span class="priority-badge badge-critical">Kritisk — gjør nå</span>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Legg inn REVENUECAT_WEBHOOK_SECRET i Supabase</strong>
+          <p>Gå til <strong>Edge Functions</strong> → <strong>revenuecat-webhook</strong> → <strong>Secrets</strong><br>
+          Generer et nytt token (samme metode som oppgave 1, steg 1) og legg det inn:</p>
+          <table>
+            <tr><th>Felt</th><th>Verdi</th></tr>
+            <tr><td>Name</td><td><code>REVENUECAT_WEBHOOK_SECRET</code></td></tr>
+            <tr><td>Value</td><td>nytt tilfeldig token</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Konfigurer webhook i RevenueCat Dashboard</strong>
+          <p>Gå til <strong>app.revenuecat.com</strong> → ditt prosjekt → <strong>Integrations</strong> → <strong>Webhooks</strong> → <strong>Add webhook</strong></p>
+          <table>
+            <tr><th>Felt</th><th>Verdi</th></tr>
+            <tr><td>Webhook URL</td><td><code>https://zujvhbnuqocquthbujmp.supabase.co/functions/v1/revenuecat-webhook</code></td></tr>
+            <tr><td>Authorization header</td><td><code>Bearer &lt;REVENUECAT_WEBHOOK_SECRET&gt;</code></td></tr>
+          </table>
+          <p>Aktiver disse events: <code>INITIAL_PURCHASE</code>, <code>RENEWAL</code>, <code>CANCELLATION</code>, <code>EXPIRATION</code>, <code>BILLING_ISSUE</code></p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Test webhook</strong>
+          <p>Klikk <strong>Test</strong>-knappen i RevenueCat. Sjekk Supabase Dashboard → <strong>Edge Functions</strong> → <strong>Logs</strong> og bekreft at du ser en vellykket request.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ══════════════════════════════════════════
+       OPPGAVE 3 — GITHUB PAGES
+  ═══════════════════════════════════════════ -->
+  <div class="section" id="github-pages">
+    <div class="section-header">
+      <div class="section-num num-high">3</div>
+      <div class="section-title-wrap">
+        <h2>GitHub Pages — Vilkår og personvern</h2>
+        <p>Gjør ToS og personvernerklæring tilgjengelig på nett (kreves for Play Store)</p>
+      </div>
+      <span class="priority-badge badge-high">Høy prioritet</span>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Push til GitHub</strong>
+          <p><code>docs/terms.html</code> er allerede committet. Kjør bare:</p>
+          <div class="code-block">git push origin master</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Aktiver GitHub Pages</strong>
+          <p>Gå til <strong>github.com/boklet23/biapp</strong> → <strong>Settings</strong> → <strong>Pages</strong></p>
+          <table>
+            <tr><th>Felt</th><th>Verdi</th></tr>
+            <tr><td>Source</td><td>Deploy from a branch</td></tr>
+            <tr><td>Branch</td><td><code>master</code></td></tr>
+            <tr><td>Folder</td><td><code>/docs</code></td></tr>
+          </table>
+          <p>Klikk <strong>Save</strong>. Vent 2–3 minutter.</p>
+          <div class="info-card success">
+            <div class="info-card-header">✅ Hvis Pages allerede er aktivert</div>
+            <p>Da er det nok å pushe. Sidene er live automatisk etter neste push.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Verifiser at begge URL-er er live</strong>
+          <table>
+            <tr><th>Side</th><th>URL</th></tr>
+            <tr><td>Personvern</td><td><code>https://boklet23.github.io/biapp/privacy</code></td></tr>
+            <tr><td>Vilkår for bruk</td><td><code>https://boklet23.github.io/biapp/terms</code></td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ══════════════════════════════════════════
+       OPPGAVE 4 — GOOGLE PLAY + IAP
+  ═══════════════════════════════════════════ -->
+  <div class="section" id="play-store">
+    <div class="section-header">
+      <div class="section-num num-high">4</div>
+      <div class="section-title-wrap">
+        <h2>Google Play — AAB og abonnementsprodukter</h2>
+        <p>Last opp første build og opprett kjøpbare produkter</p>
+      </div>
+      <span class="priority-badge badge-high">Høy prioritet</span>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Bygg AAB (hvis ingen preview-build er klar)</strong>
+          <p>Preview-profilen er nå konfigurert for AAB-format:</p>
+          <div class="code-block">npx eas build --profile preview --platform android --non-interactive</div>
+          <p>Last ned <code>.aab</code>-filen fra EAS Dashboard når bygget er ferdig.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Last opp AAB til Play Console</strong>
+          <p>Gå til <strong>play.google.com/console</strong> → velg appen <code>no.biapp.app</code><br>
+          → <strong>Testing</strong> → <strong>Internal testing</strong> → <strong>Create new release</strong><br>
+          → last opp <code>.aab</code>-filen → fyll inn release notes → <strong>Save</strong> → <strong>Review</strong> → <strong>Start rollout</strong></p>
+          <div class="info-card warn">
+            <div class="info-card-header">⚠️ Første opplasting</div>
+            <p>Google Play krever minst én godkjent AAB-opplasting for å kunne opprette In-App Products. Du trenger ikke gå til produksjon — Internal testing er nok.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Opprett abonnementsprodukter</strong>
+          <p>Venstre meny → <strong>Monetize</strong> → <strong>Products</strong> → <strong>Subscriptions</strong> → <strong>Create subscription</strong></p>
+          <table>
+            <tr><th>Product ID</th><th>Navn</th><th>Pris</th><th>Periode</th></tr>
+            <tr><td><code>hobbyist_monthly</code></td><td>Hobbyist — månedlig</td><td>NOK 49</td><td>1 måned</td></tr>
+            <tr><td><code>hobbyist_annual</code></td><td>Hobbyist — årlig</td><td>NOK 399</td><td>1 år</td></tr>
+            <tr><td><code>profesjonell_monthly</code></td><td>Profesjonell — månedlig</td><td>NOK 149</td><td>1 måned</td></tr>
+            <tr><td><code>profesjonell_annual</code></td><td>Profesjonell — årlig</td><td>NOK 1 190</td><td>1 år</td></tr>
+            <tr><td><code>lag_monthly</code></td><td>Lag — månedlig</td><td>NOK 499</td><td>1 måned</td></tr>
+            <tr><td><code>lag_annual</code></td><td>Lag — årlig</td><td>NOK 3 990</td><td>1 år</td></tr>
+          </table>
+          <p>Sett hvert produkt til status <strong>Active</strong>.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Konfigurer produktene i RevenueCat</strong>
+          <p>Gå til <strong>app.revenuecat.com</strong> → <strong>Products</strong> → <strong>Google Play</strong><br>
+          → importer produktene (eller legg til manuelt med samme Product ID-er)</p>
+          <p>Deretter under <strong>Entitlements</strong>:</p>
+          <table>
+            <tr><th>Entitlement ID</th><th>Produkter som hører til</th></tr>
+            <tr><td><code>hobbyist</code></td><td>hobbyist_monthly, hobbyist_annual</td></tr>
+            <tr><td><code>profesjonell</code></td><td>profesjonell_monthly, profesjonell_annual</td></tr>
+            <tr><td><code>lag</code></td><td>lag_monthly, lag_annual</td></tr>
+          </table>
+          <p>Under <strong>Offerings</strong>: opprett ett offering og legg til packages.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ══════════════════════════════════════════
+       OPPGAVE 5 — APP-IKON OG SPLASH
+  ═══════════════════════════════════════════ -->
+  <div class="section" id="app-icon">
+    <div class="section-header">
+      <div class="section-num num-medium">5</div>
+      <div class="section-title-wrap">
+        <h2>App-ikon og splash screen</h2>
+        <p>Påkrevd for produksjonsopplasting til Google Play</p>
+      </div>
+      <span class="priority-badge badge-medium">Medium prioritet</span>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Lag ikonene</strong>
+          <p>Bruk Figma, Canva eller Adobe Express. Eksporter som PNG.</p>
+          <table>
+            <tr><th>Fil</th><th>Størrelse</th><th>Format</th></tr>
+            <tr><td><code>assets/icon.png</code></td><td>1024 × 1024 px</td><td>PNG, ingen transparens</td></tr>
+            <tr><td><code>assets/android-icon-foreground.png</code></td><td>1024 × 1024 px</td><td>PNG med transparens — bare forgrunnsmotivet</td></tr>
+            <tr><td><code>assets/splash-icon.png</code></td><td>1284 × 2778 px</td><td>PNG</td></tr>
+          </table>
+          <div class="info-card">
+            <div class="info-card-header" style="color:#6b7280;">ℹ️ Android adaptive icon</div>
+            <p>Bakgrunnsfargen er allerede satt til <code>#1A1A2E</code> i <code>app.json</code>. Foreground-filen skal bare inneholde selve logo-motivet uten bakgrunn.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Erstatt filene i assets/-mappen</strong>
+          <p>Plasser de nye filene i <code>assets/</code>-mappen og overskriv de eksisterende.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Commit og push</strong>
+          <div class="code-block">git add assets/icon.png assets/android-icon-foreground.png assets/splash-icon.png
+git commit -m "feat: app-ikon og splash screen"
+git push origin master</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ══════════════════════════════════════════
+       OPPGAVE 6 — PRODUKSJONS-BUILD
+  ═══════════════════════════════════════════ -->
+  <div class="section" id="prod-build">
+    <div class="section-header">
+      <div class="section-num num-medium">6</div>
+      <div class="section-title-wrap">
+        <h2>Produksjons-EAS-build</h2>
+        <p>Siste steg — kun etter at alt over er på plass</p>
+      </div>
+      <span class="priority-badge badge-medium">Siste steg</span>
+    </div>
+
+    <div class="info-card danger">
+      <div class="info-card-header">⛔ Ikke bygg produksjon før</div>
+      <ul>
+        <li>App-ikon er laget og lagt inn</li>
+        <li>GitHub Pages er live (begge URL-er)</li>
+        <li>RevenueCat-produktene er konfigurert</li>
+        <li>Webhook fungerer</li>
+      </ul>
+    </div>
+
+    <div class="steps" style="margin-top:16px;">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Start produksjonsbuild</strong>
+          <div class="code-block">npx eas build --profile production --platform android --non-interactive</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Last opp til Google Play — Production</strong>
+          <p>Last ned <code>.aab</code>-filen fra EAS Dashboard.<br>
+          Play Console → <strong>Release</strong> → <strong>Production</strong> → <strong>Create new release</strong><br>
+          → last opp AAB → fyll inn launch notes → <strong>Start rollout to production</strong></p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Verifiser kjøpsflyt</strong>
+          <p>Test hele kjøpsflyten med en ekte Google-konto (Internal testing-spor) og verifiser at tier oppdateres korrekt i Supabase.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ══════════════════════════════════════════
+       OPPSUMMERING
+  ═══════════════════════════════════════════ -->
+  <div class="summary-section">
+    <h2>Oppsummering</h2>
+
+    <div class="summary-row">
+      <span class="summary-icon">🔐</span>
+      <div class="summary-text">
+        <strong>weekly-hive-alerts sikkerhetsnøkkel</strong>
+        <span>3 steder: Edge Function secret + ALTER DATABASE + cron-jobb migrasjon</span>
+      </div>
+      <span class="summary-badge badge-critical">Kritisk</span>
+    </div>
+
+    <div class="summary-row">
+      <span class="summary-icon">🔗</span>
+      <div class="summary-text">
+        <strong>RevenueCat webhook</strong>
+        <span>Secret i Supabase + URL i RevenueCat Dashboard + test</span>
+      </div>
+      <span class="summary-badge badge-critical">Kritisk</span>
+    </div>
+
+    <div class="summary-row">
+      <span class="summary-icon">📄</span>
+      <div class="summary-text">
+        <strong>GitHub Pages</strong>
+        <span>git push → GitHub Pages aktiveres → begge URL-er live</span>
+      </div>
+      <span class="summary-badge badge-high">Høy</span>
+    </div>
+
+    <div class="summary-row">
+      <span class="summary-icon">🏪</span>
+      <div class="summary-text">
+        <strong>Google Play + RevenueCat-produkter</strong>
+        <span>AAB-opplasting + 6 abonnementsprodukter + entitlements</span>
+      </div>
+      <span class="summary-badge badge-high">Høy</span>
+    </div>
+
+    <div class="summary-row">
+      <span class="summary-icon">🎨</span>
+      <div class="summary-text">
+        <strong>App-ikon og splash screen</strong>
+        <span>1024×1024 PNG for ikon + adaptive foreground + splash</span>
+      </div>
+      <span class="summary-badge badge-medium">Medium</span>
+    </div>
+
+    <div class="summary-row">
+      <span class="summary-icon">🚀</span>
+      <div class="summary-text">
+        <strong>Produksjons-EAS-build + Play Store-opplasting</strong>
+        <span>Gjøres sist — etter at alt over er verifisert</span>
+      </div>
+      <span class="summary-badge badge-medium">Siste</span>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <p>BiVokter — Internt oppsettdokument · Oppdatert 11. mai 2026 · <a href="mailto:andre.haukeland@gmail.com">andre.haukeland@gmail.com</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
