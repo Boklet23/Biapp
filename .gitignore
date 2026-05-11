@@ -44,3 +44,6 @@ yarn-error.*
 
 # Google Play service account (sensitive)
 google-play-service-account.json
+
+# Automation prompt (contains credentials — local only)
+scripts/automate-remaining.md
