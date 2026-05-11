@@ -397,18 +397,21 @@
   <div class="completed-banner">
     <h3>✅ Allerede gjort — ikke gjør igjen</h3>
     <div class="completed-grid">
+      <div class="completed-item"><span>🛡️</span> Migrasjoner 0001–0018 kjørt i produksjon</div>
       <div class="completed-item"><span>🔐</span> weekly-alerts secret satt og deployet (v3)</div>
       <div class="completed-item"><span>🗓️</span> pg_cron-jobb med x-alerts-secret (migrasjon 0018)</div>
       <div class="completed-item"><span>📄</span> GitHub Pages live — terms + privacy</div>
-      <div class="completed-item"><span>🎨</span> App-ikon 1024×1024 generert og committet</div>
+      <div class="completed-item"><span>🎨</span> App-ikon 1024×1024 + Android adaptive icon</div>
+      <div class="completed-item"><span>🖼️</span> Splash screen (1284×2778 PNG) generert og committet</div>
       <div class="completed-item"><span>⚙️</span> eas.json submit-konfig (serviceAccountKeyPath)</div>
-      <div class="completed-item"><span>🔄</span> EAS Workflow YAML (auto-bygg ved push)</div>
-      <div class="completed-item"><span>📦</span> Subscription-script klar (scripts/create-play-subscriptions.js)</div>
-      <div class="completed-item"><span>🛡️</span> Migrasjoner 0001–0018 kjørt</div>
+      <div class="completed-item"><span>🔄</span> EAS Workflow YAML (auto-bygg ved push til master)</div>
+      <div class="completed-item"><span>📦</span> scripts/create-play-subscriptions.js klar</div>
+      <div class="completed-item"><span>🤖</span> scripts/setup-gcloud-serviceaccount.ps1 klar</div>
       <div class="completed-item"><span>🔑</span> REVENUECAT_WEBHOOK_SECRET satt i Supabase</div>
-      <div class="completed-item"><span>🏷️</span> RevenueCat entitlements konfigurert (hobbyist, profesjonell, lag)</div>
-      <div class="completed-item"><span>🎁</span> RevenueCat default offering + 6 pakker opprettet via API</div>
-      <div class="completed-item"><span>🖼️</span> Splash screen generert (1284×2778 PNG) og committet</div>
+      <div class="completed-item"><span>🏷️</span> RevenueCat: 6 produkter opprettet via API</div>
+      <div class="completed-item"><span>🔖</span> RevenueCat: 3 entitlements konfigurert og koblet</div>
+      <div class="completed-item"><span>🎁</span> RevenueCat: default offering + 6 pakker opprettet</div>
+      <div class="completed-item"><span>🏗️</span> EAS production build kjørt — AAB klar for opplasting</div>
     </div>
   </div>
 
@@ -418,7 +421,7 @@
     <div class="progress-step critical"><span>🔑</span>Service Account</div>
     <div class="progress-step high"><span>📤</span>Første AAB</div>
     <div class="progress-step high"><span>📦</span>Produkter</div>
-    <div class="progress-step medium"><span>🚀</span>Prod-build</div>
+    <div class="progress-step medium"><span>🚀</span>Submit</div>
   </div>
 
 
@@ -517,12 +520,13 @@
     </div>
 
     <div class="info-card auto">
-      <div class="info-card-header">🤖 Hva dette låser opp</div>
-      <p>Når dette er gjort kan du kjøre:</p>
+      <div class="info-card-header">🤖 Halvautomatisert — PowerShell-script er klar</div>
+      <p><code>scripts/setup-gcloud-serviceaccount.ps1</code> gjør steg 1 automatisk. Kjøres i PowerShell etter at du er logget inn i gcloud.</p>
+      <p style="margin-top:8px;">Når dette er gjort låses opp:</p>
       <ul>
-        <li><code>npx eas build --profile production --auto-submit --non-interactive</code> — bygg + opplasting i én kommando</li>
-        <li><code>node scripts/create-play-subscriptions.js</code> — oppretter alle 6 abonnementsprodukter automatisk</li>
-        <li>EAS Workflow tar over fremtidige opplastinger automatisk ved push til master</li>
+        <li><code>node scripts/create-play-subscriptions.js</code> — oppretter alle 6 Google Play-produkter</li>
+        <li><code>npx eas submit --platform android --latest</code> — laster opp AAB til Play Store</li>
+        <li>EAS Workflow tar over fremtidige opplastinger ved push til master</li>
       </ul>
     </div>
 
@@ -530,22 +534,17 @@
       <div class="step">
         <div class="step-num">1</div>
         <div class="step-body">
-          <strong>Opprett service account i Google Cloud Console</strong>
-          <p>Følg Expo sin guide steg for steg:<br>
-          <code>https://github.com/expo/fyi/blob/main/creating-google-service-account.md</code></p>
-          <p>Kort oppsummert:</p>
-          <table>
-            <tr><th>Steg</th><th>Handling</th></tr>
-            <tr><td>1</td><td>Gå til <strong>console.cloud.google.com</strong> → opprett eller velg et prosjekt</td></tr>
-            <tr><td>2</td><td>Søk etter «Google Play Android Developer API» → <strong>Enable</strong></td></tr>
-            <tr><td>3</td><td>IAM &amp; Admin → Service Accounts → <strong>Create service account</strong></td></tr>
-            <tr><td>4</td><td>Gi den et navn, f.eks. <code>biapp-play-submit</code></td></tr>
-            <tr><td>5</td><td>Under Keys → <strong>Add key → JSON</strong> → last ned filen</td></tr>
-            <tr><td>6</td><td>Lagre filen som <code>google-play-service-account.json</code> i prosjektets rotmappe</td></tr>
-          </table>
-          <div class="info-card success">
-            <div class="info-card-header">✅ Filen er allerede i .gitignore</div>
-            <p>Den vil aldri bli committet til GitHub ved et uhell.</p>
+          <strong>Logg inn i gcloud og kjør PS1-scriptet</strong>
+          <p>Åpne PowerShell og kjør disse to kommandoene:</p>
+          <div class="code-block"><span class="comment"># Interaktiv innlogging (åpner nettleser)</span>
+gcloud auth login
+
+<span class="comment"># Scriptet oppretter prosjekt, aktiverer API, service account og laster ned JSON</span>
+.\scripts\setup-gcloud-serviceaccount.ps1</div>
+          <p>Scriptet lagrer nøkkelen som <code>google-play-service-account.json</code> i prosjektrotmappen (allerede i .gitignore).</p>
+          <div class="info-card warn">
+            <div class="info-card-header">⚠️ gcloud må være installert</div>
+            <p>Sjekk: <code>gcloud --version</code>. Hvis ikke installert: <code>winget install Google.CloudSDK</code></p>
           </div>
         </div>
       </div>
@@ -553,14 +552,14 @@
       <div class="step">
         <div class="step-num">2</div>
         <div class="step-body">
-          <strong>Link service account til Google Play Console</strong>
+          <strong>Link service account til Google Play Console (manuelt — Google-krav)</strong>
           <p>Gå til <strong>play.google.com/console</strong> → <strong>Setup</strong> → <strong>API access</strong><br>
-          → velg det Google Cloud-prosjektet du brukte ovenfor → <strong>Grant access</strong><br>
-          → finn service account-eposten → gi rollen <strong>Release Manager</strong><br>
-          → klikk <strong>Apply</strong></p>
+          → velg Google Cloud-prosjektet <code>biapp-play-2026</code><br>
+          → finn <code>biapp-play-submit@biapp-play-2026.iam.gserviceaccount.com</code><br>
+          → gi rollen <strong>Release Manager</strong> → klikk <strong>Apply</strong></p>
           <div class="info-card warn">
             <div class="info-card-header">⏱️ Forsinkelse</div>
-            <p>Det kan ta opptil 24 timer før tilgangen er aktiv første gang. I praksis er det som regel under en time.</p>
+            <p>Det kan ta opptil en time før tilgangen er aktiv første gang.</p>
           </div>
         </div>
       </div>
@@ -582,36 +581,54 @@
       <span class="priority-badge badge-high">Høy — kun én gang</span>
     </div>
 
+    <div class="info-card success">
+      <div class="info-card-header">✅ Production AAB er allerede bygget</div>
+      <p>EAS production build ble kjørt 11. mai 2026 og er ferdig. Last ned AAB-en direkte — du trenger ikke bygge på nytt.</p>
+    </div>
+
     <div class="info-card warn">
       <div class="info-card-header">⚠️ Google-krav</div>
-      <p>Google Play API blokkerer oppretting av abonnementsprodukter og automatisk submit inntil én AAB er manuelt godkjent. Etter dette tar EAS over.</p>
+      <p>Google Play API blokkerer oppretting av abonnementsprodukter og automatisk EAS submit inntil én AAB er manuelt lastet opp. Etter dette tar EAS Workflow over alle fremtidige opplastinger.</p>
     </div>
 
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>
         <div class="step-body">
-          <strong>Bygg en preview-AAB (hvis ingen klar)</strong>
-          <div class="code-block">npx eas build --profile preview --platform android --non-interactive</div>
-          <p>Last ned <code>.aab</code>-filen fra EAS Dashboard når bygget er ferdig (~10 min).</p>
+          <strong>Last ned AAB fra EAS Dashboard</strong>
+          <p>Gå til <strong>expo.dev</strong> → ditt prosjekt <code>@boklet23/biapp</code> → <strong>Builds</strong><br>
+          → finn production-bygget fra 11. mai 2026 → last ned <code>.aab</code>-filen.</p>
+          <p>Alternativt via CLI:</p>
+          <div class="code-block">npx eas build:list --platform android --profile production --limit 1</div>
+          <p>Kopier download-URL og last ned med nettleseren eller curl.</p>
         </div>
       </div>
 
       <div class="step">
         <div class="step-num">2</div>
         <div class="step-body">
-          <strong>Last opp til intern testing</strong>
-          <p>Gå til <strong>play.google.com/console</strong> → velg appen <code>no.biapp.app</code><br>
-          → <strong>Testing</strong> → <strong>Internal testing</strong> → <strong>Create new release</strong><br>
-          → last opp <code>.aab</code>-filen → fyll inn release notes → <strong>Save</strong> → <strong>Review release</strong> → <strong>Start rollout to Internal testing</strong></p>
+          <strong>Opprett app-oppføring i Play Console (hvis ikke gjort)</strong>
+          <p>Gå til <strong>play.google.com/console</strong> → <strong>Create app</strong><br>
+          → Package name: <code>no.biapp.app</code> → App name: <strong>BiVokter</strong><br>
+          → fyll inn kategori (Lifestyle), innholdsrating, og distribusjonsstatus.</p>
         </div>
       </div>
 
       <div class="step">
         <div class="step-num">3</div>
         <div class="step-body">
+          <strong>Last opp AAB til intern testing</strong>
+          <p>I Play Console → <code>no.biapp.app</code> → <strong>Testing</strong> → <strong>Internal testing</strong><br>
+          → <strong>Create new release</strong> → last opp <code>.aab</code>-filen<br>
+          → fyll inn release notes → <strong>Save</strong> → <strong>Review release</strong> → <strong>Start rollout to Internal testing</strong></p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
           <strong>Vent på godkjenning</strong>
-          <p>Intern testing godkjennes vanligvis innen noen timer. Du vil få e-post fra Google Play.</p>
+          <p>Intern testing godkjennes vanligvis innen noen timer. Du får e-post fra Google Play.</p>
         </div>
       </div>
     </div>
@@ -689,14 +706,20 @@ node scripts/create-play-subscriptions.js</div>
       </ul>
     </div>
 
+    <div class="info-card success">
+      <div class="info-card-header">✅ Production build er allerede bygget</div>
+      <p>AAB fra 11. mai 2026 finnes på EAS Dashboard. Når alt over er på plass trenger du kun å kjøre submit — ikke ny build.</p>
+    </div>
+
     <div class="steps" style="margin-top:16px;">
       <div class="step">
         <div class="step-num">1</div>
         <div class="step-body">
-          <strong>Bygg + last opp automatisk (én kommando)</strong>
-          <p>Service account JSON må ligge i prosjektmappen først:</p>
-          <div class="code-block">npx eas build --profile production --platform android --auto-submit --non-interactive</div>
-          <p>EAS bygger AAB-en og laster den rett opp til <strong>Internal testing</strong> i Play Console.</p>
+          <strong>Submit siste production-build</strong>
+          <p>Når <code>google-play-service-account.json</code> er på plass:</p>
+          <div class="code-block"><span class="comment"># Submit det siste ferdigbygde production-bygget:</span>
+npx eas submit --platform android --latest --profile production</div>
+          <p>EAS laster opp AAB-en til <strong>Internal testing</strong> i Play Console automatisk.</p>
         </div>
       </div>
 
@@ -704,7 +727,7 @@ node scripts/create-play-subscriptions.js</div>
         <div class="step-num">2</div>
         <div class="step-body">
           <strong>Fremover: automatisk ved push til master</strong>
-          <p>EAS Workflow-filen (<code>.eas/workflows/build-submit.yml</code>) kjøres automatisk ved neste push — du trenger aldri kjøre manuell build igjen.</p>
+          <p>EAS Workflow (<code>.eas/workflows/build-submit.yml</code>) bygger og submitter automatisk ved neste push til master — ingen manuell handling nødvendig.</p>
           <div class="info-card auto">
             <div class="info-card-header">🤖 EAS Workflow er aktiv</div>
             <p>Se status i <strong>expo.dev</strong> → ditt prosjekt → <strong>Workflows</strong>.</p>
@@ -716,7 +739,7 @@ node scripts/create-play-subscriptions.js</div>
         <div class="step-num">3</div>
         <div class="step-body">
           <strong>Verifiser kjøpsflyt</strong>
-          <p>Test med en ekte Google-konto på Internal testing-sporet. Verifiser at tier oppdateres korrekt i Supabase etter kjøp.</p>
+          <p>Test med en ekte Google-konto på Internal testing-sporet. Kjøp et abonnement og verifiser at <code>subscription_tier</code> oppdateres korrekt i Supabase etter kjøpet.</p>
         </div>
       </div>
     </div>
@@ -778,8 +801,8 @@ node scripts/create-play-subscriptions.js</div>
     <div class="summary-row done">
       <span class="summary-icon">✅</span>
       <div class="summary-text">
-        <strong>RevenueCat entitlements + offerings konfigurert via API</strong>
-        <span>3 entitlements, default offering, 6 pakker opprettet — gjenstår produktkobling</span>
+        <strong>RevenueCat: produkter + entitlements + offerings via API</strong>
+        <span>6 produkter, 3 entitlements, default offering med 6 pakker — gjenstår produktkobling i dashboard</span>
       </div>
       <span class="summary-badge badge-done">Ferdig</span>
     </div>
@@ -787,8 +810,17 @@ node scripts/create-play-subscriptions.js</div>
     <div class="summary-row done">
       <span class="summary-icon">✅</span>
       <div class="summary-text">
-        <strong>Splash screen generert og committet</strong>
-        <span>assets/splash-icon.png (1284×2778 PNG) med BiVokter-branding</span>
+        <strong>Splash screen + app-ikon</strong>
+        <span>assets/splash-icon.png og assets/icon.png generert og committet</span>
+      </div>
+      <span class="summary-badge badge-done">Ferdig</span>
+    </div>
+
+    <div class="summary-row done">
+      <span class="summary-icon">✅</span>
+      <div class="summary-text">
+        <strong>EAS production build kjørt</strong>
+        <span>AAB klar på expo.dev — 11. mai 2026</span>
       </div>
       <span class="summary-badge badge-done">Ferdig</span>
     </div>
@@ -806,7 +838,7 @@ node scripts/create-play-subscriptions.js</div>
       <span class="summary-icon">🔑</span>
       <div class="summary-text">
         <strong>Google Service Account (steg 2)</strong>
-        <span>Opprett i Cloud Console → last ned JSON → link til Play Console</span>
+        <span>gcloud auth login → PS1-script → link til Play Console</span>
       </div>
       <span class="summary-badge badge-critical">Kritisk</span>
     </div>
@@ -815,7 +847,7 @@ node scripts/create-play-subscriptions.js</div>
       <span class="summary-icon">📤</span>
       <div class="summary-text">
         <strong>Første manuelle AAB-opplasting (steg 3)</strong>
-        <span>Kreves av Google én gang — EAS tar over etter dette</span>
+        <span>Last ned AAB fra EAS Dashboard → last opp i Play Console Internal testing</span>
       </div>
       <span class="summary-badge badge-high">Høy</span>
     </div>
@@ -824,7 +856,7 @@ node scripts/create-play-subscriptions.js</div>
       <span class="summary-icon">📦</span>
       <div class="summary-text">
         <strong>Google Play abonnementsprodukter (steg 4)</strong>
-        <span>Kjør create-play-subscriptions.js etter service account er klar</span>
+        <span>node scripts/create-play-subscriptions.js — etter service account er klar</span>
       </div>
       <span class="summary-badge badge-high">Høy</span>
     </div>
@@ -832,8 +864,8 @@ node scripts/create-play-subscriptions.js</div>
     <div class="summary-row">
       <span class="summary-icon">🚀</span>
       <div class="summary-text">
-        <strong>Produksjons-build + auto-submit (steg 5)</strong>
-        <span>eas build --auto-submit — gjøres sist</span>
+        <strong>Submit til Play Store (steg 5)</strong>
+        <span>npx eas submit --latest — siste production-build submitteres automatisk</span>
       </div>
       <span class="summary-badge badge-medium">Siste</span>
     </div>
