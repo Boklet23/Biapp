@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BiVokter — DALL-E 3 bildeprompts</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; padding: 40px 20px; }
+  h1 { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+  .subtitle { color: #666; font-size: 14px; margin-bottom: 40px; }
+  .card { background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .number { background: #f5a623; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+  .name { font-size: 18px; font-weight: 700; }
+  .slug { font-size: 12px; color: #999; margin-top: 2px; }
+  .prompt-box { background: #f8f8f6; border-radius: 10px; padding: 16px; font-size: 14px; line-height: 1.7; color: #333; border-left: 3px solid #f5a623; }
+  .copy-btn { margin-top: 12px; padding: 8px 16px; background: #f5a623; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+  .copy-btn:hover { opacity: 0.85; }
+  .copy-btn.copied { background: #27ae60; }
+  .tip { background: #fff8e1; border-radius: 12px; padding: 16px 20px; margin-bottom: 32px; font-size: 13px; line-height: 1.6; color: #555; border: 1px solid #ffe082; }
+  .tip strong { color: #333; }
+  @media (max-width: 600px) { body { padding: 20px 16px; } }
+</style>
+</head>
+<body>
+
+<h1>DALL-E 3 — BiVokter bildeprompts</h1>
+<p class="subtitle">10 realistiske makrofoto-prompts for sykdomsguiden · Lim inn i ChatGPT, DALL-E 3 eller GPT-4o Image</p>
+
+<div class="tip">
+  <strong>Slik bruker du disse:</strong> Kopier en prompt → gå til <strong>chat.openai.com</strong> → velg DALL-E 3 eller GPT-4o → lim inn prompten og trykk enter.
+  Last opp det genererte bildet til Supabase Storage og oppdater <code>image_url</code>-kolonnen i <code>diseases</code>-tabellen med slug-en.
+  Anbefalt størrelse: 1024×1024 eller 1792×1024.
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="number">1</div>
+    <div><div class="name">Varroamidd</div><div class="slug">slug: varroamidd</div></div>
+  </div>
+  <div class="prompt-box" id="p1">Ultra-close macro photograph of a Varroa destructor mite clinging to the abdomen of a honey bee. Natural lighting, extreme detail showing the reddish-brown oval exoskeleton of the 1.5mm mite against the fuzzy amber bee abdominal hairs. Shallow depth of field with honeycomb cells in soft background bokeh. Shot with Canon EF 100mm f/2.8L Macro IS USM, ISO 400, natural daylight. Scientific documentary photography.</div>
+  <button class="copy-btn" onclick="copyPrompt('p1', this)">Kopier prompt</button>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="number">2</div>
+    <div><div class="name">Kalkyngel</div><div class="slug">slug: kalkyngel</div></div>
+  </div>
+  <div class="prompt-box" id="p2">Close-up macro photograph of chalkbrood disease in an open honeybee comb. Chalk-white mummified larvae in hexagonal beeswax cells, some cells showing black spore-laden corpses. Golden-brown wax surrounding the cells, a few healthy glistening white larvae in adjacent cells for contrast. Natural diffused light, shallow depth of field, scientific documentary beekeeping photography.</div>
+  <button class="copy-btn" onclick="copyPrompt('p2', this)">Kopier prompt</button>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="number">3</div>
+    <div><div class="name">Europeisk yngelråte</div><div class="slug">slug: europeisk-yngelraate</div></div>
+  </div>
+  <div class="prompt-box" id="p3">Macro photograph of European foulbrood (EFB) infected honeybee comb. Open brood cells showing yellowed twisted larvae in various stages of decomposition. Healthy pearly-white larvae in adjacent cells for contrast. Warm golden wax background, natural light, shallow depth of field. Realistic beekeeping disease documentation photography.</div>
+  <button class="copy-btn" onclick="copyPrompt('p3', this)">Kopier prompt</button>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="number">4</div>
+    <div><div class="name">Amerikansk yngelråte</div><div class="slug">slug: amerikansk-yngelraate</div></div>
+  </div>
+  <div class="prompt-box" id="p4">Close-up macro photograph of American foulbrood infection in honeybee brood comb. Sunken, discolored dark brown wax cappings in characteristic pepper pot pattern. A matchstick inserted into a cell pulling a ropy chocolate-brown sticky mass in a long string. Healthy lighter-colored sealed brood cells nearby. Natural diffused light, scientific documentary style.</div>
+  <button class="copy-btn" onclick="copyPrompt('p4', this)">Kopier prompt</button>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="number">5</div>
+    <div><div class="name">Sekkyngelvirus</div><div class="slug">slug: sekkyngelvirus</div></div>
+  </div>
+  <div class="prompt-box" id="p5">Macro photograph of sacbrood virus (SBV) infected honey bee larva inside an opened hexagonal wax cell in brood comb. The pre-pupal larva is in characteristic curved sac-like form, yellowish-brown fluid visible inside the slightly transparent larval cuticle. Surrounding cells show healthy white larvae for contrast. Natural warm light, extreme macro detail, scientific documentary photography.</div>
+  <button class="copy-btn" onclick="copyPrompt('p5', this)">Kopier prompt</button>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="number">6</div>
+    <div><div class="name">Nosema</div><div class="slug">slug: nosema</div></div>
+  </div>
+  <div class="prompt-box" id="p6">Close-up photograph of a honeybee hive entrance showing classic nosema dysentery symptoms. Brown fecal streaks on the white painted landing board and lower hive body exterior. Early spring morning, natural light, dew on grass. A few adult bees crawling on the landing board looking weak. Realistic beekeeping documentary photography.</div>
+  <button class="copy-btn" onclick="copyPrompt('p6', this)">Kopier prompt</button>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="number">7</div>
+    <div><div class="name">Tropilaelaps</div><div class="slug">slug: tropilaelaps</div></div>
+  </div>
+  <div class="prompt-box" id="p7">Ultra-close macro photograph showing multiple Tropilaelaps mites on honey bee brood inside hexagonal wax cells. Several small elongated reddish-brown mites clearly smaller and more elongated than Varroa visible on pale honey bee larvae. Some larvae showing deformities. Scientific laboratory-quality macro photography, extreme detail, natural light.</div>
+  <button class="copy-btn" onclick="copyPrompt('p7', this)">Kopier prompt</button>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="number">8</div>
+    <div><div class="name">Voksmøll</div><div class="slug">slug: voksmoell</div></div>
+  </div>
+  <div class="prompt-box" id="p8">Close-up macro photograph of greater wax moth larva damage inside a dark beeswax honeycomb. Silken white tunnels and webbing through the dark wax cells, a cream-colored larva with dark head partially visible inside a silk tunnel. Frass and wax debris against golden-brown wax. Natural light, beekeeping documentary photography.</div>
+  <button class="copy-btn" onclick="copyPrompt('p8', this)">Kopier prompt</button>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="number">9</div>
+    <div><div class="name">Maur</div><div class="slug">slug: maur</div></div>
+  </div>
+  <div class="prompt-box" id="p9">Close-up macro photograph of wood ants (Formica species) at the entrance of a wooden beehive. Several large red-black ants visible on the wooden landing board. Natural outdoor forest setting, green vegetation in background, natural morning light, shallow depth of field, ultra-realistic documentary photography.</div>
+  <button class="copy-btn" onclick="copyPrompt('p9', this)">Kopier prompt</button>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="number">10</div>
+    <div><div class="name">Mus</div><div class="slug">slug: mus</div></div>
+  </div>
+  <div class="prompt-box" id="p10">Documentary photograph of a beehive interior opened in early spring showing mouse damage. Gnawed and partially destroyed dark beeswax comb cells with irregular bite marks. Scattered mouse droppings on the bottom board. Scraps of dry grass used as nesting in one corner. Some intact honey cells visible. Natural spring light. Realistic beekeeping damage assessment photography.</div>
+  <button class="copy-btn" onclick="copyPrompt('p10', this)">Kopier prompt</button>
+</div>
+
+<script>
+function copyPrompt(id, btn) {
+  const text = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Kopiert!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Kopier prompt';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+</script>
+
+</body>
+</html>
