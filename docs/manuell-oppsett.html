@@ -391,7 +391,7 @@
 <div class="container">
 
   <h1 class="page-title">Manuelt oppsett</h1>
-  <p class="page-sub">Det som gjenstår — alt annet er automatisert. Oppdatert 11. mai 2026.</p>
+  <p class="page-sub">Det som gjenstår — alt annet er automatisert. Oppdatert 12. mai 2026.</p>
 
   <!-- Completed items -->
   <div class="completed-banner">
@@ -407,17 +407,18 @@
       <div class="completed-item"><span>🔄</span> EAS Workflow YAML (auto-bygg ved push til master)</div>
       <div class="completed-item"><span>📦</span> scripts/create-play-subscriptions.js klar</div>
       <div class="completed-item"><span>🤖</span> scripts/setup-gcloud-serviceaccount.ps1 klar</div>
-      <div class="completed-item"><span>🔑</span> REVENUECAT_WEBHOOK_SECRET satt i Supabase</div>
-      <div class="completed-item"><span>🏷️</span> RevenueCat: 6 produkter opprettet via API</div>
-      <div class="completed-item"><span>🔖</span> RevenueCat: 3 entitlements konfigurert og koblet</div>
-      <div class="completed-item"><span>🎁</span> RevenueCat: default offering + 6 pakker opprettet</div>
       <div class="completed-item"><span>🏗️</span> EAS production build kjørt — AAB klar for opplasting</div>
+      <div class="completed-item"><span>🔑</span> RevenueCat: REVENUECAT_WEBHOOK_SECRET satt i Supabase</div>
+      <div class="completed-item"><span>🏷️</span> RevenueCat: 6 produkter + 3 entitlements konfigurert</div>
+      <div class="completed-item"><span>🎁</span> RevenueCat: default offering + 6 pakker opprettet</div>
+      <div class="completed-item"><span>✔️</span> RevenueCat: pakkenavn no.biapp.app ✓</div>
+      <div class="completed-item"><span>🔗</span> RevenueCat: produkter koblet til pakker ✓</div>
+      <div class="completed-item"><span>📡</span> RevenueCat: webhook-URL konfigurert ✓</div>
     </div>
   </div>
 
   <!-- Progress overview — kun gjenstående -->
   <div class="progress-bar">
-    <div class="progress-step critical"><span>🔗</span>RC Dashboard</div>
     <div class="progress-step critical"><span>🔑</span>Service Account</div>
     <div class="progress-step high"><span>📤</span>Første AAB</div>
     <div class="progress-step high"><span>📦</span>Produkter</div>
@@ -426,92 +427,11 @@
 
 
   <!-- ══════════════════════════════════════════
-       OPPGAVE 1 — REVENUECAT DASHBOARD (3 STEG)
-  ═══════════════════════════════════════════ -->
-  <div class="section" id="revenuecat">
-    <div class="section-header">
-      <div class="section-num num-critical">1</div>
-      <div class="section-title-wrap">
-        <h2>RevenueCat Dashboard — 3 manuelle steg</h2>
-        <p>API-et støtter ikke disse operasjonene — må gjøres i nettleseren</p>
-      </div>
-      <span class="priority-badge badge-critical">Kritisk — gjør nå</span>
-    </div>
-
-    <div class="info-card success">
-      <div class="info-card-header">✅ Allerede gjort via API</div>
-      <p>REVENUECAT_WEBHOOK_SECRET er satt i Supabase. 3 entitlements (hobbyist, profesjonell, lag) er opprettet med produkter tilknyttet. Default offering med 6 pakker er opprettet.</p>
-    </div>
-
-    <div class="info-card danger">
-      <div class="info-card-header">⚠️ Kritisk feil: Feil pakkenavn i RevenueCat</div>
-      <p>RevenueCat-appen er registrert med pakkenavn <code>no.Biapp</code> i stedet for <code>no.biapp.app</code>. Alle kjøp vil feile validering mot Play Store. Dette <strong>må</strong> rettes manuelt — API returnerer 405 på PATCH/PUT.</p>
-    </div>
-
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-body">
-          <strong>Fiks pakkenavn: no.Biapp → no.biapp.app</strong>
-          <p>Gå til <strong>app.revenuecat.com</strong> → ditt prosjekt → <strong>Apps</strong><br>
-          → klikk på <strong>Biapp (Play Store)</strong><br>
-          → endre <strong>Package Name</strong> fra <code>no.Biapp</code> til <code>no.biapp.app</code><br>
-          → klikk <strong>Save changes</strong></p>
-          <div class="info-card danger">
-            <div class="info-card-header">🚫 Uten denne endringen vil alle kjøp feile</div>
-            <p>Play Store sender <code>no.biapp.app</code> i alle kjøpsvalideringer. RevenueCat med feil pakkenavn vil avvise dem.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-body">
-          <strong>Koble produkter til pakker i default offering</strong>
-          <p>Gå til <strong>app.revenuecat.com</strong> → <strong>Offerings</strong> → <strong>default</strong><br>
-          → klikk på hver pakke nedenfor → velg tilhørende produkt under <strong>Products</strong>:</p>
-          <table>
-            <tr><th>Pakke</th><th>Produkt som skal kobles til</th></tr>
-            <tr><td><code>hobbyist_monthly</code></td><td>hobbyist_monthly (Google Play)</td></tr>
-            <tr><td><code>hobbyist_annual</code></td><td>hobbyist_annual (Google Play)</td></tr>
-            <tr><td><code>profesjonell_monthly</code></td><td>profesjonell_monthly (Google Play)</td></tr>
-            <tr><td><code>profesjonell_annual</code></td><td>profesjonell_annual (Google Play)</td></tr>
-            <tr><td><code>lag_monthly</code></td><td>lag_monthly (Google Play)</td></tr>
-            <tr><td><code>lag_annual</code></td><td>lag_annual (Google Play)</td></tr>
-          </table>
-          <p>NB: Produktene i RevenueCat bruker format <code>hobbyist_monthly:base</code> (subscriptionId:basePlanId).</p>
-        </div>
-      </div>
-
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-body">
-          <strong>Konfigurer webhook-URL i RevenueCat</strong>
-          <p>Gå til <strong>app.revenuecat.com</strong> → ditt prosjekt → <strong>Integrations</strong> → <strong>Webhooks</strong> → <strong>Add webhook</strong></p>
-          <table>
-            <tr><th>Felt</th><th>Verdi</th></tr>
-            <tr><td>Webhook URL</td><td><code>https://zujvhbnuqocquthbujmp.supabase.co/functions/v1/revenuecat-webhook</code></td></tr>
-            <tr><td>Authorization header</td><td><code>Bearer ca323f8f4b3710305fa44fcadd9c8b11436ad5867a0bfa7369c64c65293068cb</code></td></tr>
-          </table>
-          <p>Aktiver disse events: <code>INITIAL_PURCHASE</code>, <code>RENEWAL</code>, <code>CANCELLATION</code>, <code>EXPIRATION</code>, <code>BILLING_ISSUE</code></p>
-          <div class="info-card success">
-            <div class="info-card-header">✅ Secret er allerede satt i Supabase</div>
-            <p>REVENUECAT_WEBHOOK_SECRET er konfigurert. Kopier nøyaktig verdien fra Authorization-feltet over.</p>
-          </div>
-          <p style="margin-top:12px;">Test: klikk <strong>Test</strong>-knappen i RevenueCat → bekreft HTTP 200 i Supabase Dashboard → Edge Functions → Logs.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <hr>
-
-  <!-- ══════════════════════════════════════════
-       OPPGAVE 2 — GOOGLE SERVICE ACCOUNT
+       OPPGAVE 1 — GOOGLE SERVICE ACCOUNT
   ═══════════════════════════════════════════ -->
   <div class="section" id="service-account">
     <div class="section-header">
-      <div class="section-num num-critical">2</div>
+      <div class="section-num num-critical">1</div>
       <div class="section-title-wrap">
         <h2>Google Service Account</h2>
         <p>Én gang — låser opp automatisk EAS submit og abonnements-scriptet</p>
@@ -569,11 +489,11 @@ gcloud auth login
   <hr>
 
   <!-- ══════════════════════════════════════════
-       OPPGAVE 3 — FØRSTE MANUELLE AAB-OPPLASTING
+       OPPGAVE 2 — FØRSTE MANUELLE AAB-OPPLASTING
   ═══════════════════════════════════════════ -->
   <div class="section" id="first-upload">
     <div class="section-header">
-      <div class="section-num num-high">3</div>
+      <div class="section-num num-high">2</div>
       <div class="section-title-wrap">
         <h2>Første AAB-opplasting til Play Store</h2>
         <p>Google krever én manuell opplasting før API og abonnementsprodukter fungerer</p>
@@ -637,16 +557,16 @@ gcloud auth login
   <hr>
 
   <!-- ══════════════════════════════════════════
-       OPPGAVE 4 — ABONNEMENTSPRODUKTER (GOOGLE PLAY)
+       OPPGAVE 3 — ABONNEMENTSPRODUKTER (GOOGLE PLAY)
   ═══════════════════════════════════════════ -->
   <div class="section" id="products">
     <div class="section-header">
-      <div class="section-num num-high">4</div>
+      <div class="section-num num-high">3</div>
       <div class="section-title-wrap">
         <h2>Abonnementsprodukter — Google Play</h2>
         <p>Opprett 6 produkter via scriptet etter at service account er på plass</p>
       </div>
-      <span class="priority-badge badge-high">Høy — etter steg 2 og 3</span>
+      <span class="priority-badge badge-high">Høy — etter steg 1</span>
     </div>
 
     <div class="info-card success">
@@ -683,11 +603,11 @@ node scripts/create-play-subscriptions.js</div>
   <hr>
 
   <!-- ══════════════════════════════════════════
-       OPPGAVE 5 — PRODUKSJONS-BUILD
+       OPPGAVE 4 — PRODUKSJONS-BUILD
   ═══════════════════════════════════════════ -->
   <div class="section" id="prod-build">
     <div class="section-header">
-      <div class="section-num num-medium">5</div>
+      <div class="section-num num-medium">4</div>
       <div class="section-title-wrap">
         <h2>Produksjons-build og opplasting</h2>
         <p>Siste steg — gjøres kun etter at alt over er på plass</p>
@@ -696,13 +616,11 @@ node scripts/create-play-subscriptions.js</div>
     </div>
 
     <div class="info-card danger">
-      <div class="info-card-header">⛔ Ikke bygg produksjon før</div>
+      <div class="info-card-header">⛔ Ikke submit før</div>
       <ul>
-        <li>RevenueCat pakkenavn er rettet til <code>no.biapp.app</code> (steg 1a)</li>
-        <li>RevenueCat pakker er koblet til produkter (steg 1b)</li>
-        <li>RevenueCat webhook er konfigurert (steg 1c)</li>
-        <li>Google Service Account er satt opp (steg 2)</li>
-        <li>Abonnementsprodukter er aktive i Google Play (steg 4)</li>
+        <li>Google Service Account er satt opp (steg 1)</li>
+        <li>App er opprettet i Play Console og AAB er lastet opp (steg 2)</li>
+        <li>Abonnementsprodukter er aktive i Google Play (steg 3)</li>
       </ul>
     </div>
 
@@ -825,19 +743,19 @@ npx eas submit --platform android --latest --profile production</div>
       <span class="summary-badge badge-done">Ferdig</span>
     </div>
 
-    <div class="summary-row">
-      <span class="summary-icon">⚠️</span>
+    <div class="summary-row done">
+      <span class="summary-icon">✅</span>
       <div class="summary-text">
-        <strong>RevenueCat Dashboard — 3 steg (steg 1)</strong>
-        <span>Fiks pakkenavn no.Biapp→no.biapp.app + koble pakker til produkter + webhook-URL</span>
+        <strong>RevenueCat — fullstendig konfigurert</strong>
+        <span>Pakkenavn ✓ · produkter koblet til pakker ✓ · webhook-URL konfigurert ✓</span>
       </div>
-      <span class="summary-badge badge-critical">Kritisk</span>
+      <span class="summary-badge badge-done">Ferdig</span>
     </div>
 
     <div class="summary-row">
       <span class="summary-icon">🔑</span>
       <div class="summary-text">
-        <strong>Google Service Account (steg 2)</strong>
+        <strong>Google Service Account (steg 1)</strong>
         <span>gcloud auth login → PS1-script → link til Play Console</span>
       </div>
       <span class="summary-badge badge-critical">Kritisk</span>
@@ -846,8 +764,8 @@ npx eas submit --platform android --latest --profile production</div>
     <div class="summary-row">
       <span class="summary-icon">📤</span>
       <div class="summary-text">
-        <strong>Første manuelle AAB-opplasting (steg 3)</strong>
-        <span>Last ned AAB fra EAS Dashboard → last opp i Play Console Internal testing</span>
+        <strong>Første manuelle AAB-opplasting (steg 2)</strong>
+        <span>Last ned AAB fra EAS Dashboard → opprett app i Play Console → last opp</span>
       </div>
       <span class="summary-badge badge-high">Høy</span>
     </div>
@@ -855,7 +773,7 @@ npx eas submit --platform android --latest --profile production</div>
     <div class="summary-row">
       <span class="summary-icon">📦</span>
       <div class="summary-text">
-        <strong>Google Play abonnementsprodukter (steg 4)</strong>
+        <strong>Google Play abonnementsprodukter (steg 3)</strong>
         <span>node scripts/create-play-subscriptions.js — etter service account er klar</span>
       </div>
       <span class="summary-badge badge-high">Høy</span>
@@ -864,7 +782,7 @@ npx eas submit --platform android --latest --profile production</div>
     <div class="summary-row">
       <span class="summary-icon">🚀</span>
       <div class="summary-text">
-        <strong>Submit til Play Store (steg 5)</strong>
+        <strong>Submit til Play Store (steg 4)</strong>
         <span>npx eas submit --latest — siste production-build submitteres automatisk</span>
       </div>
       <span class="summary-badge badge-medium">Siste</span>
