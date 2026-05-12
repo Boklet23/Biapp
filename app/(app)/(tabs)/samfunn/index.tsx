@@ -25,14 +25,14 @@ export default function Samfunn() {
   const { data: associations = [], isLoading: lagLoading } = useQuery({
     queryKey: ['bee-associations'],
     queryFn: fetchBeeAssociations,
-    staleTime: STALE_24H,
+    staleTime: 60 * 60 * 1000,
     gcTime: GC_7D,
   });
 
   const { data: vendors = [], isLoading: utstyrLoading } = useQuery({
     queryKey: ['equipment-vendors'],
     queryFn: fetchEquipmentVendors,
-    staleTime: STALE_24H,
+    staleTime: 60 * 60 * 1000,
     gcTime: GC_7D,
   });
 

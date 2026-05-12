@@ -37,6 +37,8 @@ export default function RedigerKube() {
   const [beeBreed, setBeeBreed] = useState<BeeBreed>('annet');
   const [locationName, setLocationName] = useState('');
   const [notes, setNotes] = useState('');
+  const [numBoxes, setNumBoxes] = useState(1);
+  const [framesPerBox, setFramesPerBox] = useState(10);
   const [nameError, setNameError] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoIsLocal, setPhotoIsLocal] = useState(false);
@@ -50,6 +52,8 @@ export default function RedigerKube() {
       setBeeBreed(hive.beeBreed ?? 'annet');
       setLocationName(hive.locationName ?? '');
       setNotes(hive.notes ?? '');
+      setNumBoxes(hive.numBoxes ?? 1);
+      setFramesPerBox(hive.framesPerBox ?? 10);
       setPhotoUri(hive.photoUrl ?? null);
       setPhotoIsLocal(false);
     }
@@ -101,8 +105,8 @@ export default function RedigerKube() {
       return updateHive(id, hiveData);
     },
     onError: (error: Error) => showToast(error.message ?? 'Kunne ikke lagre endringer', 'error'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hive', id] });
+    onSuccess: (updatedHive) => {
+      queryClient.setQueryData(['hive', id], updatedHive);
       queryClient.invalidateQueries({ queryKey: ['hives'] });
       router.back();
     },
@@ -118,6 +122,8 @@ export default function RedigerKube() {
       name: name.trim(),
       type,
       beeBreed,
+      numBoxes,
+      framesPerBox,
       locationName: locationName.trim() || undefined,
       notes: notes.trim() || undefined,
       ...(photoIsLocal && photoUri ? { localPhotoUri: photoUri } : {}),
@@ -207,6 +213,51 @@ export default function RedigerKube() {
               <Text style={styles.breedKg}>~{b.kg} kg/år</Text>
             </Pressable>
           ))}
+        </View>
+
+        {/* Kubeoppsett */}
+        <Text style={styles.sectionLabel}>Kubeoppsett</Text>
+        <View style={styles.stepperRow}>
+          <View style={styles.stepperGroup}>
+            <Text style={styles.stepperLabel}>Antall etasjer</Text>
+            <View style={styles.stepper}>
+              <Pressable
+                style={styles.stepperBtn}
+                onPress={() => setNumBoxes((n) => Math.max(1, n - 1))}
+                hitSlop={8}
+              >
+                <Text style={styles.stepperBtnText}>−</Text>
+              </Pressable>
+              <Text style={styles.stepperVal}>{numBoxes}</Text>
+              <Pressable
+                style={styles.stepperBtn}
+                onPress={() => setNumBoxes((n) => Math.min(8, n + 1))}
+                hitSlop={8}
+              >
+                <Text style={styles.stepperBtnText}>+</Text>
+              </Pressable>
+            </View>
+          </View>
+          <View style={styles.stepperGroup}>
+            <Text style={styles.stepperLabel}>Rammer per etasje</Text>
+            <View style={styles.stepper}>
+              <Pressable
+                style={styles.stepperBtn}
+                onPress={() => setFramesPerBox((n) => Math.max(1, n - 1))}
+                hitSlop={8}
+              >
+                <Text style={styles.stepperBtnText}>−</Text>
+              </Pressable>
+              <Text style={styles.stepperVal}>{framesPerBox}</Text>
+              <Pressable
+                style={styles.stepperBtn}
+                onPress={() => setFramesPerBox((n) => Math.min(20, n + 1))}
+                hitSlop={8}
+              >
+                <Text style={styles.stepperBtnText}>+</Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
 
         <Input
@@ -303,6 +354,53 @@ const styles = StyleSheet.create({
   breedKg: {
     fontSize: 11,
     color: Colors.mid + '90',
+  },
+  stepperRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  stepperGroup: {
+    flex: 1,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.mid + '20',
+    padding: 12,
+    alignItems: 'center',
+    gap: 8,
+  },
+  stepperLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.mid,
+    textAlign: 'center',
+  },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  stepperBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: Colors.honey + '18',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperBtnText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.honey,
+    lineHeight: 22,
+  },
+  stepperVal: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.dark,
+    minWidth: 28,
+    textAlign: 'center',
   },
   notesInput: {
     height: 88,

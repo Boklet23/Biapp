@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SeverityBadge } from './SeverityBadge';
 import { Colors } from '@/constants/colors';
 import { Disease } from '@/types';
@@ -17,6 +17,17 @@ export function DiseaseCard({ disease, onPress }: DiseaseCardProps) {
       accessibilityLabel={disease.nameNo}
     >
       <View style={styles.row}>
+        {disease.imageUrl ? (
+          <Image
+            source={{ uri: disease.imageUrl }}
+            style={styles.thumbnail}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.thumbnail, styles.thumbnailFallback]}>
+            <Text style={styles.thumbnailEmoji}>🐝</Text>
+          </View>
+        )}
         <View style={styles.content}>
           <Text style={styles.name}>{disease.nameNo}</Text>
           <SeverityBadge severity={disease.severity} notifiable={disease.isNotifiable} />
@@ -31,7 +42,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.white,
     borderRadius: 14,
-    padding: 16,
+    padding: 12,
     shadowColor: Colors.dark,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -40,6 +51,18 @@ const styles = StyleSheet.create({
   },
   cardPressed: { opacity: 0.7 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  thumbnail: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    flexShrink: 0,
+  },
+  thumbnailFallback: {
+    backgroundColor: Colors.honey + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thumbnailEmoji: { fontSize: 26 },
   content: { flex: 1, gap: 6 },
   name: { fontSize: 16, fontWeight: '700', color: Colors.dark },
   chevron: { fontSize: 22, color: Colors.mid, fontWeight: '300' },

@@ -38,6 +38,8 @@ export interface Hive {
   isActive: boolean;
   notes: string | null;
   photoUrl: string | null;
+  numBoxes: number | null;
+  framesPerBox: number | null;
   createdAt: string;
 }
 

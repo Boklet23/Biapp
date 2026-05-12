@@ -15,6 +15,8 @@ export interface CreateHiveData {
   locationLng?: number;
   notes?: string;
   photoUrl?: string;
+  numBoxes?: number;
+  framesPerBox?: number;
 }
 
 export async function normalizePhotoUri(uri: string): Promise<string> {
@@ -120,6 +122,8 @@ export async function createHive(input: CreateHiveData): Promise<Hive> {
       location_lat: input.locationLat ?? null,
       location_lng: input.locationLng ?? null,
       notes: input.notes ?? null,
+      num_boxes: input.numBoxes ?? 1,
+      frames_per_box: input.framesPerBox ?? 10,
       ...(input.photoUrl !== undefined ? { photo_url: input.photoUrl } : {}),
     })
     .select()
@@ -139,6 +143,8 @@ export async function updateHive(id: string, input: UpdateHiveData): Promise<Hiv
   if (input.locationLng !== undefined) patch.location_lng = input.locationLng;
   if (input.notes !== undefined) patch.notes = input.notes;
   if (input.photoUrl !== undefined) patch.photo_url = input.photoUrl;
+  if (input.numBoxes !== undefined) patch.num_boxes = input.numBoxes;
+  if (input.framesPerBox !== undefined) patch.frames_per_box = input.framesPerBox;
   if (input.isActive !== undefined) patch.is_active = input.isActive;
 
   const { data, error } = await supabase
@@ -182,6 +188,8 @@ function mapHive(row: Record<string, unknown>): Hive {
     isActive: row.is_active === true,
     notes: typeof row.notes === 'string' ? row.notes : null,
     photoUrl: typeof row.photo_url === 'string' ? row.photo_url : null,
+    numBoxes: typeof row.num_boxes === 'number' ? row.num_boxes : null,
+    framesPerBox: typeof row.frames_per_box === 'number' ? row.frames_per_box : null,
     createdAt: row.created_at,
   };
 }

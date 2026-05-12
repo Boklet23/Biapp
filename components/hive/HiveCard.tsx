@@ -27,6 +27,21 @@ function daysSince(dateStr: string): string {
   return `${days} d siden`;
 }
 
+function BoxStack({ count }: { count: number }) {
+  const boxes = Math.min(Math.max(count, 1), 6);
+  return (
+    <View style={boxStyles.stack}>
+      {Array.from({ length: boxes }).map((_, i) => (
+        <View key={i} style={boxStyles.box} />
+      ))}
+    </View>
+  );
+}
+
+const boxStyles = StyleSheet.create({
+  stack: { gap: 2, alignItems: 'center' },
+  box: { width: 20, height: 4, backgroundColor: Colors.honey, borderRadius: 1 },
+});
 
 interface HiveCardProps {
   hive: Hive;
@@ -45,6 +60,7 @@ export function HiveCard({ hive, lastInspection, lastWeight, onPress }: HiveCard
   const varroa = lastInspection?.varroaCount;
   const varroaBad = varroa != null && varroa > 3;
   const weightKg = lastWeight?.weightKg ?? null;
+  const numBoxes = hive.numBoxes ?? 1;
 
   return (
     <Pressable
@@ -55,18 +71,24 @@ export function HiveCard({ hive, lastInspection, lastWeight, onPress }: HiveCard
     >
       {/* Top row: thumbnail · info · health ring */}
       <View style={styles.top}>
-        {hive.photoUrl ? (
-          <Image
-            source={{ uri: hive.photoUrl }}
-            style={styles.thumbnail}
-            resizeMode="cover"
-            accessibilityLabel={`Bilde av ${hive.name}`}
-          />
-        ) : (
-          <View style={[styles.thumbnail, { backgroundColor: TYPE_COLORS[hive.type] ?? Colors.muted }]}>
-            <Text style={styles.thumbnailInitial}>{hive.name.charAt(0).toUpperCase()}</Text>
+        <View style={styles.thumbnailWrap}>
+          {hive.photoUrl ? (
+            <Image
+              source={{ uri: hive.photoUrl }}
+              style={styles.thumbnail}
+              resizeMode="cover"
+              accessibilityLabel={`Bilde av ${hive.name}`}
+            />
+          ) : (
+            <View style={[styles.thumbnail, { backgroundColor: TYPE_COLORS[hive.type] ?? Colors.muted }]}>
+              <Text style={styles.thumbnailInitial}>{hive.name.charAt(0).toUpperCase()}</Text>
+            </View>
+          )}
+          <View style={styles.boxBadge}>
+            <BoxStack count={numBoxes} />
+            <Text style={styles.boxCount}>{numBoxes}</Text>
           </View>
-        )}
+        </View>
 
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={1}>{hive.name}</Text>
@@ -104,9 +126,13 @@ export function HiveCard({ hive, lastInspection, lastWeight, onPress }: HiveCard
             {varroa != null ? varroa : '–'}
           </Text>
         </View>
-        <View style={styles.stat}>
+        <View style={[styles.stat, styles.statBorder]}>
           <Text style={styles.statKey}>RAMMER</Text>
           <Text style={styles.statVal}>{totalFrames > 0 ? totalFrames : '–'}</Text>
+        </View>
+        <View style={styles.stat}>
+          <Text style={styles.statKey}>ETASJER</Text>
+          <Text style={styles.statVal}>{numBoxes}</Text>
         </View>
       </View>
     </Pressable>
@@ -133,11 +159,16 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: 'center',
   },
+  thumbnailWrap: {
+    width: 76,
+    height: 76,
+    flexShrink: 0,
+    position: 'relative',
+  },
   thumbnail: {
     width: 76,
     height: 76,
     borderRadius: Radii.sm,
-    flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -146,6 +177,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: FontFamily.bold,
     color: Colors.white,
+  },
+  boxBadge: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderRadius: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 3,
+    gap: 2,
+  },
+  boxCount: {
+    fontSize: 9,
+    fontWeight: '800',
+    fontFamily: FontFamily.extrabold,
+    color: Colors.honey,
+    lineHeight: 10,
   },
 
   info: {
@@ -207,17 +256,17 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 6,
   },
   statBorder: {
     borderRightWidth: 1,
     borderRightColor: Colors.hair,
   },
   statKey: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '800',
     fontFamily: FontFamily.extrabold,
-    letterSpacing: 1,
+    letterSpacing: 0.8,
     color: Colors.muted,
     marginBottom: 2,
   },

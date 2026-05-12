@@ -35,6 +35,8 @@ export default function NyKube() {
   const [locationLat, setLocationLat] = useState<number | null>(null);
   const [locationLng, setLocationLng] = useState<number | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [numBoxes, setNumBoxes] = useState(1);
+  const [framesPerBox, setFramesPerBox] = useState(10);
   const [notes, setNotes] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [nameError, setNameError] = useState('');
@@ -83,6 +85,7 @@ export default function NyKube() {
     },
     onError: (error: Error) => showToast(error.message ?? 'Kunne ikke lagre kube', 'error'),
     onSuccess: (hive) => {
+      queryClient.setQueryData(['hive', hive.id], hive);
       queryClient.invalidateQueries({ queryKey: ['hives'] });
       router.replace({ pathname: '/kuber/[id]' as any, params: { id: hive.id } });
     },
@@ -126,6 +129,8 @@ export default function NyKube() {
       name: name.trim(),
       type,
       beeBreed,
+      numBoxes,
+      framesPerBox,
       locationName: locationName.trim() || undefined,
       locationLat: locationLat ?? undefined,
       locationLng: locationLng ?? undefined,
@@ -229,6 +234,51 @@ export default function NyKube() {
               <Text style={styles.breedKg}>~{b.kg} kg/år</Text>
             </Pressable>
           ))}
+        </View>
+
+        {/* Kubeoppsett */}
+        <Text style={styles.sectionLabel}>Kubeoppsett</Text>
+        <View style={styles.stepperRow}>
+          <View style={styles.stepperGroup}>
+            <Text style={styles.stepperLabel}>Antall etasjer</Text>
+            <View style={styles.stepper}>
+              <Pressable
+                style={styles.stepperBtn}
+                onPress={() => setNumBoxes((n) => Math.max(1, n - 1))}
+                hitSlop={8}
+              >
+                <Text style={styles.stepperBtnText}>−</Text>
+              </Pressable>
+              <Text style={styles.stepperVal}>{numBoxes}</Text>
+              <Pressable
+                style={styles.stepperBtn}
+                onPress={() => setNumBoxes((n) => Math.min(8, n + 1))}
+                hitSlop={8}
+              >
+                <Text style={styles.stepperBtnText}>+</Text>
+              </Pressable>
+            </View>
+          </View>
+          <View style={styles.stepperGroup}>
+            <Text style={styles.stepperLabel}>Rammer per etasje</Text>
+            <View style={styles.stepper}>
+              <Pressable
+                style={styles.stepperBtn}
+                onPress={() => setFramesPerBox((n) => Math.max(1, n - 1))}
+                hitSlop={8}
+              >
+                <Text style={styles.stepperBtnText}>−</Text>
+              </Pressable>
+              <Text style={styles.stepperVal}>{framesPerBox}</Text>
+              <Pressable
+                style={styles.stepperBtn}
+                onPress={() => setFramesPerBox((n) => Math.min(20, n + 1))}
+                hitSlop={8}
+              >
+                <Text style={styles.stepperBtnText}>+</Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
 
         <Input
@@ -473,6 +523,53 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   photoRemoveText: { fontSize: 14, color: Colors.white, fontWeight: '700', lineHeight: 16 },
+  stepperRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  stepperGroup: {
+    flex: 1,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.mid + '20',
+    padding: 12,
+    alignItems: 'center',
+    gap: 8,
+  },
+  stepperLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.mid,
+    textAlign: 'center',
+  },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  stepperBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: Colors.honey + '18',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperBtnText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.honey,
+    lineHeight: 22,
+  },
+  stepperVal: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.dark,
+    minWidth: 28,
+    textAlign: 'center',
+  },
   gpsBtn: {
     flexDirection: 'row',
     alignItems: 'center',
