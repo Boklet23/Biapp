@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { InfoSheet, InfoRow, InfoText } from '@/components/ui/InfoSheet';
 import { Colors } from '@/constants/colors';
 import { HiveTypeChip } from '@/components/hive/HiveTypeChip';
-import { createHive, uploadHivePhoto } from '@/services/hive';
+import { createHive, normalizePhotoUri, uploadHivePhoto } from '@/services/hive';
 import { supabase } from '@/lib/supabase';
 import { useToastStore } from '@/store/toast';
 import { BeeBreed, HiveType } from '@/types';
@@ -102,11 +102,14 @@ export default function NyKube() {
       : ImagePicker.launchImageLibraryAsync;
     const result = await fn({
       mediaTypes: ['images'],
-      allowsEditing: true,
+      allowsEditing: source === 'library',
       aspect: [4, 3],
       quality: 0.7,
     });
-    if (!result.canceled) setPhotoUri(result.assets[0].uri);
+    if (!result.canceled) {
+      const uri = await normalizePhotoUri(result.assets[0].uri);
+      setPhotoUri(uri);
+    }
   };
 
   const handleSave = () => {

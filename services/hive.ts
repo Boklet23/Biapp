@@ -17,6 +17,15 @@ export interface CreateHiveData {
   photoUrl?: string;
 }
 
+export async function normalizePhotoUri(uri: string): Promise<string> {
+  if (uri.startsWith('file://')) return uri;
+  const ext = uri.split('?')[0].split('.').pop()?.toLowerCase();
+  const safeExt = ext && ['jpg', 'jpeg', 'png', 'webp'].includes(ext) ? ext : 'jpg';
+  const dest = `${FileSystem.cacheDirectory ?? FileSystem.documentDirectory ?? ''}photo_preview_${Date.now()}.${safeExt}`;
+  await FileSystem.copyAsync({ from: uri, to: dest });
+  return dest;
+}
+
 export async function uploadHivePhoto(
   localUri: string,
   userId: string,

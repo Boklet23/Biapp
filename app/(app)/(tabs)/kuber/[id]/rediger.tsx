@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Colors, Shadows } from '@/constants/colors';
 import { HiveTypeChip } from '@/components/hive/HiveTypeChip';
-import { fetchHive, updateHive, uploadHivePhoto } from '@/services/hive';
+import { fetchHive, normalizePhotoUri, updateHive, uploadHivePhoto } from '@/services/hive';
 import { supabase } from '@/lib/supabase';
 import { useToastStore } from '@/store/toast';
 import { BeeBreed, HiveType } from '@/types';
@@ -69,12 +69,17 @@ export default function RedigerKube() {
       : ImagePicker.launchImageLibraryAsync;
     const result = await fn({
       mediaTypes: ['images'],
-      allowsEditing: true,
+      // allowsEditing disabled for camera: UCrop on Android 13+ silently returns canceled
+      // even when photo is taken, preventing setPhotoUri from being called.
+      allowsEditing: source === 'library',
       aspect: [4, 3],
       quality: 0.7,
     });
     if (!result.canceled) {
-      setPhotoUri(result.assets[0].uri);
+      // Normalize to file:// — content:// URIs from Android camera/gallery
+      // cannot be rendered by React Native's <Image> component directly.
+      const uri = await normalizePhotoUri(result.assets[0].uri);
+      setPhotoUri(uri);
       setPhotoIsLocal(true);
     }
   };
