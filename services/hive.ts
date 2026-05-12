@@ -27,7 +27,7 @@ export async function uploadHivePhoto(
   if (localUri.startsWith('content://')) {
     const srcExt = localUri.split('.').pop()?.toLowerCase();
     const tmpExt = srcExt && ['jpg', 'jpeg', 'png'].includes(srcExt) ? srcExt : 'jpg';
-    const tmp = `${FileSystem.cacheDirectory ?? ''}hive_upload_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${tmpExt}`;
+    const tmp = `${FileSystem.cacheDirectory ?? FileSystem.documentDirectory ?? ''}hive_upload_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${tmpExt}`;
     await FileSystem.copyAsync({ from: localUri, to: tmp });
     uploadUri = tmp;
   }
