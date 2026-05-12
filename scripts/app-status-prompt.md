@@ -113,9 +113,10 @@ supabase/
     0001–0018            — alle migrasjoner kjørt i produksjon
 
 scripts/
-  create-play-subscriptions.js  — oppretter 6 abonnementsprodukter via Google Play API
-  generate-splash.js             — genererte splash-screen PNG
-  automate-remaining.md          — automatiseringsprompt (local-only, ikke i git)
+  create-play-subscriptions.js       — oppretter 6 abonnementsprodukter via Google Play API
+  generate-splash.js                  — genererte splash-screen PNG
+  setup-gcloud-serviceaccount.ps1    — halvautomatisert Google SA-oppsett (local-only, ikke i git)
+  automate-remaining.md              — automatiseringsprompt (local-only, ikke i git)
 
 assets/
   icon.png                     — 1024×1024 BiVokter-ikon (navy + honning)
@@ -201,7 +202,9 @@ docs/
 - [x] `eas.json` production submit-konfig: `serviceAccountKeyPath`, `track: internal`
 - [x] `.eas/workflows/build-submit.yml`: automatisk bygg + submit ved push til master
 - [x] `scripts/create-play-subscriptions.js`: oppretter 6 produkter via Play API
+- [x] `scripts/setup-gcloud-serviceaccount.ps1`: halvautomatisert service account (kjør etter `gcloud auth login`)
 - [x] `RECORD_AUDIO`-tillatelse fjernet (Google Play compliance)
+- [x] EAS production build kjørt 11. mai 2026 — AAB klar på expo.dev
 
 ---
 
@@ -235,18 +238,19 @@ docs/
 - Estimert tid: 3 min
 
 **2. Google Service Account**
-- Google Cloud Console → opprett service account `biapp-play-submit` → last ned JSON
-- Lagre som `google-play-service-account.json` i prosjektrotmappen (allerede i .gitignore)
-- Google Play Console → Setup → API access → link service account → gi "Release Manager"-rolle
-- Estimert tid: ~20 min
+- `gcloud auth login` (interaktivt, åpner nettleser)
+- `.\scripts\setup-gcloud-serviceaccount.ps1` (oppretter prosjekt, SA og laster ned JSON automatisk)
+- Google Play Console → Setup → API access → link `biapp-play-submit@biapp-play-2026.iam.gserviceaccount.com` → gi "Release Manager"-rolle
+- Estimert tid: ~15 min
 
 ### Høy prioritet (kreves for kjøp)
 
 **3. Første manuelle AAB-opplasting til Google Play**
 - Google krever én manuell opplasting til intern testing før API fungerer
-- Bygg: `npx eas build --profile preview --platform android --non-interactive`
-- Last ned AAB fra EAS Dashboard → last opp i Play Console → Internal testing
-- Estimert tid: ~10 min (pluss ~10 min byggtid)
+- **Production AAB er allerede bygget (11. mai 2026) — last ned fra expo.dev, ingen ny build nødvendig**
+- Opprett app-oppføring i Play Console: package `no.biapp.app`, navn BiVokter
+- Last opp AAB: Play Console → Internal testing → Create new release → last opp → Start rollout
+- Estimert tid: ~10 min
 - **Etter dette tar EAS Workflow over automatisk**
 
 **4. Kjør subscription-scriptet**
@@ -257,11 +261,11 @@ docs/
 
 ### Siste steg
 
-**5. Produksjons-build + auto-submit**
-- Kjøres etter at alt over er på plass
-- `npx eas build --profile production --platform android --auto-submit --non-interactive`
-- EAS bygger AAB og laster den rett opp til Play Store Internal testing
-- Estimert tid: ~15 min (pluss ~15 min byggtid)
+**5. Submit til Play Store**
+- AAB er allerede bygget — bare submit:
+- `npx eas submit --platform android --latest --profile production`
+- EAS laster opp siste production-build til Internal testing i Play Console
+- Estimert tid: ~5 min (ingen byggtid)
 
 ---
 
