@@ -32,7 +32,7 @@ Deno.serve(async (req: Request) => {
   // Verify RevenueCat authorization header
   const authHeader = req.headers.get('Authorization');
   const webhookSecret = Deno.env.get('REVENUECAT_WEBHOOK_SECRET');
-  if (webhookSecret && authHeader !== webhookSecret) {
+  if (webhookSecret && authHeader?.trim() !== webhookSecret.trim()) {
     return new Response('Unauthorized', { status: 401 });
   }
 
