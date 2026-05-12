@@ -107,8 +107,12 @@ export default function NyKube() {
       quality: 0.7,
     });
     if (!result.canceled) {
-      const uri = await normalizePhotoUri(result.assets[0].uri);
-      setPhotoUri(uri);
+      try {
+        const uri = await normalizePhotoUri(result.assets[0].uri);
+        setPhotoUri(uri);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Kunne ikke laste bildet', 'error');
+      }
     }
   };
 

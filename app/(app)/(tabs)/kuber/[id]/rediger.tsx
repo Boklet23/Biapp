@@ -76,11 +76,13 @@ export default function RedigerKube() {
       quality: 0.7,
     });
     if (!result.canceled) {
-      // Normalize to file:// — content:// URIs from Android camera/gallery
-      // cannot be rendered by React Native's <Image> component directly.
-      const uri = await normalizePhotoUri(result.assets[0].uri);
-      setPhotoUri(uri);
-      setPhotoIsLocal(true);
+      try {
+        const uri = await normalizePhotoUri(result.assets[0].uri);
+        setPhotoUri(uri);
+        setPhotoIsLocal(true);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Kunne ikke laste bildet', 'error');
+      }
     }
   };
 
@@ -142,7 +144,12 @@ export default function RedigerKube() {
             accessibilityRole="button"
             accessibilityLabel="Bytt bilde av kuben"
           >
-            <Image source={{ uri: photoUri }} style={styles.photoHero} resizeMode="cover" />
+            <Image
+              source={{ uri: photoUri }}
+              style={styles.photoHero}
+              resizeMode="cover"
+              onError={() => { setPhotoUri(null); setPhotoIsLocal(false); }}
+            />
             <View style={styles.photoEditBadge}>
               <Text style={styles.photoEditText}>Trykk for å bytte</Text>
             </View>

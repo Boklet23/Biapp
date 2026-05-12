@@ -21,8 +21,14 @@ export async function normalizePhotoUri(uri: string): Promise<string> {
   if (uri.startsWith('file://')) return uri;
   const ext = uri.split('?')[0].split('.').pop()?.toLowerCase();
   const safeExt = ext && ['jpg', 'jpeg', 'png', 'webp'].includes(ext) ? ext : 'jpg';
-  const dest = `${FileSystem.cacheDirectory ?? FileSystem.documentDirectory ?? ''}photo_preview_${Date.now()}.${safeExt}`;
-  await FileSystem.copyAsync({ from: uri, to: dest });
+  const cacheDir = FileSystem.cacheDirectory ?? FileSystem.documentDirectory;
+  if (!cacheDir) throw new Error('Filsystem ikke tilgjengelig');
+  const dest = `${cacheDir}photo_preview_${Date.now()}.${safeExt}`;
+  try {
+    await FileSystem.copyAsync({ from: uri, to: dest });
+  } catch {
+    throw new Error('Kunne ikke lese bildet fra kameraet');
+  }
   return dest;
 }
 

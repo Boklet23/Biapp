@@ -1,5 +1,5 @@
 import { lazy, Suspense, useLayoutEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -238,6 +238,15 @@ export default function KubeProfil() {
           )}
         </View>
 
+        {/* Hero photo */}
+        {hive.photoUrl && (
+          <Image
+            source={{ uri: hive.photoUrl }}
+            style={styles.heroPhoto}
+            resizeMode="cover"
+          />
+        )}
+
         {/* Map */}
         <Suspense fallback={null}>
           <HiveMap hive={hive} />
@@ -377,6 +386,13 @@ const styles = StyleSheet.create({
   scroll: { padding: 20, gap: 0, paddingBottom: 100 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   editBtn: { fontSize: 16, fontWeight: '600', fontFamily: FontFamily.semibold, color: Colors.honey },
+
+  heroPhoto: {
+    width: '100%',
+    height: 200,
+    borderRadius: 16,
+    marginBottom: 16,
+  },
 
   hiveHeader: {
     flexDirection: 'row',
