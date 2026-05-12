@@ -90,6 +90,11 @@ export interface DiseasePhoto {
   bg: string;
 }
 
+export interface SeasonalTip {
+  season: string;
+  tips: string[];
+}
+
 export interface Disease {
   id: string;
   slug: string;
@@ -102,6 +107,13 @@ export interface Disease {
   prevention: string;
   thumbnailPath: string | null;
   photos: DiseasePhoto[];
+  // Enriched fields — present when loaded from Supabase
+  seasonalTreatment?: SeasonalTip[] | null;
+  diagnosticTips?: string | null;
+  goal?: string | null;
+  sources?: string | null;
+  imageUrl?: string | null;
+  imagePrompt?: string | null;
 }
 
 export interface Team {

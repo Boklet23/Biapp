@@ -12,6 +12,7 @@ import { Colors } from '@/constants/colors';
 import { FontFamily } from '@/constants/typography';
 import { GUIDE_ARTICLES } from '@/constants/beginnerGuide';
 import { DISEASES } from '@/constants/diseases';
+import { fetchDiseases } from '@/services/diseases';
 import { fetchHives } from '@/services/hive';
 import { fetchHarvests, createHarvest, deleteHarvest } from '@/services/harvest';
 import { useAuthStore } from '@/store/auth';
@@ -63,15 +64,23 @@ export default function Info() {
     onError: (error: Error) => showToast(error.message, 'error'),
   });
 
+  const { data: diseases = DISEASES } = useQuery({
+    queryKey: ['diseases'],
+    queryFn: fetchDiseases,
+    placeholderData: DISEASES,
+    staleTime: 24 * 60 * 60 * 1000,
+    gcTime: 7 * 24 * 60 * 60 * 1000,
+  });
+
   const filteredDiseases = useMemo(() => {
-    if (!query.trim()) return DISEASES;
+    if (!query.trim()) return diseases;
     const q = query.toLowerCase();
-    return DISEASES.filter(
+    return diseases.filter(
       (d) =>
         d.nameNo.toLowerCase().includes(q) ||
         d.symptoms.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [query, diseases]);
 
   return (
     <Screen>
@@ -114,7 +123,7 @@ export default function Info() {
         </ScrollView>
 
         <SectionTitle>Sykdomsguide</SectionTitle>
-        <Text style={styles.sub}>10 vanlige tilstander i norsk birøkt</Text>
+        <Text style={styles.sub}>{diseases.length} vanlige tilstander i norsk birøkt</Text>
 
         <TextInput
           style={styles.search}
