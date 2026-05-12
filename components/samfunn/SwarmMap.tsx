@@ -8,6 +8,7 @@ import { OSLO } from '@/constants/locations';
 import { fetchSwarmReports, createSwarmReport, SwarmReport } from '@/services/swarmReport';
 import { useToastStore } from '@/store/toast';
 import { ReportSwarmModal } from './ReportSwarmModal';
+import { supabase } from '@/lib/supabase';
 
 const isExpoGo = Constants.appOwnership === 'expo';
 
@@ -25,7 +26,11 @@ function daysSince(iso: string): string {
   return `${Math.floor(days / 7)} uker siden`;
 }
 
-export function SwarmMap() {
+interface SwarmMapProps {
+  searchQuery?: string;
+}
+
+export function SwarmMap({ searchQuery = '' }: SwarmMapProps) {
   const queryClient = useQueryClient();
   const showToast = useToastStore((s) => s.show);
   const [modalVisible, setModalVisible] = useState(false);
@@ -35,7 +40,21 @@ export function SwarmMap() {
   const { data: reports = [] } = useQuery({
     queryKey: ['swarm-reports'],
     queryFn: fetchSwarmReports,
+    refetchInterval: 60_000,
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('swarm-reports-live')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'swarm_reports' },
+        () => queryClient.invalidateQueries({ queryKey: ['swarm-reports'] })
+      )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'swarm_reports' },
+        () => queryClient.invalidateQueries({ queryKey: ['swarm-reports'] })
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const reportMutation = useMutation({
     mutationFn: (args: { description: string; contactInfo: string }) =>
@@ -48,7 +67,7 @@ export function SwarmMap() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['swarm-reports'] });
       setModalVisible(false);
-      showToast('Svirm rapportert!', 'success');
+      showToast('Sverm rapportert!', 'success');
     },
     onError: (error: Error) => {
       showToast(error.message ?? 'Kunne ikke sende rapport', 'error');
@@ -79,12 +98,20 @@ export function SwarmMap() {
     ? [userLocation.lng, userLocation.lat]
     : [OSLO.lng, OSLO.lat];
 
+  const visibleReports = searchQuery.trim()
+    ? reports.filter(
+        (r) =>
+          r.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          r.contactInfo?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : reports;
+
   return (
     <View style={styles.container}>
       <MapView style={styles.map} styleURL={Mapbox.StyleURL.Street} logoEnabled={false} attributionPosition={{ bottom: 4, right: 4 }}>
         <Camera centerCoordinate={centerCoords} zoomLevel={5} animationDuration={0} />
 
-        {reports.map((report) => (
+        {visibleReports.map((report) => (
           <PointAnnotation
             key={report.id}
             id={report.id}
@@ -104,7 +131,7 @@ export function SwarmMap() {
           <Pressable style={styles.calloutClose} onPress={() => setSelectedReport(null)}>
             <Text style={styles.calloutCloseText}>✕</Text>
           </Pressable>
-          <Text style={styles.calloutTitle}>Svirm rapportert {daysSince(selectedReport.reportedAt)}</Text>
+          <Text style={styles.calloutTitle}>Sverm rapportert {daysSince(selectedReport.reportedAt)}</Text>
           {selectedReport.description && (
             <Text style={styles.calloutDesc}>{selectedReport.description}</Text>
           )}
@@ -119,9 +146,9 @@ export function SwarmMap() {
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
         onPress={handleReportPress}
         accessibilityRole="button"
-        accessibilityLabel="Rapporter svirm"
+        accessibilityLabel="Rapporter sverm"
       >
-        <Text style={styles.fabText}>+ Rapporter svirm</Text>
+        <Text style={styles.fabText}>+ Rapporter sverm</Text>
       </Pressable>
 
       <ReportSwarmModal

@@ -16,15 +16,16 @@ type Tab = 'kart' | 'lag' | 'utstyr';
 
 export default function Samfunn() {
   const [activeTab, setActiveTab] = useState<Tab>('kart');
-  const [query, setQuery] = useState('');
+  const [lagQuery, setLagQuery] = useState('');
+  const [svermQuery, setSvermQuery] = useState('');
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return BEE_ASSOCIATIONS;
-    const q = query.toLowerCase();
+    if (!lagQuery.trim()) return BEE_ASSOCIATIONS;
+    const q = lagQuery.toLowerCase();
     return BEE_ASSOCIATIONS.filter(
       (a) => a.name.toLowerCase().includes(q) || a.county.toLowerCase().includes(q)
     );
-  }, [query]);
+  }, [lagQuery]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -39,7 +40,7 @@ export default function Samfunn() {
             onPress={() => setActiveTab('kart')}
           >
             <Text style={[styles.tabText, activeTab === 'kart' && styles.tabTextActive]}>
-              🗺 Svirm
+              🐝 Sverm
             </Text>
           </Pressable>
           <Pressable
@@ -63,9 +64,20 @@ export default function Samfunn() {
 
       {/* Innhold */}
       {activeTab === 'kart' ? (
-        <Suspense fallback={null}>
-          <SwarmMap />
-        </Suspense>
+        <View style={styles.kartContainer}>
+          <TextInput
+            style={[styles.search, styles.searchKart]}
+            value={svermQuery}
+            onChangeText={setSvermQuery}
+            placeholder="Søk i svermbeskrivelser..."
+            placeholderTextColor={Colors.mid + '80'}
+            clearButtonMode="while-editing"
+            returnKeyType="search"
+          />
+          <Suspense fallback={null}>
+            <SwarmMap searchQuery={svermQuery} />
+          </Suspense>
+        </View>
       ) : activeTab === 'lag' ? (
         <ScrollView
           contentContainerStyle={styles.content}
@@ -75,8 +87,8 @@ export default function Samfunn() {
           <Text style={styles.sub}>Norske birøkterlag</Text>
           <TextInput
             style={styles.search}
-            value={query}
-            onChangeText={setQuery}
+            value={lagQuery}
+            onChangeText={setLagQuery}
             placeholder="Søk på lag eller fylke..."
             placeholderTextColor={Colors.mid + '80'}
             clearButtonMode="while-editing"
@@ -117,6 +129,8 @@ export default function Samfunn() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.light },
+  kartContainer: { flex: 1 },
+  searchKart: { margin: 12, marginBottom: 0 },
   header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 0 },
   title: { fontSize: 28, fontWeight: '800', fontFamily: FontFamily.extrabold, color: Colors.dark, marginBottom: 12 },
   tabs: {
