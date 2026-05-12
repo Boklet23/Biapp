@@ -1,35 +1,38 @@
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '@/constants/colors';
-import { BeeAssociation } from '@/constants/beeAssociations';
+import { BeeAssociation } from '@/services/associations';
+
+const TYPE_LABEL: Record<BeeAssociation['type'], string> = {
+  nasjonal: '🇳🇴 Nasjonalt',
+  fylke: '📋 Fylkeslag',
+  lokal: '📍 Lokallag',
+};
 
 interface AssociationCardProps {
   association: BeeAssociation;
 }
 
 export function AssociationCard({ association }: AssociationCardProps) {
-  const handleWebsite = () => {
-    if (association.website) Linking.openURL(association.website);
-  };
-
-  const handleEmail = () => {
-    if (association.email) Linking.openURL(`mailto:${association.email}`);
-  };
+  const hasActions = association.website || association.email || association.phone;
 
   return (
     <View style={styles.card}>
       <View style={styles.header}>
         <View style={styles.info}>
           <Text style={styles.name}>{association.name}</Text>
-          <Text style={styles.county}>📍 {association.county}</Text>
+          <View style={styles.metaRow}>
+            <Text style={styles.county}>{association.county}</Text>
+            <Text style={styles.typeBadge}>{TYPE_LABEL[association.type]}</Text>
+          </View>
         </View>
       </View>
 
-      {(association.website || association.email) && (
+      {hasActions && (
         <View style={styles.actions}>
           {association.website && (
             <Pressable
               style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
-              onPress={handleWebsite}
+              onPress={() => Linking.openURL(association.website!)}
               accessibilityRole="link"
               accessibilityLabel={`Åpne nettside til ${association.name}`}
             >
@@ -39,11 +42,21 @@ export function AssociationCard({ association }: AssociationCardProps) {
           {association.email && (
             <Pressable
               style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
-              onPress={handleEmail}
+              onPress={() => Linking.openURL(`mailto:${association.email}`)}
               accessibilityRole="link"
               accessibilityLabel={`Send e-post til ${association.name}`}
             >
               <Text style={styles.actionBtnText}>✉️ E-post</Text>
+            </Pressable>
+          )}
+          {association.phone && (
+            <Pressable
+              style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
+              onPress={() => Linking.openURL(`tel:${association.phone}`)}
+              accessibilityRole="link"
+              accessibilityLabel={`Ring ${association.name}`}
+            >
+              <Text style={styles.actionBtnText}>📞 Ring</Text>
             </Pressable>
           )}
         </View>
@@ -65,10 +78,12 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  info: { flex: 1, gap: 3 },
+  info: { flex: 1, gap: 4 },
   name: { fontSize: 15, fontWeight: '700', color: Colors.dark },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   county: { fontSize: 12, color: Colors.mid },
-  actions: { flexDirection: 'row', gap: 8 },
+  typeBadge: { fontSize: 11, color: Colors.mid + 'bb' },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   actionBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
