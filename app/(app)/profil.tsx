@@ -13,6 +13,7 @@ import {
 } from '@/services/notifications';
 import { useAuthStore } from '@/store/auth';
 import { useToastStore } from '@/store/toast';
+import { supabase } from '@/lib/supabase';
 import { ExperienceLevel } from '@/types';
 
 const EXPERIENCE_OPTIONS: { value: ExperienceLevel; label: string }[] = [
@@ -78,6 +79,34 @@ export default function ProfilModal() {
           text: 'Logg ut',
           style: 'destructive',
           onPress: () => signOut().catch((e: Error) => showToast(e.message ?? 'Kunne ikke logge ut', 'error')),
+        },
+      ]
+    );
+  };
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Ikke innlogget');
+      const { error } = await supabase.functions.invoke('delete-account', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (error) throw new Error(error.message ?? 'Kunne ikke slette konto');
+    },
+    onSuccess: () => signOut().catch(() => null),
+    onError: (e: Error) => showToast(e.message ?? 'Kunne ikke slette konto', 'error'),
+  });
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Slett konto',
+      'Dette vil permanent slette kontoen din og alle data (kuber, inspeksjoner, behandlinger). Denne handlingen kan ikke angres.',
+      [
+        { text: 'Avbryt', style: 'cancel' },
+        {
+          text: 'Slett konto',
+          style: 'destructive',
+          onPress: () => deleteAccountMutation.mutate(),
         },
       ]
     );
@@ -172,6 +201,14 @@ export default function ProfilModal() {
           label="Logg ut"
           variant="danger"
           onPress={handleSignOut}
+        />
+
+        <Button
+          label={deleteAccountMutation.isPending ? 'Sletter...' : 'Slett konto'}
+          variant="danger"
+          onPress={handleDeleteAccount}
+          loading={deleteAccountMutation.isPending}
+          disabled={deleteAccountMutation.isPending}
         />
       </ScrollView>
     </Screen>
