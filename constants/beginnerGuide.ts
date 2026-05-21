@@ -29,6 +29,22 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
         heading: 'Første sesong',
         body: 'Det beste tidspunktet å starte er tidlig vår (april–mai), enten med et kjøpt bifolk (nucleus) eller et sverm. Det første året handler mest om å lære bienes rytme — produksjon av honning kommer gjerne i år to.',
       },
+      {
+        heading: 'Plassering av kuben',
+        body: 'Sett kuben i sol (helst morgensol fra øst), ly for vind, og med innflygningsåpningen vendt mot sør eller øst. Ha en vannkilde i nærheten — biene trenger vann daglig. Hold minst 3 meter til nabogjerde og sørg for at trekklinjen ikke går over sitteplasser.',
+      },
+      {
+        heading: 'Kostnader for å starte',
+        body: 'Regn med 5 000–8 000 kr for det første utstyret: kube (1 500–3 000 kr), drakt og hanske (500–1 500 kr), røykapparat og bistikke (400–800 kr), og ett bifolk eller sverm (800–1 500 kr). Mange birøkterlag låner ut slynge og annet sesongavhengig utstyr gratis til medlemmer.',
+      },
+      {
+        heading: 'Birase',
+        body: 'Buckfast er den vanligste rasen i Norge — rolig, produktiv og svermfattig. Carnica (grå bi) er mild og vinterherdig. Norsk landrase er tilpasset norsk klima og blomstring. Kjøp bier fra en godkjent avler i ditt fylke — lokalt tilpassede bier klarer seg best.',
+      },
+      {
+        heading: 'Tid og innsats',
+        body: 'Forventes ca. 30 minutter per kube per uke i sesong, mer i mai–juni (svermesesongen). August krever tid til varroa-behandling og fôring. Vintermånedene er rolige — en kort sjekk av innflygningen er som regel nok. To kuber tar ikke dobbelt så lang tid som én.',
+      },
     ],
   },
   {
@@ -52,6 +68,18 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
       {
         heading: 'Hva bør du velge?',
         body: 'Velg Langstroth hvis du vil ha tilgang til mye kunnskap, kurs og standardutstyr. Velg Warré eller toppstang om du er opptatt av bienes naturlige atferd og vil gjøre færre inngrep. Uansett type: start med én kube og lær deg den godt før du utvider.',
+      },
+      {
+        heading: 'Materialer og kvalitet',
+        body: 'Gran og furu er vanligst — begge holder godt om de er malt eller oljet utvendig. Velg minst 22 mm tykkelse for isolasjon. Unngå trykkimpregnert tre innvendig — kjemikaliene er skadelige for biene. Plast-kuber finnes og er lette å rengjøre, men gir dårligere isolasjon.',
+      },
+      {
+        heading: 'Ny vs. brukt kube',
+        body: 'Brukte kuber er billige, men kan skjule sykdom — spesielt Amerikansk yngelrotte (AFB) som overlever tiår i voks og tre. Krev alltid friskmelding fra selger. Flass av alt gammelt voks og flabbe innvendig med gassbrenner (flambér) før bruk. Ny kube er tryggere for nybegynnere.',
+      },
+      {
+        heading: 'Antall kuber å starte med',
+        body: 'Start med to kuber. Med to kan du sammenligne atferd, flytte rammer mellom dem for å styrke en svak koloni, og lære mye raskere enn med én. Hadde du bare én kube og den dør, er sesongen over. To er også minimum for å ta opp dronningoppdrett senere.',
       },
     ],
   },
@@ -81,6 +109,18 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
         heading: 'Hva kan vente',
         body: 'Dronningoppdrett-utstyr, feromonfeller, og merking av dronninger er ting du kan lære deg når du har hatt bier i ett par sesonger. Start enkelt.',
       },
+      {
+        heading: 'Vekt og journal',
+        body: 'En kubevekt (manuell eller digital) gir deg innsikt i trekkstyrken uten å åpne kuben. Vekten stiger raskt under god blomstring og synker under dårlig vær. BiVokter-appen lar deg logge vekt, behandlinger og inspeksjonsfunn — alt samlet på ett sted.',
+      },
+      {
+        heading: 'Dronningmerking',
+        body: 'Merk dronningen med farget markeringstusj (POSCA eller BUKI-kit) etter et internasjonalt fargesystem: hvit (år som slutter på 1/6), gul (2/7), rød (3/8), grønn (4/9), blå (5/0). En merket dronning er langt lettere å finne under inspeksjon og du ser raskt om kolonien har byttet dronning.',
+      },
+      {
+        heading: 'Varroa-overvåkingsutstyr',
+        body: 'Klebbplate (festes under varroanettet, telles etter 48 timer) gir naturlig fall. Alkoholvask er mer nøyaktig: 300 bier i 70% isopropanol, rist og tell bunnfall. Refraktometer brukes til å måle vanninnhold i honning (under 18% = moden). Alle disse er rimelige og viktige verktøy.',
+      },
     ],
   },
   {
@@ -108,6 +148,14 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
       {
         heading: 'Høst (sep–okt)',
         body: 'Kolonien krymper. Sikre tilstrekkelig vinterforråd — minst 15–20 kg honning per kube. Mus-sperre settes på innflygningsåpningen. Siste varroa-kontroll.',
+      },
+      {
+        heading: 'November og desember',
+        body: 'Kolonien er i vinterklubbe og skal ikke forstyrres. Sjekk at innflygningsåpningen ikke er sperret av snø eller døde bier. Bruk vinteren til å lese fagstoff, bestille utstyr til neste sesong, og smelte om gammelt voks. BiVokter-appen viser historikk fra sesongen.',
+      },
+      {
+        heading: 'Løpende registrering',
+        body: 'Skriv alltid ned dato, vær, hva du observerte og hva du gjorde etter hver inspeksjon. Noter antall rammer med yngel, honning, om du fant dronningen, og eventuelle tegn på sykdom. Et godt journalføringssystem gjør at du husker hva som skjedde — og lærer raskere.',
       },
     ],
   },
@@ -137,6 +185,18 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
         heading: 'Kommunikasjon',
         body: 'Bier kommuniserer gjennom feromoner og dans. Vokseldansen forteller retning og avstand til matkilder. Alarmferomonet (fra broddapparatet) er grunnen til at én stikk kan utløse flere — hold roen og bruk røyk for å maskere det.',
       },
+      {
+        heading: 'Dronningskifte',
+        body: 'Bytt dronning hvert 1–2 år for å opprettholde produktivitet og redusere svermtilbøyelighet. Ung dronning legger mer egg og kolonien er mer stabil. Kjøp dronning fra godkjent avler med dokumentasjon. Introduser forsiktig via introduksjonsbur med sukkerplugg — kolonien aksepterer henne gradvis.',
+      },
+      {
+        heading: 'Dronningløs koloni',
+        body: 'Tegn på at kolonien mangler dronning: ingen ferskt egg eller ungt yngel, biene er urolige og støyende, og du kan se droneyngel lagt av leggarbeidere (ujevne celler, mange droner). Handle raskt: tilsett en ny dronning, en ramme med ferskt egg, eller slå kolonien sammen med en sterk nabo.',
+      },
+      {
+        heading: 'Å finne dronningen',
+        body: 'Se ytterst på rammen og langs bunnen — dronningen trekker seg bort fra lys og bevegelse. Se etter en ring av arbeiderbier rundt henne (hofstaten). Dronningen er lenger og smalere enn en drone, med kortere vinger relativt til kroppen. En merket dronning er langt lettere å finne.',
+      },
     ],
   },
   {
@@ -164,6 +224,18 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
       {
         heading: 'Lagring og merking',
         body: 'Honning holder seg i praksis evig om den oppbevares mørkt og kjølig (under 20°C). Unngå direkte sollys og temperaturer over 40°C (ødelegger enzymer). Norsk lov krever merking med innhold, vekt, og produsent dersom du selger.',
+      },
+      {
+        heading: 'Hygiene og utstyr',
+        body: 'Alt utstyr som kommer i kontakt med honning må være mattgodkjent (rustfritt stål eller matplast). Vask med varmt vann — ikke såpe, det setter smak. Slyngrommet skal være bifritt og vindtett for å unngå at rovbier oppdager honningen. Renhet er viktig for smak og holdbarhet.',
+      },
+      {
+        heading: 'Lovkrav ved salg',
+        body: 'Produserer du under 3 000 kg/år, regnes du som primærprodusent og kan selge direkte uten full næringsmiddelregistrering. Over dette kreves registrering hos Mattilsynet. Uansett volum: merking med produsent, nettovekt, "best før"-dato og opprinnelsesland er obligatorisk ved salg.',
+      },
+      {
+        heading: 'Krystallisering',
+        body: 'Krystallisering er naturlig og et tegn på ekte honning. Kløverhonning krystalliserer på noen uker, lynghonning nesten umiddelbart, mens akasiehonning kan holde seg flytende i måneder. Varm forsiktig opp (maks 40°C i vannbad) for å gjøre den flytende igjen — over 40°C ødelegges enzymer.',
       },
     ],
   },
@@ -193,6 +265,14 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
         heading: 'Resistens og samarbeid',
         body: 'Varroa utvikler ikke resistens mot oksalsyre eller maursyre (naturlige syrer). Bruk godkjente midler og bytt ikke mellom ulike midler unødig. Snakk med nabobirøktere — varroa sprer seg mellom kolonier, og koordinert behandling i området gir best effekt.',
       },
+      {
+        heading: 'Oksalsyre i praksis',
+        body: 'Drypp-metoden: 3–5 ml ferdig løsning (3,5% oksalsyre i sukkerlake) per biegang mellom rammene. Brukes kun uten yngel (desember–januar). Fordamping (Varrox-apparat): 2,1 g oksalsyre-dihydrat per kube, kan brukes med noe yngel. Bruk alltid vernemaske (FFP2) og hansker — oksalsyre er etsende.',
+      },
+      {
+        heading: 'Biavl mot varroa',
+        body: 'VSH-bier (Varroa Sensitive Hygiene) renser aktivt varroa fra forseglet yngel og kan redusere behovet for kjemisk behandling. Norsk Genressurssenter og godkjente avlere arbeider med å utvikle varroa-resistente linjer. Velg lokalt avlede bier som er testet mot varroa i norsk klima.',
+      },
     ],
   },
   {
@@ -220,6 +300,14 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
       {
         heading: 'Hva du ikke skal gjøre',
         body: 'Gi aldri ubehandlet honning fra ukjent kilde — det kan overføre Amerikansk yngelrotte (AFB). Gi ikke melk, juice eller annen mat. Fôr alltid om kvelden for å unngå røveri. Slutt å fôre i god tid før honninginnsamlingen begynner om våren.',
+      },
+      {
+        heading: 'Aminosyretilskudd',
+        body: 'Produkter som Amino-B Booster blandes i sukkerlaken og supplerer proteiner ved dårlig pollentilgang. Nyttig tidlig vår eller under langvarig regnvær. Ikke nødvendig med rik naturlig blomstring. Les dosering nøye — for mye gir ikke bedre effekt og er bortkastet penger.',
+      },
+      {
+        heading: 'Planter for biene',
+        body: 'Phacelia, bokhvete og kløver er enkle å så og gir rik nektarproduksjon. Raps og lind gir store trekktopper på forsommeren. Frukttrær, bringebær og solsikke er verdifulle om våren og sommeren. Snakk med naboer og lokale bønder om å plante biprodusentplanter — alle vinner på det.',
       },
     ],
   },
@@ -249,6 +337,14 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
         heading: 'Fange et sverm',
         body: 'Et sverm som henger i et tre er rolig og ufarlig — biene har ingen yngel å forsvare. Rist svermen ned i en svermkasse eller kube. Pass på at dronningen er med — da blir de fleste biene. Plasser kassen med innflygning mot kvelden. Sjekk etter 3 dager om de er blitt.',
       },
+      {
+        heading: 'Hva gjør du om kuben allerede har svermet?',
+        body: 'Finn dronningcellene. Åpen celle: svermen har ikke forlatt ennå — kuben kan reddes. Lukket eller klekket celle: svermet er sannsynligvis borte. La den sterkeste cellen stå og fjern resten forsiktig. Ny dronning er kjønnsmoden etter 5–7 dager, legger egg etter 3–4 uker. Ikke åpne kuben i mellomtiden.',
+      },
+      {
+        heading: 'Svermkasse og svermfangst',
+        body: 'En tom, mørk kasse med noen biter gammelt kakestykke og litt propolis på innerveggen lokker til seg frittliggende sverm. Sett den opp 2–3 meter over bakken i kanten av hagen tidlig i mai. Sjekk ukentlig. Har du fanget en sverm, flytt kassen til fast plass om natten når alle biene er inne.',
+      },
     ],
   },
   {
@@ -277,6 +373,14 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
         heading: 'Honningtyper',
         body: 'Honningens smak og farge bestemmes av nektarkildene. Norsk skogshonning (fra bladlussekresjon på gran og furu) er mørk og kraftig. Kløverhonning er lys og mild. Lynghonning er geleaktig og aromatisk. Variasjonen er stor mellom år og lokasjon.',
       },
+      {
+        heading: 'Smelte og rense voks',
+        body: 'Smelt gammel voks i vannbad — aldri direkte på platen, brannsfare. Sil gjennom en nylonstrømpe mens voksen er flytende. Hell i former og la avkjøle sakte. Urenheter (propolis, kakebiter) synker til bunns og skjæres av når voksen er stivnet. Ren voks er gul og uten fremmedstoffer.',
+      },
+      {
+        heading: 'Salve og kosmetikk',
+        body: 'En enkel bivokssalve lages av 30 g smeltet bivoks, 100 ml jomfruolje (oliven eller mandelolje), og evt. 10 dråper eterisk olje (lavendel eller propolis-tinktur). Bland ved 70°C, hell i glass og la stivne. Populært som leppebalsam, håndsalve eller sårsmøring — og enkelt å selge lokalt.',
+      },
     ],
   },
   {
@@ -304,6 +408,14 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
       {
         heading: 'Vinteren er over',
         body: 'Første tegn på liv om våren er samlingsaktivitet en varm dag (over 10°C). Første inspeksjon gjøres når temperaturen er over 12°C inne i kuben. Se etter yngel, dronning og matforråd. Topp opp med fôr om nødvendig og glede deg — en ny sesong begynner!',
+      },
+      {
+        heading: 'Beskytte mot vind og vær',
+        body: 'Plasser kuben med innflygningsåpningen mot sør eller øst — morgensol varmer opp kolonien og stimulerer aktivitet. Bruk vindspjeld av halmballer, planker eller busker på nordsiden. Løft kuben 20–30 cm over bakken på klosser eller stativ — fukt fra bakken er en vanlig årsak til vinterdød.',
+      },
+      {
+        heading: 'Bruk vinteren til læring',
+        body: 'Delta på kurs hos ditt lokale birøkterlag — mange arrangerer teorikurs og foredrag i vinterhalvåret. Les fagbøker (f.eks. "Birøkt i Norge" av Terje Reinertsen). Følg norske birøktere på YouTube og Facebook. Planlegg neste sesongsopplegg, varroa-strategi og hva du vil forbedre — og noter det i BiVokter-appen.',
       },
     ],
   },
