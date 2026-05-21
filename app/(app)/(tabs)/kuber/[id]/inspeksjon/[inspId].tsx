@@ -1,10 +1,10 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
 import { Colors } from '@/constants/colors';
 import { MOOD_EMOJI } from '@/constants/ui';
-import { fetchInspection } from '@/services/inspection';
+import { fetchInspection, fetchInspectionMedia } from '@/services/inspection';
 const MOOD_LABEL = ['', 'Bekymret', 'Nøytral', 'Bra', 'Flott', 'Strålende'];
 
 function formatDate(iso: string): string {
@@ -56,6 +56,12 @@ export default function VisInspeksjon() {
     queryFn: () => fetchInspection(inspId),
   });
 
+  const { data: media = [] } = useQuery({
+    queryKey: ['inspection-media', inspId],
+    queryFn: () => fetchInspectionMedia(inspId),
+    enabled: !!inspId,
+  });
+
   if (isLoading || !insp) {
     return (
       <Screen>
@@ -104,6 +110,17 @@ export default function VisInspeksjon() {
           <Section title="Notater">
             <Text style={styles.notesText}>{insp.notes}</Text>
           </Section>
+        )}
+
+        {media.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Bilder</Text>
+            <View style={styles.mediaGrid}>
+              {media.map((url, i) => (
+                <Image key={i} source={{ uri: url }} style={styles.mediaImage} resizeMode="cover" />
+              ))}
+            </View>
+          </View>
         )}
       </ScrollView>
     </Screen>
@@ -173,5 +190,19 @@ const styles = StyleSheet.create({
     color: Colors.dark,
     lineHeight: 22,
     paddingVertical: 14,
+  },
+
+  mediaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    padding: 12,
+  },
+  mediaImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
   },
 });

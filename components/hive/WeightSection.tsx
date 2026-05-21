@@ -89,40 +89,61 @@ interface WeightChartProps {
 
 function WeightChart({ weights }: WeightChartProps) {
   const { width } = useWindowDimensions();
-  const points = [...weights].slice(0, 8).reverse();
+  // Show up to 30 most recent entries (covers a full season of weekly readings)
+  const points = [...weights].slice(0, 30).reverse();
   if (points.length < 2) return null;
 
+  const yAxisW = 36;
   const chartW = width - 80;
-  const chartH = 80;
-  const padX = 16;
-  const padY = 10;
-  const innerW = chartW - padX * 2;
-  const innerH = chartH - padY * 2;
+  const chartH = 120;
+  const padX = yAxisW;
+  const padTop = 10;
+  const padBottom = 22;
+  const innerW = chartW - padX - 8;
+  const innerH = chartH - padTop - padBottom;
 
   const vals = points.map((p) => p.weightKg);
   const minVal = Math.min(...vals);
   const maxVal = Math.max(...vals);
   const range = maxVal - minVal || 1;
+  const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+
+  const toY = (kg: number) => padTop + innerH - ((kg - minVal) / range) * innerH;
+  const toX = (idx: number) => padX + (idx / (points.length - 1)) * innerW;
 
   const pts = points.map((w, idx) => ({
-    x: padX + (idx / (points.length - 1)) * innerW,
-    y: padY + innerH - ((w.weightKg - minVal) / range) * innerH,
-    kg: w.weightKg,
-    date: w.weighedAt,
-    id: w.id,
+    x: toX(idx), y: toY(w.weightKg), kg: w.weightKg, date: w.weighedAt, id: w.id,
   }));
 
   const poly = pts.map((p) => `${p.x},${p.y}`).join(' ');
+  const avgY = toY(avg);
+
+  // Show date labels only for first, middle and last point to avoid overlap
+  const labelIdxs = new Set([0, Math.floor((points.length - 1) / 2), points.length - 1]);
 
   return (
     <Svg width={chartW} height={chartH} style={{ marginTop: 8 }}>
-      <Line x1={padX} y1={padY + innerH} x2={padX + innerW} y2={padY + innerH} stroke={Colors.mid + '30'} strokeWidth={1} />
+      {/* Y-axis labels */}
+      <SvgText x={yAxisW - 4} y={padTop + 5} fontSize={9} fill={Colors.mid} textAnchor="end">{maxVal.toFixed(1)}</SvgText>
+      <SvgText x={yAxisW - 4} y={padTop + innerH + 4} fontSize={9} fill={Colors.mid} textAnchor="end">{minVal.toFixed(1)}</SvgText>
+
+      {/* Average reference line */}
+      <Line x1={padX} y1={avgY} x2={padX + innerW} y2={avgY} stroke={Colors.mid + '25'} strokeWidth={1} strokeDasharray="4,4" />
+
+      {/* Baseline */}
+      <Line x1={padX} y1={padTop + innerH} x2={padX + innerW} y2={padTop + innerH} stroke={Colors.mid + '30'} strokeWidth={1} />
+
+      {/* Data line */}
       <Polyline points={poly} fill="none" stroke={Colors.info} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+
+      {/* Data points */}
       {pts.map((p) => (
-        <Circle key={p.id} cx={p.x} cy={p.y} r={4} fill={Colors.info} stroke="#fff" strokeWidth={1.5} />
+        <Circle key={p.id} cx={p.x} cy={p.y} r={3.5} fill={Colors.info} stroke="#fff" strokeWidth={1.5} />
       ))}
-      {pts.map((p) => (
-        <SvgText key={`lbl-${p.id}`} x={p.x} y={chartH - 1} fontSize={9} fill={Colors.mid} textAnchor="middle">
+
+      {/* Date labels — sparse to avoid overlap */}
+      {pts.map((p, idx) => labelIdxs.has(idx) && (
+        <SvgText key={`lbl-${p.id}`} x={p.x} y={chartH - 4} fontSize={9} fill={Colors.mid} textAnchor="middle">
           {formatDate(p.date)}
         </SvgText>
       ))}

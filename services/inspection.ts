@@ -1,3 +1,5 @@
+import * as FileSystem from 'expo-file-system/legacy';
+import { FileSystemUploadType } from 'expo-file-system/legacy';
 import { supabase } from '@/lib/supabase';
 import { Inspection, VarroaAnalysis } from '@/types';
 
@@ -113,6 +115,68 @@ export async function createInspection(input: CreateInspectionData): Promise<Ins
 
   if (error) throw error;
   return mapInspection(data);
+}
+
+export async function uploadInspectionPhoto(
+  localUri: string,
+  inspectionId: string,
+  userId: string,
+  accessToken: string,
+): Promise<string> {
+  let uploadUri = localUri;
+  if (localUri.startsWith('content://')) {
+    const srcExt = localUri.split('.').pop()?.toLowerCase();
+    const tmpExt = srcExt && ['jpg', 'jpeg', 'png'].includes(srcExt) ? srcExt : 'jpg';
+    const tmp = `${FileSystem.cacheDirectory ?? FileSystem.documentDirectory ?? ''}insp_${Date.now()}.${tmpExt}`;
+    await FileSystem.copyAsync({ from: localUri, to: tmp });
+    uploadUri = tmp;
+  }
+
+  const ext = uploadUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+  const safeExt = ['jpg', 'jpeg', 'png'].includes(ext) ? ext : 'jpg';
+  const contentType = safeExt === 'png' ? 'image/png' : 'image/jpeg';
+  const fileName = `${userId}/${inspectionId}/${Date.now()}.${safeExt}`;
+  const uploadUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/inspection-media/${fileName}`;
+
+  const response = await FileSystem.uploadAsync(uploadUrl, uploadUri, {
+    httpMethod: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': contentType,
+      apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
+    },
+    uploadType: FileSystemUploadType.BINARY_CONTENT,
+  });
+
+  if (response.status < 200 || response.status >= 300) {
+    throw new Error(`Bildeoppasting feilet (HTTP ${response.status})`);
+  }
+
+  const { data } = supabase.storage.from('inspection-media').getPublicUrl(fileName);
+  return data.publicUrl;
+}
+
+export async function createInspectionMedia(inspectionId: string, storagePath: string): Promise<void> {
+  const { error } = await supabase
+    .from('inspection_media')
+    .insert({ inspection_id: inspectionId, storage_path: storagePath, media_type: 'image' });
+  if (error) throw error;
+}
+
+export async function fetchInspectionMedia(inspectionId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('inspection_media')
+    .select('storage_path')
+    .eq('inspection_id', inspectionId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []).map((row) => row.storage_path as string);
+}
+
+export async function deleteInspectionMedia(id: string): Promise<void> {
+  const { error } = await supabase.from('inspection_media').delete().eq('id', id);
+  if (error) throw error;
 }
 
 export async function analyzeVarroa(

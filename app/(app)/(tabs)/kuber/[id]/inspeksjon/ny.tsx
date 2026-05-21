@@ -26,7 +26,8 @@ import { Colors } from '@/constants/colors';
 import { FontFamily } from '@/constants/typography';
 import { MOOD_EMOJIS } from '@/constants/ui';
 import { fetchHive } from '@/services/hive';
-import { createInspection, analyzeVarroa } from '@/services/inspection';
+import { createInspection, analyzeVarroa, uploadInspectionPhoto, createInspectionMedia, CreateInspectionData } from '@/services/inspection';
+import { supabase } from '@/lib/supabase';
 import { fetchWeather } from '@/services/weather';
 import { useToastStore } from '@/store/toast';
 import { useEffectiveTier } from '@/hooks/useEffectiveTier';
@@ -381,9 +382,12 @@ interface Step4Props {
   setNotes: (v: string) => void;
   moodScore: number;
   setMoodScore: (v: number) => void;
+  photoUris: string[];
+  onAddPhoto: () => Promise<void>;
+  onRemovePhoto: (uri: string) => void;
 }
 
-function Step4({ notes, setNotes, moodScore, setMoodScore }: Step4Props) {
+function Step4({ notes, setNotes, moodScore, setMoodScore, photoUris, onAddPhoto, onRemovePhoto }: Step4Props) {
   return (
     <View style={styles.stepContent}>
       <Text style={styles.stepHeading}>Notater og humør</Text>
@@ -400,6 +404,26 @@ function Step4({ notes, setNotes, moodScore, setMoodScore }: Step4Props) {
           numberOfLines={4}
           textAlignVertical="top"
         />
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Bilder (valgfritt)</Text>
+        <View style={styles.photoRow}>
+          {photoUris.map((uri) => (
+            <View key={uri} style={styles.photoThumbWrap}>
+              <Image source={{ uri }} style={styles.photoThumb} resizeMode="cover" />
+              <Pressable style={styles.photoRemoveBtn} onPress={() => onRemovePhoto(uri)} hitSlop={6}>
+                <Text style={styles.photoRemoveText}>✕</Text>
+              </Pressable>
+            </View>
+          ))}
+          {photoUris.length < 4 && (
+            <Pressable style={styles.photoAddBtn} onPress={onAddPhoto}>
+              <Text style={styles.photoAddIcon}>📷</Text>
+              <Text style={styles.photoAddText}>Legg til</Text>
+            </Pressable>
+          )}
+        </View>
       </View>
 
       <Text style={styles.label}>Kubehumør</Text>
@@ -478,14 +502,49 @@ export default function NyInspeksjon() {
   // Step 4
   const [notes, setNotes] = useState('');
   const [moodScore, setMoodScore] = useState(0);
+  const [photoUris, setPhotoUris] = useState<string[]>([]);
+
+  const handleAddPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Tillatelse nektet', 'Gi BiVokter tilgang til bilder i innstillingene.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      allowsEditing: false,
+      exif: false,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setPhotoUris((prev) => [...prev, result.assets[0].uri]);
+    }
+  };
+
+  const handleRemovePhoto = (uri: string) => {
+    setPhotoUris((prev) => prev.filter((u) => u !== uri));
+  };
 
   const mutation = useMutation({
-    mutationFn: createInspection,
+    mutationFn: async (data: CreateInspectionData) => {
+      const insp = await createInspection(data);
+      if (photoUris.length > 0) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await Promise.all(photoUris.map(async (uri) => {
+            const path = await uploadInspectionPhoto(uri, insp.id, session.user.id, session.access_token);
+            await createInspectionMedia(insp.id, path);
+          }));
+        }
+      }
+      return insp;
+    },
     onError: (error: Error) => showToast(error.message ?? 'Kunne ikke lagre inspeksjon', 'error'),
     onSuccess: (insp) => {
       queryClient.invalidateQueries({ queryKey: ['inspections', id] });
       queryClient.invalidateQueries({ queryKey: ['last-inspection-per-hive'] });
       queryClient.invalidateQueries({ queryKey: ['all-inspections'] });
+      queryClient.invalidateQueries({ queryKey: ['inspection-media', insp.id] });
       router.replace({ pathname: '/kuber/[id]/inspeksjon/[inspId]', params: { id, inspId: insp.id } });
     },
   });
@@ -599,6 +658,9 @@ export default function NyInspeksjon() {
             setNotes={setNotes}
             moodScore={moodScore}
             setMoodScore={setMoodScore}
+            photoUris={photoUris}
+            onAddPhoto={handleAddPhoto}
+            onRemovePhoto={handleRemovePhoto}
           />
         )}
       </ScrollView>
@@ -746,6 +808,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FontFamily.regular,
   },
+
+  // Photo picker
+  photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 },
+  photoThumbWrap: { position: 'relative', width: 76, height: 76 },
+  photoThumb: { width: 76, height: 76, borderRadius: 10 },
+  photoRemoveBtn: {
+    position: 'absolute', top: -6, right: -6,
+    backgroundColor: Colors.error, borderRadius: 10,
+    width: 20, height: 20, alignItems: 'center', justifyContent: 'center',
+  },
+  photoRemoveText: { color: Colors.white, fontSize: 10, fontWeight: '700' },
+  photoAddBtn: {
+    width: 76, height: 76, borderRadius: 10,
+    borderWidth: 1.5, borderColor: Colors.mid + '40',
+    alignItems: 'center', justifyContent: 'center', gap: 2,
+    backgroundColor: Colors.white,
+  },
+  photoAddIcon: { fontSize: 22 },
+  photoAddText: { fontSize: 11, color: Colors.mid },
 
   // AI Varroa analyse
   aiSection: {
