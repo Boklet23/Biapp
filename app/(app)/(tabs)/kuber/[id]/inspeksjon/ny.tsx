@@ -481,6 +481,7 @@ export default function NyInspeksjon() {
             setWeatherCondition(w.condition);
           }
         })
+        .catch(() => {})
         .finally(() => setWeatherLoading(false));
     }
   }, [hive]);
@@ -554,6 +555,10 @@ export default function NyInspeksjon() {
 
   const handleNext = () => {
     if (isLastStep) {
+      if (varroaCount !== '' && isNaN(Number(varroaCount))) {
+        showToast('Varroa-telling må være et tall', 'error');
+        return;
+      }
       mutation.mutate({
         hiveId: id,
         inspectedAt: inspectedAt.toISOString(),

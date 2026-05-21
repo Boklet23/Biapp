@@ -115,12 +115,14 @@ export default function Hjem() {
   useEffect(() => {
     AsyncStorage.getItem(WEATHER_LOCATION_KEY).then((raw) => {
       if (raw) {
-        try { setSavedLocation(JSON.parse(raw)); } catch {}
+        try { setSavedLocation(JSON.parse(raw)); } catch {
+          AsyncStorage.removeItem(WEATHER_LOCATION_KEY).catch(() => {});
+        }
       }
     });
   }, []);
 
-  const { data: hives = [], isLoading: hivesLoading } = useQuery({
+  const { data: hives = [], isLoading: hivesLoading, isError: hivesError, refetch: refetchHives } = useQuery({
     queryKey: ['hives'],
     queryFn: fetchHives,
     meta: { onError: () => showToast('Kunne ikke laste kuber', 'error') },
@@ -331,6 +333,17 @@ export default function Hjem() {
             </View>
           </View>
         </View>
+
+        {/* ─── Retry banner (hives failed to load) ─── */}
+        {hivesError && (
+          <Pressable
+            style={styles.retryBanner}
+            onPress={() => refetchHives()}
+            accessibilityRole="button"
+          >
+            <Text style={styles.retryText}>Kunne ikke laste kubedata. Trykk for å prøve igjen.</Text>
+          </Pressable>
+        )}
 
         {/* ─── Trial banner ─── */}
         {trialDaysLeft !== null && (
@@ -663,6 +676,23 @@ const styles = StyleSheet.create({
   alertNames: { fontSize: 12, fontFamily: FontFamily.regular, color: Colors.inkSoft, marginTop: 1 },
   alertChevron: { fontSize: 20, color: Colors.error, fontWeight: '300' },
 
+  retryBanner: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    backgroundColor: Colors.errorSoft,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: Colors.error + '30',
+  },
+  retryText: {
+    fontSize: 13,
+    fontFamily: FontFamily.medium,
+    fontWeight: '500',
+    color: Colors.error,
+    textAlign: 'center',
+  },
   trialBanner: {
     marginHorizontal: 20,
     marginTop: 12,

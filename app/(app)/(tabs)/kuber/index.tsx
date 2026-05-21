@@ -47,6 +47,7 @@ export default function KuberOversikt() {
     mutationFn: deleteHive,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hives'] });
+      queryClient.invalidateQueries({ queryKey: ['last-inspection-per-hive'] });
     },
     onError: (error: Error) => {
       showToast(error.message ?? 'Kunne ikke slette kuben. Prøv igjen.', 'error');

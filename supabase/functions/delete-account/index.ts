@@ -1,4 +1,31 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+async function cleanStorageBucket(
+  client: SupabaseClient,
+  bucket: string,
+  folder: string,
+): Promise<void> {
+  const { data: items } = await client.storage.from(bucket).list(folder);
+  if (!items?.length) return;
+
+  const filePaths: string[] = [];
+  const subFolders: string[] = [];
+
+  for (const item of items) {
+    const fullPath = `${folder}/${item.name}`;
+    if (item.id) {
+      filePaths.push(fullPath);
+    } else {
+      subFolders.push(fullPath);
+    }
+  }
+
+  if (filePaths.length > 0) {
+    await client.storage.from(bucket).remove(filePaths);
+  }
+
+  await Promise.all(subFolders.map((sub) => cleanStorageBucket(client, bucket, sub)));
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
@@ -22,6 +49,12 @@ Deno.serve(async (req: Request) => {
   if (userError || !user) {
     return new Response('Unauthorized', { status: 401 });
   }
+
+  // Clean up storage files before deleting user (GDPR compliance)
+  await Promise.all([
+    cleanStorageBucket(supabaseAdmin, 'hive-photos', user.id),
+    cleanStorageBucket(supabaseAdmin, 'inspection-media', user.id),
+  ]);
 
   const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
 
