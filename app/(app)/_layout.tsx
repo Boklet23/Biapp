@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth';
 import { GlobalToast } from '@/components/ui/Toast';
 import { Colors } from '@/constants/colors';
 import { requestNotificationPermission, registerPushToken } from '@/services/notifications';
+import { initPurchases, mapEntitlementToTier, syncTierToSupabase } from '@/services/subscription';
 
 const isExpoGo = Constants.appOwnership === 'expo';
 
@@ -16,6 +17,12 @@ export default function AppLayout() {
     if (!session) return;
     requestNotificationPermission();
     registerPushToken();
+    if (!isExpoGo) {
+      initPurchases(session.user.id)
+        .then(mapEntitlementToTier)
+        .then(syncTierToSupabase)
+        .catch(() => {});
+    }
   }, [session]);
 
   useEffect(() => {
