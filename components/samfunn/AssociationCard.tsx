@@ -13,7 +13,7 @@ interface AssociationCardProps {
 }
 
 export function AssociationCard({ association }: AssociationCardProps) {
-  const hasActions = association.website || association.email || association.phone;
+  const hasActions = association.website || association.email || association.phone || association.facebookUrl;
 
   return (
     <View style={styles.card}>
@@ -24,6 +24,9 @@ export function AssociationCard({ association }: AssociationCardProps) {
             <Text style={styles.county}>{association.county}</Text>
             <Text style={styles.typeBadge}>{TYPE_LABEL[association.type]}</Text>
           </View>
+          {association.contactPerson && (
+            <Text style={styles.contactPerson}>Kontaktperson: {association.contactPerson}</Text>
+          )}
         </View>
       </View>
 
@@ -56,7 +59,17 @@ export function AssociationCard({ association }: AssociationCardProps) {
               accessibilityRole="link"
               accessibilityLabel={`Ring ${association.name}`}
             >
-              <Text style={styles.actionBtnText}>📞 Ring</Text>
+              <Text style={styles.actionBtnText}>📞 Mobil</Text>
+            </Pressable>
+          )}
+          {association.facebookUrl && (
+            <Pressable
+              style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
+              onPress={() => Linking.openURL(association.facebookUrl!)}
+              accessibilityRole="link"
+              accessibilityLabel={`Åpne Facebook-side til ${association.name}`}
+            >
+              <Text style={styles.actionBtnText}>🔵 Facebook</Text>
             </Pressable>
           )}
         </View>
@@ -83,6 +96,7 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   county: { fontSize: 12, color: Colors.mid },
   typeBadge: { fontSize: 11, color: Colors.mid + 'bb' },
+  contactPerson: { fontSize: 12, color: Colors.mid, marginTop: 2 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   actionBtn: {
     paddingHorizontal: 12,

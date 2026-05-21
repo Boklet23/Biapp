@@ -4,9 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useQuery } from '@tanstack/react-query';
 import { AssociationCard } from '@/components/samfunn/AssociationCard';
+import { FylkeslagSection } from '@/components/samfunn/FylkeslagSection';
 import { Colors } from '@/constants/colors';
 import { FontFamily } from '@/constants/typography';
-import { fetchBeeAssociations, fetchEquipmentVendors } from '@/services/associations';
+import { fetchGroupedAssociations, fetchEquipmentVendors } from '@/services/associations';
 
 const SwarmMap = lazy(() =>
   import('@/components/samfunn/SwarmMap').then((m) => ({ default: m.SwarmMap }))
@@ -22,9 +23,10 @@ export default function Samfunn() {
   const [lagQuery, setLagQuery] = useState('');
   const [svermQuery, setSvermQuery] = useState('');
 
-  const { data: associations = [], isLoading: lagLoading } = useQuery({
-    queryKey: ['bee-associations'],
-    queryFn: fetchBeeAssociations,
+  const EMPTY_GROUPED = useMemo(() => ({ nasjonal: [], groups: [], ungrouped: [] }), []);
+  const { data: grouped = EMPTY_GROUPED, isLoading: lagLoading } = useQuery({
+    queryKey: ['bee-associations-grouped'],
+    queryFn: fetchGroupedAssociations,
     staleTime: 60 * 60 * 1000,
     gcTime: GC_7D,
   });
@@ -36,17 +38,24 @@ export default function Samfunn() {
     gcTime: GC_7D,
   });
 
-  const filteredAssociations = useMemo(() => {
-    if (!lagQuery.trim()) return associations;
+  const allAssociations = useMemo(() => [
+    ...grouped.nasjonal,
+    ...grouped.groups.flatMap((g) => [g.fylkeslag, ...g.lokallag]),
+    ...grouped.ungrouped,
+  ], [grouped]);
+
+  const filteredAll = useMemo(() => {
+    if (!lagQuery.trim()) return allAssociations;
     const q = lagQuery.toLowerCase();
-    return associations.filter(
+    return allAssociations.filter(
       (a) =>
         a.name.toLowerCase().includes(q) ||
         a.county.toLowerCase().includes(q) ||
         a.email?.toLowerCase().includes(q) ||
-        a.phone?.includes(q)
+        a.phone?.includes(q) ||
+        a.contactPerson?.toLowerCase().includes(q)
     );
-  }, [associations, lagQuery]);
+  }, [allAssociations, lagQuery]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -98,7 +107,7 @@ export default function Samfunn() {
             style={styles.search}
             value={lagQuery}
             onChangeText={setLagQuery}
-            placeholder="Søk på lag, fylke, e-post eller tlf..."
+            placeholder="Søk på lag, kontaktperson, fylke, e-post..."
             placeholderTextColor={Colors.mid + '80'}
             clearButtonMode="while-editing"
             returnKeyType="search"
@@ -106,15 +115,28 @@ export default function Samfunn() {
 
           {lagLoading ? (
             <ActivityIndicator color={Colors.honey} style={styles.loader} />
-          ) : filteredAssociations.length === 0 ? (
-            <Text style={styles.empty}>
-              {lagQuery.trim() ? `Ingen treff for «${lagQuery}»` : 'Ingen lag funnet'}
-            </Text>
+          ) : lagQuery.trim() ? (
+            filteredAll.length === 0 ? (
+              <Text style={styles.empty}>{`Ingen treff for «${lagQuery}»`}</Text>
+            ) : (
+              <>
+                <Text style={styles.sub}>{filteredAll.length} treff</Text>
+                {filteredAll.map((assoc) => (
+                  <AssociationCard key={assoc.id} association={assoc} />
+                ))}
+              </>
+            )
           ) : (
             <>
-              <Text style={styles.sub}>{filteredAssociations.length} birøkterlag</Text>
-              {filteredAssociations.map((assoc) => (
-                <AssociationCard key={assoc.id} association={assoc} />
+              <Text style={styles.sub}>{allAssociations.length} birøkterlag</Text>
+              {grouped.nasjonal.map((a) => (
+                <AssociationCard key={a.id} association={a} />
+              ))}
+              {grouped.groups.map((g) => (
+                <FylkeslagSection key={g.fylkeslag.id} group={g} />
+              ))}
+              {grouped.ungrouped.map((a) => (
+                <AssociationCard key={a.id} association={a} />
               ))}
             </>
           )}

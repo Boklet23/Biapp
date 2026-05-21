@@ -8,7 +8,15 @@ export interface BeeAssociation {
   website: string | null;
   email: string | null;
   phone: string | null;
+  contactPerson: string | null;
+  facebookUrl: string | null;
+  parentId: string | null;
   updatedAt: string;
+}
+
+export interface FylkeslagGroup {
+  fylkeslag: BeeAssociation;
+  lokallag: BeeAssociation[];
 }
 
 export interface EquipmentVendor {
@@ -63,8 +71,29 @@ function mapAssociation(row: Record<string, unknown>): BeeAssociation {
     website: typeof row.website === 'string' ? row.website : null,
     email: typeof row.email === 'string' ? row.email : null,
     phone: typeof row.phone === 'string' ? row.phone : null,
+    contactPerson: typeof row.contact_person === 'string' ? row.contact_person : null,
+    facebookUrl: typeof row.facebook_url === 'string' ? row.facebook_url : null,
+    parentId: typeof row.parent_id === 'string' ? row.parent_id : null,
     updatedAt: row.updated_at as string,
   };
+}
+
+export async function fetchGroupedAssociations(): Promise<{
+  nasjonal: BeeAssociation[];
+  groups: FylkeslagGroup[];
+  ungrouped: BeeAssociation[];
+}> {
+  const all = await fetchBeeAssociations();
+  const nasjonal = all.filter((a) => a.type === 'nasjonal');
+  const fylkeslag = all.filter((a) => a.type === 'fylke');
+  const lokallag = all.filter((a) => a.type === 'lokal');
+
+  const groups = fylkeslag.map((f) => ({
+    fylkeslag: f,
+    lokallag: lokallag.filter((l) => l.parentId === f.id),
+  }));
+  const ungrouped = lokallag.filter((l) => !l.parentId);
+  return { nasjonal, groups, ungrouped };
 }
 
 function mapVendor(row: Record<string, unknown>): EquipmentVendor {
