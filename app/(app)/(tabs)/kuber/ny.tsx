@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressa
 import { router } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
+import { getDeviceLocation, locationErrorMessage } from '@/services/location';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { InfoSheet, InfoRow, InfoText } from '@/components/ui/InfoSheet';
@@ -45,23 +45,14 @@ export default function NyKube() {
   const handleGetLocation = async () => {
     setGpsLoading(true);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        showToast('GPS-tillatelse nektet. Gi tilgang i Innstillinger.', 'error');
-        return;
+      const { lat, lng, placeName } = await getDeviceLocation();
+      setLocationLat(lat);
+      setLocationLng(lng);
+      if (!locationName.trim() && placeName) {
+        setLocationName(placeName);
       }
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setLocationLat(loc.coords.latitude);
-      setLocationLng(loc.coords.longitude);
-      if (!locationName.trim()) {
-        const [place] = await Location.reverseGeocodeAsync(loc.coords);
-        if (place) {
-          const parts = [place.city ?? place.subregion, place.region].filter(Boolean);
-          setLocationName(parts.join(', '));
-        }
-      }
-    } catch {
-      showToast('Kunne ikke hente posisjon. Prøv igjen.', 'error');
+    } catch (err) {
+      showToast(locationErrorMessage(err), 'error');
     } finally {
       setGpsLoading(false);
     }
