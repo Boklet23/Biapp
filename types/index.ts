@@ -208,3 +208,15 @@ export interface FeedPost {
   authorName: string | null;
   likedByMe: boolean;
 }
+
+export interface MapHiveEntry {
+  id: string;
+  name: string;
+  type: HiveType;
+  locationLat: number;
+  locationLng: number;
+  locationName: string | null;
+  ownerId: string;
+  ownerName: string;
+  relationship: 'own' | 'team' | 'shared';
+}

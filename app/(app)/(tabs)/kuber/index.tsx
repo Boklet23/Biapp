@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
 import { HiveCard } from '@/components/hive/HiveCard';
+import { HivesMapView } from '@/components/hive/HivesMapView';
 import { BeeParticles } from '@/components/animations/BeeParticles';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { Colors, Shadows } from '@/constants/colors';
@@ -26,6 +27,7 @@ export default function KuberOversikt() {
   const [refreshing, setRefreshing] = useState(false);
   const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
   const [filter, setFilter] = useState<Filter>('alle');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const showToast = useToastStore((s) => s.show);
   const profile = useAuthStore((s) => s.profile);
   const isStarter = (profile?.subscriptionTier ?? 'starter') === 'starter';
@@ -156,7 +158,7 @@ export default function KuberOversikt() {
           ))}
         </View>
 
-        {/* Analysis shortcuts */}
+        {/* Analysis shortcuts + view toggle */}
         <View style={styles.tools}>
           <Pressable
             onPress={() => router.push('/kuber/sammenlign' as any)}
@@ -170,37 +172,57 @@ export default function KuberOversikt() {
           >
             <Text style={styles.toolText}>📈 Sesong</Text>
           </Pressable>
+          <View style={styles.viewToggle}>
+            <Pressable
+              onPress={() => setViewMode('list')}
+              style={[styles.toggleBtn, viewMode === 'list' && styles.toggleBtnActive]}
+              accessibilityLabel="Listevisning"
+            >
+              <Text style={[styles.toggleBtnText, viewMode === 'list' && styles.toggleBtnTextActive]}>☰</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setViewMode('map')}
+              style={[styles.toggleBtn, viewMode === 'map' && styles.toggleBtnActive]}
+              accessibilityLabel="Kartvisning"
+            >
+              <Text style={[styles.toggleBtnText, viewMode === 'map' && styles.toggleBtnTextActive]}>🗺</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.list, filtered.length === 0 && styles.emptyList]}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.honey} />
-        }
-        renderItem={({ item }) => (
-          <Pressable onLongPress={() => handleDelete(item)} delayLongPress={600}>
-            <HiveCard
-              hive={item}
-              lastInspection={lastInspectionByHive[item.id]}
-              onPress={() => router.push({ pathname: '/kuber/[id]' as any, params: { id: item.id } })}
-            />
-          </Pressable>
-        )}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>🐝</Text>
-            <Text style={styles.emptyTitle}>
-              {filter === 'alle' ? 'Ingen kuber ennå' : 'Ingen kuber i denne kategorien'}
-            </Text>
-            {filter === 'alle' && (
-              <Text style={styles.emptyText}>Trykk + for å legge til din første bikube</Text>
-            )}
-          </View>
-        }
-      />
+      {viewMode === 'map' ? (
+        <HivesMapView />
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[styles.list, filtered.length === 0 && styles.emptyList]}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.honey} />
+          }
+          renderItem={({ item }) => (
+            <Pressable onLongPress={() => handleDelete(item)} delayLongPress={600}>
+              <HiveCard
+                hive={item}
+                lastInspection={lastInspectionByHive[item.id]}
+                onPress={() => router.push({ pathname: '/kuber/[id]' as any, params: { id: item.id } })}
+              />
+            </Pressable>
+          )}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={styles.emptyEmoji}>🐝</Text>
+              <Text style={styles.emptyTitle}>
+                {filter === 'alle' ? 'Ingen kuber ennå' : 'Ingen kuber i denne kategorien'}
+              </Text>
+              {filter === 'alle' && (
+                <Text style={styles.emptyText}>Trykk + for å legge til din første bikube</Text>
+              )}
+            </View>
+          }
+        />
+      )}
 
       {/* FAB */}
       <Pressable
@@ -281,6 +303,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     gap: 8,
+    alignItems: 'center',
   },
   toolBtn: {
     paddingHorizontal: 12,
@@ -329,6 +352,27 @@ const styles = StyleSheet.create({
     color: Colors.dark,
   },
 
+  viewToggle: {
+    flexDirection: 'row',
+    marginLeft: 'auto',
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  toggleBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  toggleBtnActive: {
+    backgroundColor: Colors.honey,
+  },
+  toggleBtnText: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.55)',
+  },
+  toggleBtnTextActive: {
+    color: Colors.dark,
+  },
   list: { padding: 20, gap: 12, paddingBottom: 100 },
   emptyList: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },

@@ -1,6 +1,7 @@
 import { Disease } from '@/types';
 
-// Alle foto-URLer er fra Wikimedia Commons (CC-lisensiert / public domain)
+const BASE = 'https://zujvhbnuqocquthbujmp.supabase.co/storage/v1/object/public/disease-images/';
+
 export const DISEASES: Disease[] = [
   {
     id: '1',
@@ -18,26 +19,9 @@ export const DISEASES: Disease[] = [
       'Regelmessig varroatelling (limbunn, vaskemetode eller sukkerpuder). Sværmforebygging reduserer yngelmengde og gir naturlig behandlingsvindu.',
     thumbnailPath: null,
     photos: [
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/6/6a/Varroa_destructor_on_honeybee_host.jpg',
-        caption: 'Varroamidd på bie — elektronmikroskopbilde (USDA)',
-        bg: '#F5F0FF',
-      },
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/a/a6/Varroa_Mite.jpg',
-        caption: 'Nærbilde av Varroa destructor (USDA)',
-        bg: '#FFF0F0',
-      },
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/d/d5/Honey_bee_with_Deformed_Wing_Virus_and_Varroa_destructor.jpg',
-        caption: 'Bie med misdannede vinger og synlig varroamidd',
-        bg: '#F0F8FF',
-      },
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Abeilles-bees-treatment-varroa.jpg',
-        caption: 'Bier reagerer på Apiguard-behandling mot Varroa',
-        bg: '#FFF5E6',
-      },
+      { uri: `${BASE}varroamidd-01.png?v=1`, caption: 'Varroamidd på bie — nærbilde', bg: '#F5F0FF' },
+      { uri: `${BASE}varroamidd-02.png?v=1`, caption: 'Nærbilde av Varroa destructor', bg: '#FFF0F0' },
+      { uri: `${BASE}varroamidd-03.png?v=1`, caption: 'Bie med misdannede vinger og varroamidd', bg: '#F0F8FF' },
     ],
   },
   {
@@ -56,14 +40,9 @@ export const DISEASES: Disease[] = [
       'Hygieniske bier (f.eks. Buckfast) fjerner smittet yngel raskt. Unngå overcrowding og dårlig ventilasjon.',
     thumbnailPath: null,
     photos: [
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/d/d9/Ascosphaera_apis_%28Maasen_ex_Claussen%29_L.S._Olive_%26_Spiltoir_1324048.jpg',
-        caption: 'Ascosphaera apis — soppsporet som forårsaker kalkyngel',
-        bg: '#F8F8F8',
-      },
-      { emoji: '⬜', caption: 'Hvite, kritt-aktige larver i åpne celler', bg: '#F0F0F0' },
-      { emoji: '⬛', caption: 'Svarte kadavere ved sporulering', bg: '#FAF5E4' },
-      { emoji: '🏚️', caption: 'Flekkete yngelbilde — typisk mønster', bg: '#F5F0EA' },
+      { uri: `${BASE}kalkyngel-01.png?v=1`, caption: 'Ascosphaera apis — soppsporet som forårsaker kalkyngel', bg: '#F8F8F8' },
+      { uri: `${BASE}kalkyngel-02.png?v=1`, caption: 'Hvite, kritt-aktige larver i åpne celler', bg: '#F0F0F0' },
+      { uri: `${BASE}kalkyngel-03.png?v=1`, caption: 'Svarte kadavere ved sporulering — høy smitterisiko', bg: '#FAF5E4' },
     ],
   },
   {
@@ -82,18 +61,9 @@ export const DISEASES: Disease[] = [
       'Unngå stress på kolonien (sulting, trangboddhet). Bruk av hygieniske bier. Behandle med antibiotika kun etter veterinærdirektiv.',
     thumbnailPath: null,
     photos: [
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/d/d8/European_foulbrood_CZ.jpg',
-        caption: 'Europeisk yngelråte — gulfargede, misformede larver',
-        bg: '#FFFDE7',
-      },
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/0/00/EFB_clinical_symptoms.jpg',
-        caption: 'Kliniske symptomer på EFB i åpne celler',
-        bg: '#FFF8E1',
-      },
-      { emoji: '🗺️', caption: 'Flekkete yngelbilde med tomme og fylte celler', bg: '#FFF3E0' },
-      { emoji: '🔀', caption: 'Larver i vridd posisjon — karakteristisk for EFB', bg: '#FBE9E7' },
+      { uri: `${BASE}europeisk-yngelraate-01.png?v=1`, caption: 'Europeisk yngelråte — gulfargede, misformede larver', bg: '#FFFDE7' },
+      { uri: `${BASE}europeisk-yngelraate-02.png?v=1`, caption: 'Kliniske symptomer på EFB i åpne celler', bg: '#FFF8E1' },
+      { uri: `${BASE}europeisk-yngelraate-03.png?v=1`, caption: 'Flekkete yngelbilde med tomme og fylte celler', bg: '#FFF3E0' },
     ],
   },
   {
@@ -112,26 +82,9 @@ export const DISEASES: Disease[] = [
       'Kjøp kun utstyr og pakker fra godkjente kilder. Desinfiser alltid brukt utstyr. Meld mistanke til Mattilsynet.',
     thumbnailPath: null,
     photos: [
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/e/e5/AFB_in_combs.jpg',
-        caption: 'AFB i kaker — innsunkne lokk og mørke avleiringer',
-        bg: '#FFF8E1',
-      },
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/9/93/Loque_americana.jpg',
-        caption: 'Innsunkne lokk og seig tråddtrekksmasse',
-        bg: '#FFF3E0',
-      },
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/2/24/Brood_Paenibacillus_larvae.jpg',
-        caption: 'Yngel angrepet av Paenibacillus larvae',
-        bg: '#FBE9E7',
-      },
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/f/f7/Fuocoarnia.JPG',
-        caption: 'Brenning av kube — eneste løsning ved AFB-funn',
-        bg: '#FFEBEE',
-      },
+      { uri: `${BASE}amerikansk-yngelraate-01.png?v=1`, caption: 'AFB i kaker — innsunkne lokk og mørke avleiringer', bg: '#FFF8E1' },
+      { uri: `${BASE}amerikansk-yngelraate-02.png?v=1`, caption: 'Innsunkne lokk og seig tråddtrekksmasse', bg: '#FFF3E0' },
+      { uri: `${BASE}amerikansk-yngelraate-03.png?v=1`, caption: 'Yngel angrepet av Paenibacillus larvae', bg: '#FBE9E7' },
     ],
   },
   {
@@ -150,17 +103,9 @@ export const DISEASES: Disease[] = [
       'Unngå stress. Varroabehandling reduserer sekundærinfeksjoner. Hygieniske bier fjerner sykt yngel raskt.',
     thumbnailPath: null,
     photos: [
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/2/27/Sacbrood_BHL41830855.jpg',
-        caption: 'Sekkyngelvirus — syke larver i kaker (USDA, offentlig eiendom)',
-        bg: '#FFFDE7',
-      },
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/8/81/Sacbrood_%28Page_17%29_BHL41830850.jpg',
-        caption: 'Typiske symptomer: posesekk-form og innsunkne lokk',
-        bg: '#F8F9FA',
-      },
-      { emoji: '🧊', caption: 'Tørkede larveskal som ligger i cellene', bg: '#F3F8FF' },
+      { uri: `${BASE}sekkyngelvirus-01.png?v=1`, caption: 'Sekkyngelvirus — syke larver i kaker', bg: '#FFFDE7' },
+      { uri: `${BASE}sekkyngelvirus-02.png?v=1`, caption: 'Typiske symptomer: posesekk-form og innsunkne lokk', bg: '#F8F9FA' },
+      { uri: `${BASE}sekkyngelvirus-03.png?v=1`, caption: 'Tørkede larveskal som forblir i cellene', bg: '#F3F8FF' },
     ],
   },
   {
@@ -179,13 +124,9 @@ export const DISEASES: Disease[] = [
       'Unngå lang vinterstid på gamle vokskaker. Sørg for god vinterforsyning av mat. Flytt kuber til tidlig blomstring om mulig.',
     thumbnailPath: null,
     photos: [
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/3/3e/Consequences_of_Nosema_apis_infection_for_male_honey_bees_and_their_fertility_-_Figure_1.webp',
-        caption: 'Nosema apis-infeksjon hos droner — forskningsbilde',
-        bg: '#F5F0FF',
-      },
-      { emoji: '💩', caption: 'Brunflekkete frontplate — typisk tegn på dysenteri', bg: '#FFF8E1' },
-      { emoji: '📉', caption: 'Kolonien krymper unormalt raskt om våren', bg: '#F0F4FF' },
+      { uri: `${BASE}nosema-01.png?v=1`, caption: 'Nosema apis-infeksjon — forskningsbilde', bg: '#F5F0FF' },
+      { uri: `${BASE}nosema-02.png?v=1`, caption: 'Brunflekkete front og fluktplate — tegn på dysenteri', bg: '#FFF8E1' },
+      { uri: `${BASE}nosema-03.png?v=1`, caption: 'Kolonien krymper unormalt raskt tidlig vår', bg: '#F0F4FF' },
     ],
   },
   {
@@ -204,22 +145,9 @@ export const DISEASES: Disease[] = [
       'Ikke importer bier fra Asia. Inspiser alltid importerte bier. Meld all mistanke til Mattilsynet.',
     thumbnailPath: null,
     photos: [
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/7/76/CSIRO_ScienceImage_7018_Asian_bee_mites_Tropilaelaps_sp_on_European_honey_bees_and_a_deformed_bee_top_left.jpg',
-        caption: 'Tropilaelaps på honningbier — misdannet bie øverst til venstre (CSIRO)',
-        bg: '#FFF0F0',
-      },
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/8/89/Apis_mellifera_larvae_infected_by_Tropilaelaps_mercedesae.png',
-        caption: 'Apis mellifera-larver infisert av Tropilaelaps mercedesae',
-        bg: '#F0F8FF',
-      },
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/1/1d/Brood_of_Apis_mellifera_infested_by_Tropilaelaps.png',
-        caption: 'Yngel angrepet av Tropilaelaps — typisk skademønster',
-        bg: '#FFF5F5',
-      },
-      { emoji: '🚨', caption: 'Mistanke? Ring Mattilsynet: 22 40 00 00', bg: '#FFEBEE' },
+      { uri: `${BASE}tropilaelaps-01.png?v=1`, caption: 'Tropilaelaps på honningbier — misdannet bie synlig (CSIRO)', bg: '#FFF0F0' },
+      { uri: `${BASE}tropilaelaps-02.png?v=1`, caption: 'Apis mellifera-larver infisert av Tropilaelaps mercedesae', bg: '#F0F8FF' },
+      { uri: `${BASE}tropilaelaps-03.png?v=1`, caption: 'Yngel angrepet av Tropilaelaps — typisk skademønster', bg: '#FFF5F5' },
     ],
   },
   {
@@ -238,22 +166,9 @@ export const DISEASES: Disease[] = [
       'Hold sterke kolonier – svake kolonier klarer ikke å beskytte alt voks. Frys og lagre tomme kaker riktig. Tett alle sprekker i kuben.',
     thumbnailPath: null,
     photos: [
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/a/a7/Galleria_mellonella_1.jpg',
-        caption: 'Voksmøll (Galleria mellonella) — voksen',
-        bg: '#F8F8F8',
-      },
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/5/5a/Fausse_teigne_%28larve%29.jpg',
-        caption: 'Voksmølllarve som ødelegger kaken',
-        bg: '#F5F5F0',
-      },
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/6/6e/Galleria_mellonella_cocoon%2C_grote_wasmot_cocon.jpg',
-        caption: 'Kokonger festet til kubeveggen',
-        bg: '#FFFDE7',
-      },
-      { emoji: '🕸️', caption: 'Silkete tunneler og tråder gjennom voksen', bg: '#F8F8F8' },
+      { uri: `${BASE}voksmoell-01.png?v=1`, caption: 'Voksmøll (Galleria mellonella) — voksen møll', bg: '#F8F8F8' },
+      { uri: `${BASE}voksmoell-02.png?v=1`, caption: 'Voksmølllarve som ødelegger kaken', bg: '#F5F5F0' },
+      { uri: `${BASE}voksmoell-03.png?v=1`, caption: 'Kokonger festet til kubeveggen', bg: '#FFFDE7' },
     ],
   },
   {
@@ -272,13 +187,9 @@ export const DISEASES: Disease[] = [
       'Bruk kubebein med feller. Ikke plasser kuber direkte på bakken. Fjern vegetasjon rundt kubeunderlaget.',
     thumbnailPath: null,
     photos: [
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Formica_rufa01.jpg',
-        caption: 'Formica rufa (skogmaur) — en av artene som angriper svake kuber',
-        bg: '#FFF8E1',
-      },
-      { emoji: '🫙', caption: 'Maurkopper med olje rundt kubeben', bg: '#F0FFF4' },
-      { emoji: '🌿', caption: 'Vegetasjon rundt kuben gir maur adgang', bg: '#F0F8F0' },
+      { uri: `${BASE}maur-01.png?v=1`, caption: 'Skogmaur (Formica rufa) — en av artene som angriper svake kuber', bg: '#FFF8E1' },
+      { uri: `${BASE}maur-02.png?v=1`, caption: 'Maurskåler med olje rundt kubeben', bg: '#F0FFF4' },
+      { uri: `${BASE}maur-03.png?v=1`, caption: 'Vegetasjon rundt kuben gir maur adgang', bg: '#F0F8F0' },
     ],
   },
   {
@@ -297,13 +208,9 @@ export const DISEASES: Disease[] = [
       'Sett inn muserist (åpning maks 9–10 mm) i flyåpningen ved innvintring. Fjern alle inngangspunkter for mus.',
     thumbnailPath: null,
     photos: [
-      {
-        uri: 'https://upload.wikimedia.org/wikipedia/commons/0/0c/House_mouse_%28Mus_musculus%29_2808.jpg',
-        caption: 'Husmus (Mus musculus) — søker varme og mat i kuber om vinteren',
-        bg: '#F8F8F8',
-      },
-      { emoji: '🕳️', caption: 'Gnageskader på kubekasse og kaker', bg: '#F5F0E8' },
-      { emoji: '🔒', caption: 'Muserist i flyåpning — maks 9 mm høyde', bg: '#F0F8FF' },
+      { uri: `${BASE}mus-01.png?v=1`, caption: 'Husmus (Mus musculus) — søker varme og mat i kuber om vinteren', bg: '#F8F8F8' },
+      { uri: `${BASE}mus-02.png?v=1`, caption: 'Gnageskader på kubekasse og kaker', bg: '#F5F0E8' },
+      { uri: `${BASE}mus-03.png?v=1`, caption: 'Muserist i flyåpning — maks 9–10 mm høyde', bg: '#F0F8FF' },
     ],
   },
 ];

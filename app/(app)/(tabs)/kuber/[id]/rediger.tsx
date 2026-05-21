@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Colors, Shadows } from '@/constants/colors';
@@ -39,6 +40,9 @@ export default function RedigerKube() {
   const [notes, setNotes] = useState('');
   const [numBoxes, setNumBoxes] = useState(1);
   const [framesPerBox, setFramesPerBox] = useState(10);
+  const [locationLat, setLocationLat] = useState<number | null>(null);
+  const [locationLng, setLocationLng] = useState<number | null>(null);
+  const [gpsLoading, setGpsLoading] = useState(false);
   const [nameError, setNameError] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoIsLocal, setPhotoIsLocal] = useState(false);
@@ -51,6 +55,8 @@ export default function RedigerKube() {
       setType(hive.type);
       setBeeBreed(hive.beeBreed ?? 'annet');
       setLocationName(hive.locationName ?? '');
+      setLocationLat(hive.locationLat ?? null);
+      setLocationLng(hive.locationLng ?? null);
       setNotes(hive.notes ?? '');
       setNumBoxes(hive.numBoxes ?? 1);
       setFramesPerBox(hive.framesPerBox ?? 10);
@@ -58,6 +64,31 @@ export default function RedigerKube() {
       setPhotoIsLocal(false);
     }
   }, [hive]);
+
+  const handleGetLocation = async () => {
+    setGpsLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        showToast('GPS-tillatelse nektet. Gi tilgang i Innstillinger.', 'error');
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      setLocationLat(loc.coords.latitude);
+      setLocationLng(loc.coords.longitude);
+      if (!locationName.trim()) {
+        const [place] = await Location.reverseGeocodeAsync(loc.coords);
+        if (place) {
+          const parts = [place.city ?? place.subregion, place.region].filter(Boolean);
+          setLocationName(parts.join(', '));
+        }
+      }
+    } catch {
+      showToast('Kunne ikke hente posisjon. Prøv igjen.', 'error');
+    } finally {
+      setGpsLoading(false);
+    }
+  };
 
   const handlePickPhoto = () => {
     Alert.alert('Bytt bilde', 'Velg kilde', [
@@ -125,6 +156,8 @@ export default function RedigerKube() {
       numBoxes,
       framesPerBox,
       locationName: locationName.trim() || undefined,
+      locationLat: locationLat ?? undefined,
+      locationLng: locationLng ?? undefined,
       notes: notes.trim() || undefined,
       ...(photoIsLocal && photoUri ? { localPhotoUri: photoUri } : {}),
     });
@@ -266,6 +299,21 @@ export default function RedigerKube() {
           onChangeText={setLocationName}
           placeholder="f.eks. Hagen, Skogkanten"
         />
+        <Pressable
+          style={({ pressed }) => [styles.gpsBtn, pressed && styles.gpsBtnPressed]}
+          onPress={handleGetLocation}
+          disabled={gpsLoading}
+          accessibilityRole="button"
+          accessibilityLabel="Hent GPS-posisjon"
+        >
+          {gpsLoading ? (
+            <ActivityIndicator size="small" color={Colors.honey} />
+          ) : (
+            <Text style={styles.gpsBtnText}>
+              {locationLat ? '📍 Posisjon lagret' : '📍 Bruk min posisjon'}
+            </Text>
+          )}
+        </Pressable>
 
         <Input
           label="Notater (valgfritt)"
@@ -446,4 +494,19 @@ const styles = StyleSheet.create({
   photoAddIcon: { fontSize: 36 },
   photoAddText: { fontSize: 15, color: Colors.honey, fontWeight: '700' },
   photoAddSub: { fontSize: 12, color: Colors.mid },
+  gpsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.honey + '40',
+    backgroundColor: Colors.honey + '0C',
+    marginTop: -8,
+    marginBottom: 4,
+  },
+  gpsBtnPressed: { opacity: 0.7 },
+  gpsBtnText: { fontSize: 14, color: Colors.honey, fontWeight: '600' },
 });

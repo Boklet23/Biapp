@@ -1,7 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { FileSystemUploadType } from 'expo-file-system/legacy';
 import { supabase } from '@/lib/supabase';
-import { BeeBreed, Hive, HiveType } from '@/types';
+import { BeeBreed, Hive, HiveType, MapHiveEntry } from '@/types';
 
 const VALID_HIVE_TYPES: HiveType[] = ['langstroth', 'warre', 'toppstang', 'annet'];
 const VALID_BEE_BREEDS: BeeBreed[] = ['norsk_landbee', 'buckfast', 'carniolan', 'annet'];
@@ -156,6 +156,22 @@ export async function updateHive(id: string, input: UpdateHiveData): Promise<Hiv
 
   if (error) throw error;
   return mapHive(data);
+}
+
+export async function fetchMapHives(): Promise<MapHiveEntry[]> {
+  const { data, error } = await supabase.rpc('get_map_hives');
+  if (error) throw error;
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    id: row.id as string,
+    name: row.name as string,
+    type: row.type as HiveType,
+    locationLat: row.location_lat as number,
+    locationLng: row.location_lng as number,
+    locationName: typeof row.location_name === 'string' ? row.location_name : null,
+    ownerId: row.owner_id as string,
+    ownerName: row.owner_name as string,
+    relationship: row.relationship as MapHiveEntry['relationship'],
+  }));
 }
 
 export async function deleteHive(id: string): Promise<void> {
