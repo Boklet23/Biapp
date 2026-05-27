@@ -125,7 +125,6 @@ export default function Hjem() {
   const { data: hives = [], isLoading: hivesLoading, isError: hivesError, refetch: refetchHives } = useQuery({
     queryKey: ['hives'],
     queryFn: fetchHives,
-    meta: { onError: () => showToast('Kunne ikke laste kuber', 'error') },
   });
 
   const { data: lastInspectionByHive = {} } = useQuery({
@@ -171,11 +170,14 @@ export default function Hjem() {
     [activeHives, lastInspectionByHive],
   );
 
-  const harvestedKgThisYear = Math.round(
-    harvests
-      .filter((h) => h.harvestedAt.startsWith(String(currentYear)))
-      .reduce((sum, h) => sum + h.quantityKg, 0) * 10
-  ) / 10;
+  const harvestedKgThisYear = useMemo(() =>
+    Math.round(
+      harvests
+        .filter((h) => h.harvestedAt.startsWith(String(currentYear)))
+        .reduce((sum, h) => sum + h.quantityKg, 0) * 10
+    ) / 10,
+    [harvests, currentYear],
+  );
 
   const avgHealth = useMemo(() => {
     if (activeHives.length === 0) return 0;
@@ -333,6 +335,25 @@ export default function Hjem() {
             </View>
           </View>
         </View>
+
+        {/* ─── Empty state (ingen kuber ennå) ─── */}
+        {!hivesLoading && !hivesError && hives.length === 0 && (
+          <Pressable
+            style={styles.emptyStateCta}
+            onPress={() => router.push('/(app)/(tabs)/kuber/ny' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Legg til din første kube"
+          >
+            <Text style={styles.emptyStateEmoji}>🐝</Text>
+            <Text style={styles.emptyStateTitle}>Velkommen til BiVokter!</Text>
+            <Text style={styles.emptyStateSub}>
+              Legg til din første kube for å komme i gang med inspeksjoner, varsler og AI-analyse.
+            </Text>
+            <View style={styles.emptyStateBtn}>
+              <Text style={styles.emptyStateBtnText}>Legg til din første kube →</Text>
+            </View>
+          </Pressable>
+        )}
 
         {/* ─── Retry banner (hives failed to load) ─── */}
         {hivesError && (
@@ -840,6 +861,45 @@ const styles = StyleSheet.create({
   },
   reportBtnText: {
     fontSize: 14,
+    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    color: Colors.white,
+  },
+
+  // ── Empty state ──
+  emptyStateCta: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 20,
+    backgroundColor: Colors.honey,
+    padding: 24,
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyStateEmoji: { fontSize: 48 },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    color: Colors.dark,
+    textAlign: 'center',
+  },
+  emptyStateSub: {
+    fontSize: 14,
+    fontFamily: FontFamily.regular,
+    color: Colors.dark,
+    textAlign: 'center',
+    opacity: 0.75,
+  },
+  emptyStateBtn: {
+    marginTop: 8,
+    backgroundColor: Colors.dark,
+    borderRadius: 999,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  emptyStateBtnText: {
+    fontSize: 15,
     fontWeight: '700',
     fontFamily: FontFamily.bold,
     color: Colors.white,

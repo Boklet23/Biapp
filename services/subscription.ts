@@ -72,6 +72,14 @@ export async function syncTierToSupabase(tier: SubscriptionTier): Promise<void> 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return;
 
+  const { data: profileCheck } = await supabase
+    .from('profiles')
+    .select('tier_locked')
+    .eq('id', session.user.id)
+    .single();
+
+  if (profileCheck?.tier_locked) return;
+
   const { error } = await supabase
     .from('profiles')
     .update({ subscription_tier: tier })

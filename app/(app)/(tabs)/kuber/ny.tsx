@@ -12,7 +12,9 @@ import { HiveTypeChip } from '@/components/hive/HiveTypeChip';
 import { createHive, normalizePhotoUri, uploadHivePhoto } from '@/services/hive';
 import { supabase } from '@/lib/supabase';
 import { useToastStore } from '@/store/toast';
-import { BeeBreed, HiveType } from '@/types';
+import { useAuthStore } from '@/store/auth';
+import { UpgradeModal } from '@/components/ui/UpgradeModal';
+import { BeeBreed, Hive, HiveType } from '@/types';
 
 const BEE_BREEDS: { value: BeeBreed; label: string; kg: number }[] = [
   { value: 'norsk_landbee', label: 'Norsk landbee', kg: 16 },
@@ -28,6 +30,8 @@ type InfoTopic = 'name' | 'type' | 'location' | 'notes';
 export default function NyKube() {
   const queryClient = useQueryClient();
   const showToast = useToastStore((s) => s.show);
+  const profile = useAuthStore((s) => s.profile);
+  const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
   const [name, setName] = useState('');
   const [type, setType] = useState<HiveType>('langstroth');
   const [beeBreed, setBeeBreed] = useState<BeeBreed>('annet');
@@ -116,6 +120,13 @@ export default function NyKube() {
       return;
     }
     setNameError('');
+
+    const cachedHives = queryClient.getQueryData<Hive[]>(['hives']) ?? [];
+    if (profile?.subscriptionTier === 'starter' && cachedHives.length >= 3) {
+      setUpgradeModalVisible(true);
+      return;
+    }
+
     mutation.mutate({
       name: name.trim(),
       type,
@@ -370,6 +381,13 @@ export default function NyKube() {
         <InfoRow icon="🌻" title="Skriv noe beskrivende" description="«Hagen hjemme», «Onkelens gård» eller «Skogkanten ved Nøklevann»." />
         <InfoRow icon="📌" title="Ikke GPS" description="Dette er bare et fritekst-navn, ikke en GPS-posisjon. Du kan skrive hva som helst." />
       </InfoSheet>
+
+      <UpgradeModal
+        visible={upgradeModalVisible}
+        onClose={() => setUpgradeModalVisible(false)}
+        title="Du har nådd grensen på 3 kuber"
+        subtitle="Starter-abonnementet inkluderer maks 3 kuber. Oppgrader til Hobbyist for ubegrenset antall — 49 kr/mnd, mindre enn en kaffe i uka."
+      />
 
       {/* Info: Notater */}
       <InfoSheet

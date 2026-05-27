@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Colors } from '@/constants/colors';
 import { supabase } from '@/lib/supabase';
+import { signInWithGoogle } from '@/services/googleAuth';
 
 const loginSchema = z.object({
   email: z.string().email('Ugyldig e-postadresse'),
@@ -17,6 +18,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [serverError, setServerError] = useState('');
 
   const handleLogin = async () => {
@@ -44,6 +46,18 @@ export default function Login() {
 
     if (error) {
       setServerError('Feil e-post eller passord. Prøv igjen.');
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setServerError('');
+    setGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch {
+      setServerError('Google-innlogging feilet. Prøv igjen.');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -76,6 +90,28 @@ export default function Login() {
         />
 
         <Button label="Logg inn" onPress={handleLogin} loading={loading} />
+
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>eller</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.googleBtn, pressed && { opacity: 0.8 }]}
+          onPress={handleGoogleLogin}
+          disabled={googleLoading || loading}
+          accessibilityLabel="Logg inn med Google"
+        >
+          {googleLoading ? (
+            <ActivityIndicator color={Colors.dark} size="small" />
+          ) : (
+            <>
+              <Text style={styles.googleBtnIcon}>G</Text>
+              <Text style={styles.googleBtnText}>Fortsett med Google</Text>
+            </>
+          )}
+        </Pressable>
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Har du ikke konto? </Text>
@@ -113,4 +149,23 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   footerText: { color: Colors.mid, fontSize: 14 },
   link: { color: Colors.honey, fontSize: 14, fontWeight: '600' },
+
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 20 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.mid + '25' },
+  dividerText: { fontSize: 13, color: Colors.mid },
+
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    paddingVertical: 13,
+    borderWidth: 1.5,
+    borderColor: Colors.mid + '30',
+    minHeight: 48,
+  },
+  googleBtnIcon: { fontSize: 16, fontWeight: '800', color: '#4285F4' },
+  googleBtnText: { fontSize: 15, fontWeight: '600', color: Colors.dark },
 });

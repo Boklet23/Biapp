@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Colors } from '@/constants/colors';
 import { supabase } from '@/lib/supabase';
+import { signInWithGoogle } from '@/services/googleAuth';
 
 const registerSchema = z.object({
   displayName: z.string().min(2, 'Navn må ha minst 2 tegn'),
@@ -21,6 +22,7 @@ export default function Register() {
   const [termsError, setTermsError] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [serverError, setServerError] = useState('');
 
   const handleRegister = async () => {
@@ -124,6 +126,38 @@ export default function Register() {
 
         <Button label="Opprett konto" onPress={handleRegister} loading={loading} />
 
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>eller</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.googleBtn, pressed && { opacity: 0.8 }]}
+          onPress={async () => {
+            setServerError('');
+            setGoogleLoading(true);
+            try {
+              await signInWithGoogle();
+            } catch {
+              setServerError('Google-innlogging feilet. Prøv igjen.');
+            } finally {
+              setGoogleLoading(false);
+            }
+          }}
+          disabled={googleLoading || loading}
+          accessibilityLabel="Registrer med Google"
+        >
+          {googleLoading ? (
+            <ActivityIndicator color={Colors.dark} size="small" />
+          ) : (
+            <>
+              <Text style={styles.googleBtnIcon}>G</Text>
+              <Text style={styles.googleBtnText}>Fortsett med Google</Text>
+            </>
+          )}
+        </Pressable>
+
         <View style={styles.footer}>
           <Text style={styles.footerText}>Har du allerede konto? </Text>
           <Text
@@ -177,4 +211,23 @@ const styles = StyleSheet.create({
   consentText: { flex: 1, fontSize: 13, color: Colors.mid, lineHeight: 20 },
   consentLink: { color: Colors.honey, fontWeight: '600' },
   termsError: { fontSize: 13, color: Colors.error, marginTop: -8 },
+
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 20 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.mid + '25' },
+  dividerText: { fontSize: 13, color: Colors.mid },
+
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    paddingVertical: 13,
+    borderWidth: 1.5,
+    borderColor: Colors.mid + '30',
+    minHeight: 48,
+  },
+  googleBtnIcon: { fontSize: 16, fontWeight: '800', color: '#4285F4' },
+  googleBtnText: { fontSize: 15, fontWeight: '600', color: Colors.dark },
 });

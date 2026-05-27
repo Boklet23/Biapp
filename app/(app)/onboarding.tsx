@@ -67,9 +67,13 @@ function Slide({ emoji, title, body }: SlideProps) {
   );
 }
 
-async function completeOnboarding() {
+async function completeOnboarding(addFirstHive = false) {
   await AsyncStorage.setItem(ONBOARDING_KEY, 'true').catch(() => {});
-  router.replace('/(app)/(tabs)/hjem' as any);
+  if (addFirstHive) {
+    router.replace('/(app)/(tabs)/kuber/ny' as any);
+  } else {
+    router.replace('/(app)/(tabs)/hjem' as any);
+  }
 }
 
 async function startTrial() {
@@ -138,8 +142,15 @@ export default function OnboardingScreen() {
             <Text style={styles.trialBtnText}>Start 30 dager gratis Hobbyist</Text>
             <Text style={styles.trialBtnSub}>Deretter 49 kr/mnd · Avbryt når som helst</Text>
           </Pressable>
-          <Pressable onPress={completeOnboarding} hitSlop={12} style={styles.skipBtn}>
-            <Text style={styles.skipText}>Fortsett med Starter (gratis, 3 kuber)</Text>
+          <Pressable
+            style={({ pressed }) => [styles.addHiveBtn, pressed && { opacity: 0.8 }]}
+            onPress={() => completeOnboarding(true)}
+            hitSlop={8}
+          >
+            <Text style={styles.addHiveBtnText}>Legg til din første kube →</Text>
+          </Pressable>
+          <Pressable onPress={() => { void completeOnboarding(false); }} hitSlop={12} style={styles.skipBtn}>
+            <Text style={styles.skipText}>Utforsk appen først</Text>
           </Pressable>
         </View>
       ) : (
@@ -150,7 +161,7 @@ export default function OnboardingScreen() {
           >
             <Text style={styles.nextBtnText}>Neste →</Text>
           </Pressable>
-          <Pressable onPress={completeOnboarding} hitSlop={12} style={styles.skipBtn}>
+          <Pressable onPress={() => { void completeOnboarding(); }} hitSlop={12} style={styles.skipBtn}>
             <Text style={styles.skipText}>Hopp over</Text>
           </Pressable>
         </View>
@@ -206,6 +217,15 @@ const styles = StyleSheet.create({
   },
   nextBtnText: { fontSize: 17, fontWeight: '700', color: Colors.white },
 
+  addHiveBtn: {
+    backgroundColor: Colors.dark,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    width: '100%',
+  },
+  addHiveBtnText: { fontSize: 16, fontWeight: '700', color: Colors.white },
   skipBtn: { paddingVertical: 4 },
   skipText: { fontSize: 13, color: Colors.mid },
 });

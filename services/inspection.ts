@@ -152,8 +152,7 @@ export async function uploadInspectionPhoto(
     throw new Error(`Bildeoppasting feilet (HTTP ${response.status})`);
   }
 
-  const { data } = supabase.storage.from('inspection-media').getPublicUrl(fileName);
-  return data.publicUrl;
+  return fileName;
 }
 
 export async function createInspectionMedia(inspectionId: string, storagePath: string): Promise<void> {
@@ -171,7 +170,15 @@ export async function fetchInspectionMedia(inspectionId: string): Promise<string
     .order('created_at', { ascending: true });
 
   if (error) throw error;
-  return (data ?? []).map((row) => row.storage_path as string);
+  const paths = (data ?? []).map((row) => row.storage_path as string);
+  if (paths.length === 0) return [];
+
+  const { data: signed, error: signedError } = await supabase.storage
+    .from('inspection-media')
+    .createSignedUrls(paths, 3600);
+
+  if (signedError) throw signedError;
+  return (signed ?? []).map(d => d.signedUrl).filter((u): u is string => !!u);
 }
 
 export async function deleteInspectionMedia(id: string): Promise<void> {

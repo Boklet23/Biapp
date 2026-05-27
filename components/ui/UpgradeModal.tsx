@@ -72,9 +72,11 @@ const TIERS: TierInfo[] = [
 interface UpgradeModalProps {
   visible: boolean;
   onClose: () => void;
+  title?: string;
+  subtitle?: string;
 }
 
-export function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
+export function UpgradeModal({ visible, onClose, title, subtitle }: UpgradeModalProps) {
   const { profile, setProfile } = useAuthStore();
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [cycle, setCycle] = useState<BillingCycle>('annual');
@@ -150,11 +152,16 @@ export function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Velg abonnement</Text>
+          <Text style={styles.title}>{title ?? 'Velg abonnement'}</Text>
           <Pressable onPress={onClose} style={styles.closeBtn} accessibilityLabel="Lukk">
             <Text style={styles.closeText}>✕</Text>
           </Pressable>
         </View>
+        {subtitle && (
+          <View style={styles.subtitleWrap}>
+            <Text style={styles.subtitle}>{subtitle}</Text>
+          </View>
+        )}
 
         {/* Billing toggle */}
         <View style={styles.toggleWrap}>
@@ -330,4 +337,15 @@ const styles = StyleSheet.create({
   restoreBtn: { alignItems: 'center', paddingVertical: 12 },
   restoreText: { fontSize: 14, color: Colors.mid },
   legal: { fontSize: 11, color: Colors.mid + 'AA', textAlign: 'center', lineHeight: 16 },
+  subtitleWrap: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: Colors.mid,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
 });

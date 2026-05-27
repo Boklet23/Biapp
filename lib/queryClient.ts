@@ -1,8 +1,15 @@
 import * as Sentry from '@sentry/react-native';
-import { QueryCache, QueryClient } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
+import { useToastStore } from '@/store/toast';
 
 export const queryClient = new QueryClient({
   queryCache: new QueryCache({
+    onError: (error) => {
+      Sentry.captureException(error);
+      useToastStore.getState().show(error.message, 'error');
+    },
+  }),
+  mutationCache: new MutationCache({
     onError: (error) => {
       Sentry.captureException(error);
     },

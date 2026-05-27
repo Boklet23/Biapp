@@ -44,7 +44,7 @@ export function Button({
       accessibilityRole="button"
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? Colors.white : Colors.honey} />
+        <ActivityIndicator color={variant === 'primary' ? Colors.dark : Colors.honey} />
       ) : (
         <Text style={[styles.label, styles[`${variant}Label`]]}>{label}</Text>
       )}
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.semibold,
   },
   primaryLabel: {
-    color: Colors.white,
+    color: Colors.dark,
   },
   secondaryLabel: {
     color: Colors.dark,  // honeyDark on amber fails WCAG AA — dark provides 14:1 contrast
