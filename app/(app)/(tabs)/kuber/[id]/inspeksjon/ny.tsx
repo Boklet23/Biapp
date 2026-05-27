@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { StepIndicator } from '@/components/inspection/StepIndicator';
@@ -34,6 +35,24 @@ import { Step4 } from '@/components/inspection/Step4';
 const STEP_LABELS = ['Grunninfo', 'Kubestatus', 'Helse', 'Notater'];
 const TOTAL_STEPS = 4;
 
+const draftKey = (hiveId: string) => `bivokter_insp_draft_${hiveId}`;
+
+interface DraftState {
+  weatherTemp: string;
+  weatherCondition: string;
+  framesBrood: number;
+  framesHoney: number;
+  framesEmpty: number;
+  queenSeen: boolean;
+  queenCells: boolean;
+  varroaCount: string;
+  varroaMethod: string;
+  treatmentApplied: boolean;
+  treatmentProduct: string;
+  notes: string;
+  moodScore: number;
+}
+
 export default function NyInspeksjon() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
@@ -43,6 +62,7 @@ export default function NyInspeksjon() {
   const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
 
   const [step, setStep] = useState(1);
+  const draftRestored = useRef(false);
 
   // Step 1
   const [inspectedAt, setInspectedAt] = useState(new Date());
@@ -50,27 +70,6 @@ export default function NyInspeksjon() {
   const [weatherCondition, setWeatherCondition] = useState('');
   const [weatherLoading, setWeatherLoading] = useState(false);
   const weatherFetched = useRef(false);
-
-  const { data: hive } = useQuery({
-    queryKey: ['hive', id],
-    queryFn: () => fetchHive(id),
-  });
-
-  useEffect(() => {
-    if (hive?.locationLat && hive?.locationLng && !weatherFetched.current) {
-      weatherFetched.current = true;
-      setWeatherLoading(true);
-      fetchWeather(hive.locationLat, hive.locationLng)
-        .then((w) => {
-          if (w) {
-            setWeatherTemp(String(w.temp));
-            setWeatherCondition(w.condition);
-          }
-        })
-        .catch(() => {})
-        .finally(() => setWeatherLoading(false));
-    }
-  }, [hive]);
 
   // Step 2
   const [framesBrood, setFramesBrood] = useState(0);
@@ -90,6 +89,75 @@ export default function NyInspeksjon() {
   const [notes, setNotes] = useState('');
   const [moodScore, setMoodScore] = useState(0);
   const [photoUris, setPhotoUris] = useState<string[]>([]);
+
+  const { data: hive } = useQuery({
+    queryKey: ['hive', id],
+    queryFn: () => fetchHive(id),
+  });
+
+  // Restore draft on mount
+  useEffect(() => {
+    if (!id || draftRestored.current) return;
+    draftRestored.current = true;
+    AsyncStorage.getItem(draftKey(id)).then((raw) => {
+      if (!raw) return;
+      try {
+        const draft: DraftState = JSON.parse(raw);
+        setWeatherTemp(draft.weatherTemp ?? '');
+        setWeatherCondition(draft.weatherCondition ?? '');
+        setFramesBrood(draft.framesBrood ?? 0);
+        setFramesHoney(draft.framesHoney ?? 0);
+        setFramesEmpty(draft.framesEmpty ?? 0);
+        setQueenSeen(draft.queenSeen ?? false);
+        setQueenCells(draft.queenCells ?? false);
+        setVarroaCount(draft.varroaCount ?? '');
+        setVarroaMethod(draft.varroaMethod ?? '');
+        setTreatmentApplied(draft.treatmentApplied ?? false);
+        setTreatmentProduct(draft.treatmentProduct ?? '');
+        setNotes(draft.notes ?? '');
+        setMoodScore(draft.moodScore ?? 0);
+      } catch {
+        AsyncStorage.removeItem(draftKey(id)).catch(() => {});
+      }
+    }).catch(() => {});
+  }, [id]);
+
+  // Save draft whenever fields change
+  useEffect(() => {
+    if (!id || !draftRestored.current) return;
+    const draft: DraftState = {
+      weatherTemp, weatherCondition,
+      framesBrood, framesHoney, framesEmpty,
+      queenSeen, queenCells,
+      varroaCount, varroaMethod,
+      treatmentApplied, treatmentProduct,
+      notes, moodScore,
+    };
+    AsyncStorage.setItem(draftKey(id), JSON.stringify(draft)).catch(() => {});
+  }, [
+    id, weatherTemp, weatherCondition,
+    framesBrood, framesHoney, framesEmpty,
+    queenSeen, queenCells,
+    varroaCount, varroaMethod,
+    treatmentApplied, treatmentProduct,
+    notes, moodScore,
+  ]);
+
+  useEffect(() => {
+    if (hive?.locationLat && hive?.locationLng && !weatherFetched.current) {
+      weatherFetched.current = true;
+      setWeatherLoading(true);
+      fetchWeather(hive.locationLat, hive.locationLng)
+        .then((w) => {
+          if (w) {
+            setWeatherTemp(String(w.temp));
+            setWeatherCondition(w.condition);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setWeatherLoading(false));
+    }
+  }, [hive]);
 
   const handleAddPhoto = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -132,6 +200,7 @@ export default function NyInspeksjon() {
     },
     onError: (error: Error) => showToast(error.message ?? 'Kunne ikke lagre inspeksjon', 'error'),
     onSuccess: (insp) => {
+      AsyncStorage.removeItem(draftKey(id)).catch(() => {});
       queryClient.invalidateQueries({ queryKey: ['inspections', id] });
       queryClient.invalidateQueries({ queryKey: ['last-inspection-per-hive'] });
       queryClient.invalidateQueries({ queryKey: ['all-inspections'] });
@@ -181,7 +250,14 @@ export default function NyInspeksjon() {
         'Data du har lagt inn vil ikke bli lagret.',
         [
           { text: 'Fortsett', style: 'cancel' },
-          { text: 'Avbryt', style: 'destructive', onPress: () => router.back() },
+          {
+            text: 'Avbryt',
+            style: 'destructive',
+            onPress: () => {
+              AsyncStorage.removeItem(draftKey(id)).catch(() => {});
+              router.back();
+            },
+          },
         ],
       );
     } else {

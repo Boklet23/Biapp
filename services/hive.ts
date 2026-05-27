@@ -44,7 +44,7 @@ export async function uploadHivePhoto(
   if (localUri.startsWith('content://')) {
     const srcExt = localUri.split('.').pop()?.toLowerCase();
     const tmpExt = srcExt && ['jpg', 'jpeg', 'png'].includes(srcExt) ? srcExt : 'jpg';
-    const tmp = `${FileSystem.cacheDirectory ?? FileSystem.documentDirectory ?? ''}hive_upload_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${tmpExt}`;
+    const tmp = `${FileSystem.cacheDirectory ?? FileSystem.documentDirectory ?? ''}hive_upload_${Date.now()}.${tmpExt}`;
     await FileSystem.copyAsync({ from: localUri, to: tmp });
     uploadUri = tmp;
   }
@@ -70,8 +70,12 @@ export async function uploadHivePhoto(
     throw new Error(`Opplasting feilet (HTTP ${response.status}): ${response.body}`);
   }
 
-  const { data } = supabase.storage.from('hive-photos').getPublicUrl(fileName);
-  return data.publicUrl;
+  // Return a 1-year signed URL — bucket is private, public URLs no longer work
+  const { data: signedData, error: signedError } = await supabase.storage
+    .from('hive-photos')
+    .createSignedUrl(fileName, 365 * 24 * 3600);
+  if (signedError) throw new Error(`Signert URL feilet: ${signedError.message}`);
+  return signedData.signedUrl;
 }
 
 export interface UpdateHiveData extends Partial<CreateHiveData> {

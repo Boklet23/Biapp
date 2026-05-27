@@ -22,20 +22,27 @@ function getRecommendations(
   );
   const latest = sorted[0];
 
-  // Varroa-basert anbefaling
+  // Varroa-basert anbefaling (metodespesifikke terskler)
   if (latest?.varroaCount != null) {
-    if (latest.varroaCount >= 6) {
+    const vMethod = latest.varroaMethod?.toLowerCase();
+    const isPerHundred = vMethod === 'alkoholspyling' || vMethod === 'sukkerpuder';
+    const isMitefall = vMethod === 'limbunn';
+    const critThresh = isPerHundred ? 3 : isMitefall ? 10 : 6;
+    const warnThresh = isPerHundred ? 2 : isMitefall ? 5 : 3;
+    const unit = isPerHundred ? ' per 100 bier' : isMitefall ? ' per dag' : '';
+
+    if (latest.varroaCount >= critThresh) {
       recs.push({
         icon: '🚨',
         title: 'Behandling nødvendig',
-        detail: `Varroatall ${latest.varroaCount} overskrider terskelen (5). Vurder oxalsyre-fordamping eller Apivar umiddelbart.`,
+        detail: `Varroatall ${latest.varroaCount}${unit} overskrider terskelen (${critThresh}). Vurder oksalsyre-fordamping eller Apivar umiddelbart.`,
         urgency: 'critical',
       });
-    } else if (latest.varroaCount >= 3) {
+    } else if (latest.varroaCount >= warnThresh) {
       recs.push({
         icon: '👁',
         title: 'Følg med på varroa',
-        detail: `Varroatall ${latest.varroaCount} nærmer seg terskelen. Tell igjen om 2 uker.`,
+        detail: `Varroatall ${latest.varroaCount}${unit} nærmer seg terskelen. Tell igjen om 2 uker.`,
         urgency: 'warn',
       });
     }

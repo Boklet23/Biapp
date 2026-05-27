@@ -32,7 +32,10 @@ Deno.serve(async (req: Request) => {
   // Verify RevenueCat authorization header
   const authHeader = req.headers.get('Authorization');
   const webhookSecret = Deno.env.get('REVENUECAT_WEBHOOK_SECRET');
-  if (webhookSecret && authHeader?.trim() !== webhookSecret.trim()) {
+  if (!webhookSecret) {
+    return new Response('Server misconfiguration', { status: 500 });
+  }
+  if (authHeader?.trim() !== webhookSecret.trim()) {
     return new Response('Unauthorized', { status: 401 });
   }
 
@@ -46,6 +49,7 @@ Deno.serve(async (req: Request) => {
   const event = body.event as Record<string, unknown> | undefined;
   if (!event) return new Response('Missing event', { status: 400 });
 
+  const eventId = event.id as string | undefined;
   const eventType = event.type as string;
   const appUserId = event.app_user_id as string; // this is the Supabase user ID
   const aliases = (event.aliases as string[]) ?? [];
@@ -63,6 +67,17 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
+
+  // Idempotency check — skip duplicate deliveries from RevenueCat retries
+  if (eventId) {
+    const { error: insertError } = await supabase
+      .from('revenuecat_processed_events')
+      .insert({ event_id: eventId });
+    if (insertError?.code === '23505') {
+      // Duplicate — already processed
+      return new Response('Already processed', { status: 200 });
+    }
+  }
 
   let tier: SubscriptionTier;
 

@@ -31,15 +31,22 @@ function computeScore(inspections: Inspection[]): { score: number; label: string
   }
 
   if (latest.varroaCount != null) {
-    if (latest.varroaCount > 8) {
+    const vMethod = latest.varroaMethod?.toLowerCase();
+    const isPerHundred = vMethod === 'alkoholspyling' || vMethod === 'sukkerpuder';
+    const isMitefall = vMethod === 'limbunn';
+    const critThresh = isPerHundred ? 3 : isMitefall ? 10 : 8;
+    const warnThresh = isPerHundred ? 2 : isMitefall ? 5 : 5;
+    const modThresh = isPerHundred ? 1 : isMitefall ? 2 : 3;
+
+    if (latest.varroaCount > critThresh) {
       score -= 25;
-      issues.push(`Høyt varroafall (${latest.varroaCount})`);
-    } else if (latest.varroaCount > 5) {
+      issues.push(`Høyt varroatall (${latest.varroaCount})`);
+    } else if (latest.varroaCount > warnThresh) {
       score -= 15;
-      issues.push(`Forhøyet varroafall (${latest.varroaCount})`);
-    } else if (latest.varroaCount > 3) {
+      issues.push(`Forhøyet varroatall (${latest.varroaCount})`);
+    } else if (latest.varroaCount > modThresh) {
       score -= 5;
-      issues.push(`Moderat varroafall (${latest.varroaCount})`);
+      issues.push(`Moderat varroatall (${latest.varroaCount})`);
     }
   }
 

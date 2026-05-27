@@ -24,6 +24,8 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [serverError, setServerError] = useState('');
+  const [pendingVerification, setPendingVerification] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
 
   const handleRegister = async () => {
     setServerError('');
@@ -68,7 +70,20 @@ export default function Register() {
     if (data.session) {
       router.replace('/(app)/(tabs)/hjem');
     } else {
-      setServerError('Sjekk e-posten din og bekreft kontoen, deretter logg inn.');
+      setPendingVerification(true);
+    }
+  };
+
+  const handleResend = async () => {
+    setResendLoading(true);
+    setServerError('');
+    try {
+      const { error } = await supabase.auth.resend({ type: 'signup', email });
+      if (error) throw error;
+    } catch {
+      setServerError('Kunne ikke sende e-post på nytt. Prøv igjen.');
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -81,6 +96,24 @@ export default function Register() {
         <Text style={styles.title}>Opprett konto</Text>
 
         {serverError ? <Text style={styles.serverError}>{serverError}</Text> : null}
+        {pendingVerification && (
+          <View style={styles.verificationBox}>
+            <Text style={styles.verificationText}>
+              Sjekk e-posten din og bekreft kontoen, deretter logg inn.
+            </Text>
+            <Pressable
+              style={({ pressed }) => [styles.resendBtn, pressed && { opacity: 0.8 }]}
+              onPress={handleResend}
+              disabled={resendLoading}
+              accessibilityLabel="Send bekreftelsesepost på nytt"
+            >
+              {resendLoading
+                ? <ActivityIndicator size="small" color={Colors.honey} />
+                : <Text style={styles.resendBtnText}>Send bekreftelsesepost på nytt</Text>
+              }
+            </Pressable>
+          </View>
+        )}
 
         <Input
           label="Navn"
@@ -193,7 +226,7 @@ const styles = StyleSheet.create({
   },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   footerText: { color: Colors.mid, fontSize: 14 },
-  link: { color: Colors.honey, fontSize: 14, fontWeight: '600' },
+  link: { color: Colors.honeyDark, fontSize: 14, fontWeight: '600' },
   consentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   checkbox: {
     width: 22,
@@ -209,8 +242,12 @@ const styles = StyleSheet.create({
   checkboxChecked: { backgroundColor: Colors.honey, borderColor: Colors.honey },
   checkmark: { fontSize: 13, fontWeight: '700', color: Colors.white },
   consentText: { flex: 1, fontSize: 13, color: Colors.mid, lineHeight: 20 },
-  consentLink: { color: Colors.honey, fontWeight: '600' },
+  consentLink: { color: Colors.honeyDark, fontWeight: '600' },
   termsError: { fontSize: 13, color: Colors.error, marginTop: -8 },
+  verificationBox: { backgroundColor: '#EBF5FB', borderRadius: 10, padding: 16, marginBottom: 16, gap: 12 },
+  verificationText: { fontSize: 14, color: Colors.dark, lineHeight: 20 },
+  resendBtn: { alignItems: 'center', paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: Colors.honeyDark },
+  resendBtnText: { color: Colors.honeyDark, fontSize: 14, fontWeight: '600' },
 
   divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 20 },
   dividerLine: { flex: 1, height: 1, backgroundColor: Colors.mid + '25' },

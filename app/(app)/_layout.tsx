@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 import { useAuthStore } from '@/store/auth';
 import { GlobalToast } from '@/components/ui/Toast';
 import { Colors } from '@/constants/colors';
-import { requestNotificationPermission, registerPushToken } from '@/services/notifications';
+import { requestNotificationPermission, registerPushToken, scheduleSeasonalReminders } from '@/services/notifications';
 import { initPurchases, mapEntitlementToTier, syncTierToSupabase } from '@/services/subscription';
 
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -15,7 +15,9 @@ export default function AppLayout() {
 
   useEffect(() => {
     if (!session) return;
-    requestNotificationPermission();
+    requestNotificationPermission()
+      .then((granted) => { if (granted) scheduleSeasonalReminders().catch(() => {}); })
+      .catch(() => {});
     registerPushToken();
     if (!isExpoGo) {
       initPurchases(session.user.id)

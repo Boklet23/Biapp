@@ -137,17 +137,16 @@ export default function OnboardingScreen() {
         <View style={styles.ctaBox}>
           <Pressable
             style={({ pressed }) => [styles.trialBtn, pressed && { opacity: 0.85 }]}
-            onPress={startTrial}
+            onPress={() => completeOnboarding(true)}
           >
-            <Text style={styles.trialBtnText}>Start 30 dager gratis Hobbyist</Text>
-            <Text style={styles.trialBtnSub}>Deretter 49 kr/mnd · Avbryt når som helst</Text>
+            <Text style={styles.trialBtnText}>Legg til din første kube →</Text>
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.addHiveBtn, pressed && { opacity: 0.8 }]}
-            onPress={() => completeOnboarding(true)}
+            onPress={startTrial}
             hitSlop={8}
           >
-            <Text style={styles.addHiveBtnText}>Legg til din første kube →</Text>
+            <Text style={styles.addHiveBtnText}>Start 30 dager gratis Hobbyist</Text>
           </Pressable>
           <Pressable onPress={() => { void completeOnboarding(false); }} hitSlop={12} style={styles.skipBtn}>
             <Text style={styles.skipText}>Utforsk appen først</Text>

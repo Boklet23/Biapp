@@ -5,6 +5,7 @@ import { Screen } from '@/components/ui/Screen';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Colors } from '@/constants/colors';
+import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { updateProfile } from '@/services/profile';
 import {
   scheduleSeasonalReminders,
@@ -38,6 +39,7 @@ export default function ProfilModal() {
     profile?.experienceLevel ?? null
   );
   const [seasonalEnabled, setSeasonalEnabled] = useState(false);
+  const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
 
   useEffect(() => {
     setDisplayName(profile?.displayName ?? '');
@@ -155,11 +157,28 @@ export default function ProfilModal() {
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Abonnement</Text>
-          <View style={styles.readOnly}>
-            <Text style={styles.readOnlyText}>
-              {SUBSCRIPTION_LABELS[profile?.subscriptionTier ?? 'starter']}
-            </Text>
-          </View>
+          {profile?.subscriptionTier === 'starter' || !profile?.subscriptionTier ? (
+            <Pressable
+              style={({ pressed }) => [styles.upgradeRow, pressed && { opacity: 0.85 }]}
+              onPress={() => setUpgradeModalVisible(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Oppgrader abonnement"
+            >
+              <View>
+                <Text style={styles.upgradeRowTier}>
+                  {SUBSCRIPTION_LABELS[profile?.subscriptionTier ?? 'starter']}
+                </Text>
+                <Text style={styles.upgradeRowSub}>Trykk for å oppgradere</Text>
+              </View>
+              <Text style={styles.upgradeRowCta}>Oppgrader →</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.readOnly}>
+              <Text style={styles.readOnlyText}>
+                {SUBSCRIPTION_LABELS[profile?.subscriptionTier ?? 'starter']}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Sesongpåminnelser */}
@@ -211,6 +230,8 @@ export default function ProfilModal() {
           disabled={deleteAccountMutation.isPending}
         />
       </ScrollView>
+
+      <UpgradeModal visible={upgradeModalVisible} onClose={() => setUpgradeModalVisible(false)} />
     </Screen>
   );
 }
@@ -229,9 +250,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     alignItems: 'center',
   },
-  levelBtnActive: { borderColor: Colors.honey, backgroundColor: Colors.honey + '15' },
+  levelBtnActive: { borderColor: Colors.honeyDark, backgroundColor: Colors.honey + '15' },
   levelBtnText: { fontSize: 13, fontWeight: '600', color: Colors.mid },
-  levelBtnTextActive: { color: Colors.honey },
+  levelBtnTextActive: { color: Colors.honeyDark },
   readOnly: {
     backgroundColor: Colors.light,
     borderRadius: 10,
@@ -241,6 +262,20 @@ const styles = StyleSheet.create({
     borderColor: Colors.mid + '15',
   },
   readOnlyText: { fontSize: 15, color: Colors.mid },
+  upgradeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.honeyWash,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: Colors.honey + '40',
+  },
+  upgradeRowTier: { fontSize: 15, fontWeight: '600', color: Colors.dark },
+  upgradeRowSub: { fontSize: 12, color: Colors.mid, marginTop: 2 },
+  upgradeRowCta: { fontSize: 14, fontWeight: '700', color: Colors.honeyDark },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',

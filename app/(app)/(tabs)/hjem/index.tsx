@@ -264,6 +264,7 @@ export default function Hjem() {
               style={styles.weatherRow}
               onPress={() => setLocationPickerVisible(true)}
               accessibilityRole="button"
+              accessibilityLabel="Vær og flydag-informasjon — trykk for å endre sted"
             >
               <View style={styles.weatherMain}>
                 <View style={styles.weatherIcon}>
@@ -293,6 +294,8 @@ export default function Hjem() {
             <Pressable
               style={styles.weatherSetup}
               onPress={() => setLocationPickerVisible(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Sett opp vær og inspeksjonsplanlegger"
             >
               <Text style={styles.weatherSetupText}>Trykk for å sette opp vær og inspeksjonsplanlegger</Text>
             </Pressable>
@@ -361,8 +364,22 @@ export default function Hjem() {
             style={styles.retryBanner}
             onPress={() => refetchHives()}
             accessibilityRole="button"
+            accessibilityLabel="Prøv å laste kubedata på nytt"
           >
             <Text style={styles.retryText}>Kunne ikke laste kubedata. Trykk for å prøve igjen.</Text>
+          </Pressable>
+        )}
+
+        {/* ─── Permanent upgrade nudge for Starter (no active trial) ─── */}
+        {trialDaysLeft === null && profile?.subscriptionTier === 'starter' && (
+          <Pressable
+            style={styles.upgradeNudge}
+            onPress={() => setUpgradeModalVisible(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Oppgrader til Hobbyist — lås opp AI-analyse og ubegrenset antall kuber"
+          >
+            <Text style={styles.upgradeNudgeText}>🚀  Ubegrenset kuber · AI-analyse · Rapporter</Text>
+            <Text style={styles.upgradeNudgeCta}>Oppgrader →</Text>
           </Pressable>
         )}
 
@@ -372,6 +389,7 @@ export default function Hjem() {
             style={styles.trialBanner}
             onPress={() => setUpgradeModalVisible(true)}
             accessibilityRole="button"
+            accessibilityLabel="Oppgrader abonnement — prøveperiode aktiv"
           >
             <Text style={styles.trialBannerText}>
               ⏳  {trialDaysLeft} dag{trialDaysLeft !== 1 ? 'er' : ''} igjen av gratis Hobbyist-prøveperiode
@@ -386,6 +404,7 @@ export default function Hjem() {
             style={styles.alertBanner}
             onPress={() => router.push('/(app)/(tabs)/kuber' as any)}
             accessibilityRole="button"
+            accessibilityLabel="Se kuber som krever oppmerksomhet"
           >
             <View style={styles.alertIcon}>
               <Text style={styles.alertExclamation}>!</Text>
@@ -464,6 +483,8 @@ export default function Hjem() {
           style={({ pressed }) => [styles.reportCard, pressed && { opacity: 0.88 }]}
           onPress={handleGenerateReport}
           disabled={reportLoading}
+          accessibilityRole="button"
+          accessibilityLabel="Generer årsrapport"
         >
           <View style={styles.reportContent}>
             <Text style={styles.reportKicker}>Sesong {currentYear} — klar</Text>
@@ -735,7 +756,32 @@ const styles = StyleSheet.create({
   trialBannerCta: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.honey,
+    color: Colors.honeyDark,
+    marginLeft: 8,
+  },
+
+  upgradeNudge: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    backgroundColor: Colors.honeyWash,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.honey + '40',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  upgradeNudgeText: {
+    fontSize: 13,
+    color: Colors.dark,
+    flex: 1,
+  },
+  upgradeNudgeCta: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.honeyDark,
     marginLeft: 8,
   },
 

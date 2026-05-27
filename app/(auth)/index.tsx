@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { signInWithGoogle } from '@/services/googleAuth';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import Animated, {
@@ -46,6 +47,7 @@ function Bee({ top, left, delayMs, scale = 1 }: BeeProps) {
 
 export default function Welcome() {
   const insets = useSafeAreaInsets();
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   return (
     <View style={styles.container}>
@@ -99,9 +101,30 @@ export default function Welcome() {
             style={({ pressed }) => [styles.primaryBtn, pressed && styles.primaryBtnPressed]}
             onPress={() => router.push('/(auth)/register')}
             accessibilityRole="button"
+            accessibilityLabel="Kom i gang — opprett konto"
           >
             <Text style={styles.primaryBtnText}>Kom i gang</Text>
             <Text style={styles.primaryBtnArrow}>→</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.googleBtn, pressed && { opacity: 0.85 }]}
+            onPress={async () => {
+              setGoogleLoading(true);
+              try { await signInWithGoogle(); } catch { /* handled by googleAuth */ }
+              finally { setGoogleLoading(false); }
+            }}
+            disabled={googleLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Fortsett med Google"
+          >
+            {googleLoading
+              ? <ActivityIndicator color={AMBER} size="small" />
+              : <>
+                  <Text style={styles.googleBtnIcon}>G</Text>
+                  <Text style={styles.googleBtnText}>Fortsett med Google</Text>
+                </>
+            }
           </Pressable>
 
           <Pressable
@@ -276,5 +299,24 @@ const styles = StyleSheet.create({
     color: AMBER,
     fontWeight: '700',
     fontFamily: 'Manrope_700Bold',
+  },
+
+  googleBtn: {
+    height: 54,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  googleBtnIcon: { fontSize: 16, fontWeight: '800', color: '#ffffff' },
+  googleBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.9)',
+    fontFamily: 'Manrope_600SemiBold',
   },
 });

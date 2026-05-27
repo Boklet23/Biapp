@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   footerText: { color: Colors.mid, fontSize: 14 },
-  link: { color: Colors.honey, fontSize: 14, fontWeight: '600' },
+  link: { color: Colors.honeyDark, fontSize: 14, fontWeight: '600' },
 
   divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 20 },
   dividerLine: { flex: 1, height: 1, backgroundColor: Colors.mid + '25' },

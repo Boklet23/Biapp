@@ -188,6 +188,12 @@ export function UpgradeModal({ visible, onClose, title, subtitle }: UpgradeModal
           </View>
         </View>
 
+        <View style={styles.roiBanner}>
+          <Text style={styles.roiText}>
+            💡 Tidlig oppdagelse av varroa kan redde en bikube verdt 3 000–8 000 kr
+          </Text>
+        </View>
+
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           {TIERS.map((tier) => (
             <View
@@ -293,7 +299,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  saveBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.honey },
+  saveBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.honeyDark },
 
   content: { padding: 20, gap: 16, paddingBottom: 40 },
 
@@ -315,7 +321,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
-  popularBadgeText: { fontSize: 12, fontWeight: '700', color: Colors.honey },
+  popularBadgeText: { fontSize: 12, fontWeight: '700', color: Colors.honeyDark },
 
   tierHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   tierLabel: { fontSize: 18, fontWeight: '800', color: Colors.dark },
@@ -333,6 +339,15 @@ const styles = StyleSheet.create({
   },
   buyBtnDisabled: { opacity: 0.6 },
   buyBtnText: { fontSize: 15, fontWeight: '700', color: Colors.white },
+
+  roiBanner: {
+    marginHorizontal: 20,
+    marginBottom: 4,
+    backgroundColor: Colors.honeyWash,
+    borderRadius: 12,
+    padding: 12,
+  },
+  roiText: { fontSize: 13, color: Colors.dark, lineHeight: 18, textAlign: 'center' },
 
   restoreBtn: { alignItems: 'center', paddingVertical: 12 },
   restoreText: { fontSize: 14, color: Colors.mid },

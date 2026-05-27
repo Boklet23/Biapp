@@ -117,7 +117,7 @@ export const SEASON_CHECKLISTS: MonthChecklist[] = [
     month: 12, title: 'Desember', icon: '🎄',
     items: [
       { id: 'des1', task: 'Lytt etter surring (forsiktig)' },
-      { id: 'des2', task: 'Oksylsyre-drypp hvis yngelfri og ikke behandlet i januar' },
+      { id: 'des2', task: 'Oksalsyre-drypp hvis yngelfri og ikke behandlet i januar' },
       { id: 'des3', task: 'Planlegg neste sesong og bestill dronningsmateriale' },
     ],
   },
