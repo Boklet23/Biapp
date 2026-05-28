@@ -5,23 +5,30 @@ async function cleanStorageBucket(
   bucket: string,
   folder: string,
 ): Promise<void> {
-  const { data: items } = await client.storage.from(bucket).list(folder);
-  if (!items?.length) return;
-
-  const filePaths: string[] = [];
+  const PAGE_SIZE = 100;
+  let offset = 0;
   const subFolders: string[] = [];
 
-  for (const item of items) {
-    const fullPath = `${folder}/${item.name}`;
-    if (item.id) {
-      filePaths.push(fullPath);
-    } else {
-      subFolders.push(fullPath);
-    }
-  }
+  while (true) {
+    const { data: items } = await client.storage.from(bucket).list(folder, { limit: PAGE_SIZE, offset });
+    if (!items?.length) break;
 
-  if (filePaths.length > 0) {
-    await client.storage.from(bucket).remove(filePaths);
+    const filePaths: string[] = [];
+    for (const item of items) {
+      const fullPath = `${folder}/${item.name}`;
+      if (item.id) {
+        filePaths.push(fullPath);
+      } else {
+        subFolders.push(fullPath);
+      }
+    }
+
+    if (filePaths.length > 0) {
+      await client.storage.from(bucket).remove(filePaths);
+    }
+
+    if (items.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
   }
 
   await Promise.all(subFolders.map((sub) => cleanStorageBucket(client, bucket, sub)));

@@ -8,6 +8,7 @@ import { Screen } from '@/components/ui/Screen';
 import { LocationPickerModal, PickedLocation } from '@/components/home/LocationPickerModal';
 import { SeasonGuide } from '@/components/calendar/SeasonGuide';
 import { SeasonSummaryCard } from '@/components/home/SeasonSummaryCard';
+import { ActivationGuide } from '@/components/home/ActivationGuide';
 import { Colors } from '@/constants/colors';
 import { FontFamily } from '@/constants/typography';
 import { fetchHives } from '@/services/hive';
@@ -389,6 +390,12 @@ export default function Hjem() {
             <Text style={styles.upgradeNudgeCta}>Oppgrader →</Text>
           </Pressable>
         )}
+
+        {/* ─── Aktiveringsguide (ny bruker) ─── */}
+        <ActivationGuide
+          hiveCount={hives.length}
+          inspectionCount={allInspections.length}
+        />
 
         {/* ─── Trial banner ─── */}
         {trialDaysLeft !== null && (

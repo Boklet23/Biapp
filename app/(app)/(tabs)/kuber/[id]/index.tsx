@@ -297,6 +297,27 @@ export default function KubeProfil() {
           )}
         </View>
 
+        {/* Samarbeid — øverst for Lag-tier synlighet */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.collaborationRow,
+            effectiveTier !== 'lag' && styles.collaborationRowLocked,
+            pressed && { opacity: 0.7 },
+          ]}
+          onPress={() => {
+            if (effectiveTier === 'lag') {
+              router.push({ pathname: '/kuber/[id]/samarbeid' as any, params: { id } });
+            } else {
+              setUpgradeModalVisible(true);
+            }
+          }}
+        >
+          <Text style={styles.collaborationLabel}>
+            {effectiveTier === 'lag' ? '👥  Samarbeidspartnere' : '🔒  Samarbeid (Lag)'}
+          </Text>
+          <Text style={styles.collaborationChevron}>›</Text>
+        </Pressable>
+
         {/* Helsescore */}
         <HealthScoreSection inspections={inspections} />
 
@@ -351,26 +372,6 @@ export default function KubeProfil() {
           </View>
         )}
 
-        {/* Samarbeid */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.collaborationRow,
-            effectiveTier !== 'lag' && styles.collaborationRowLocked,
-            pressed && { opacity: 0.7 },
-          ]}
-          onPress={() => {
-            if (effectiveTier === 'lag') {
-              router.push({ pathname: '/kuber/[id]/samarbeid' as any, params: { id } });
-            } else {
-              setUpgradeModalVisible(true);
-            }
-          }}
-        >
-          <Text style={styles.collaborationLabel}>
-            {effectiveTier === 'lag' ? '👥  Samarbeidspartnere' : '🔒  Samarbeid (Lag)'}
-          </Text>
-          <Text style={styles.collaborationChevron}>›</Text>
-        </Pressable>
 
       </ScrollView>
 

@@ -6,7 +6,7 @@ const CORS = {
 };
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
-const OVERDUE_DAYS = 21;
+const OVERDUE_DAYS = 14;
 const DAY_MS = 86_400_000;
 
 interface HiveRow { id: string; name: string; user_id: string }
@@ -107,7 +107,9 @@ Deno.serve(async (req: Request) => {
         ? Math.floor((now.getTime() - new Date(latest.inspected_at).getTime()) / DAY_MS)
         : 999;
 
-      if (daysSince > OVERDUE_DAYS) {
+      // Skip overdue alerts Nov–Feb (måneder 10, 11, 0, 1) — kubebesøk er ikke praktisk om vinteren
+      const isWinter = [10, 11, 0, 1].includes(now.getMonth());
+      if (!isWinter && daysSince > OVERDUE_DAYS) {
         messages.push({
           to: token,
           title: '🐝 Inspeksjon forfalt',
@@ -130,7 +132,7 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      if (latest?.varroa_count != null && latest.varroa_count > 10) {
+      if (latest?.varroa_count != null && latest.varroa_count > 3) {
         const treatedRecently = hivInsp.some(
           i => i.treatment_applied &&
             (now.getTime() - new Date(i.inspected_at).getTime()) < 30 * DAY_MS,
