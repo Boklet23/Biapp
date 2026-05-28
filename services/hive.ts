@@ -78,8 +78,11 @@ export async function uploadHivePhoto(
   return signedData.signedUrl;
 }
 
-export interface UpdateHiveData extends Partial<CreateHiveData> {
+export interface UpdateHiveData extends Partial<Omit<CreateHiveData, 'locationName' | 'locationLat' | 'locationLng'>> {
   isActive?: boolean;
+  locationName?: string | null;
+  locationLat?: number | null;
+  locationLng?: number | null;
 }
 
 const FETCH_TIMEOUT_MS = 10_000;
@@ -142,9 +145,9 @@ export async function updateHive(id: string, input: UpdateHiveData): Promise<Hiv
   if (input.name !== undefined) patch.name = input.name;
   if (input.type !== undefined) patch.type = input.type;
   if (input.beeBreed !== undefined) patch.bee_breed = input.beeBreed;
-  if (input.locationName !== undefined) patch.location_name = input.locationName;
-  if (input.locationLat !== undefined) patch.location_lat = input.locationLat;
-  if (input.locationLng !== undefined) patch.location_lng = input.locationLng;
+  if (input.locationName !== undefined) patch.location_name = input.locationName ?? null;
+  if (input.locationLat !== undefined) patch.location_lat = input.locationLat ?? null;
+  if (input.locationLng !== undefined) patch.location_lng = input.locationLng ?? null;
   if (input.notes !== undefined) patch.notes = input.notes;
   if (input.photoUrl !== undefined) patch.photo_url = input.photoUrl;
   if (input.numBoxes !== undefined) patch.num_boxes = input.numBoxes;

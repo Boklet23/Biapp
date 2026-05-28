@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Linking,
   Modal,
   Pressable,
   StyleSheet,
@@ -10,7 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import * as Location from 'expo-location';
+import { getDeviceLocation, isValidCoordinate, locationErrorMessage } from '@/services/location';
 import { Colors } from '@/constants/colors';
 
 export interface PickedLocation {
@@ -33,20 +34,29 @@ interface LocationPickerModalProps {
 }
 
 async function reverseGeocode(lat: number, lng: number, token: string): Promise<string> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
   try {
     const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${token}&language=no&types=place,locality,municipality&limit=1`;
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: controller.signal });
     const json = await res.json();
     return json.features?.[0]?.place_name ?? `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
   } catch {
     return `${lat.toFixed(3)}, ${lng.toFixed(3)}`;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
 async function forwardGeocode(query: string): Promise<SearchResult[]> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
   try {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=no&format=json&limit=6&accept-language=no`;
-    const res = await fetch(url, { headers: { 'User-Agent': 'BiVokter/1.0' } });
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'BiVokter/1.0' },
+      signal: controller.signal,
+    });
     if (!res.ok) return [];
     const json: Record<string, unknown>[] = await res.json().catch(() => []);
     return json
@@ -56,9 +66,12 @@ async function forwardGeocode(query: string): Promise<SearchResult[]> {
         name: f.display_name as string,
         lat: parseFloat(f.lat as string),
         lng: parseFloat(f.lon as string),
-      }));
+      }))
+      .filter((r) => isValidCoordinate(r.lat, r.lng));
   } catch {
-    return [];
+    throw new Error('NETWORK');
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -66,6 +79,7 @@ export function LocationPickerModal({ visible, onClose, onPick }: LocationPicker
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -75,6 +89,7 @@ export function LocationPickerModal({ visible, onClose, onPick }: LocationPicker
     if (!visible) {
       setQuery('');
       setResults([]);
+      setSearchError(null);
     }
   }, [visible]);
 
@@ -82,37 +97,47 @@ export function LocationPickerModal({ visible, onClose, onPick }: LocationPicker
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (query.trim().length < 2) {
       setResults([]);
+      setSearchError(null);
       return;
     }
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
-      const found = await forwardGeocode(query);
-      setResults(found);
-      setSearching(false);
+      setSearchError(null);
+      try {
+        const found = await forwardGeocode(query);
+        setResults(found);
+      } catch {
+        setResults([]);
+        setSearchError('Nettverksfeil. Sjekk internettilkoblingen og prøv igjen.');
+      } finally {
+        setSearching(false);
+      }
     }, 350);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, token]);
+  }, [query]);
 
   const handleGps = async () => {
     setGpsLoading(true);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Tillatelse nektet',
-          'BiVokter trenger posisjonstilgang for å bruke GPS. Aktiver dette i telefoninnstillinger.',
-        );
-        setGpsLoading(false);
-        return;
-      }
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const { latitude: lat, longitude: lng } = pos.coords;
-      const name = await reverseGeocode(lat, lng, token);
+      const { lat, lng, placeName } = await getDeviceLocation();
+      const name = placeName ?? await reverseGeocode(lat, lng, token);
       onPick({ lat, lng, name });
-    } catch {
-      Alert.alert('GPS-feil', 'Kunne ikke hente posisjon. Prøv å søk manuelt.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg === 'PERMISSION_DENIED' || msg === 'SERVICES_DISABLED') {
+        Alert.alert(
+          'GPS ikke tilgjengelig',
+          locationErrorMessage(err),
+          [
+            { text: 'Avbryt', style: 'cancel' },
+            { text: 'Åpne innstillinger', onPress: () => Linking.openSettings() },
+          ],
+        );
+      } else {
+        Alert.alert('GPS-feil', locationErrorMessage(err));
+      }
     } finally {
       setGpsLoading(false);
     }
@@ -163,9 +188,12 @@ export function LocationPickerModal({ visible, onClose, onPick }: LocationPicker
             clearButtonMode="while-editing"
           />
 
-          {/* Søkeresultater */}
           {searching && (
             <ActivityIndicator color={Colors.honey} style={{ marginTop: 16 }} />
+          )}
+
+          {searchError && (
+            <Text style={styles.searchError}>{searchError}</Text>
           )}
 
           <FlatList
@@ -183,7 +211,7 @@ export function LocationPickerModal({ visible, onClose, onPick }: LocationPicker
               </Pressable>
             )}
             ListEmptyComponent={
-              query.trim().length >= 2 && !searching ? (
+              query.trim().length >= 2 && !searching && !searchError ? (
                 <Text style={styles.noResults}>Ingen treff for «{query}»</Text>
               ) : null
             }
@@ -239,6 +267,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.mid + '20',
   },
+
+  searchError: { fontSize: 13, color: Colors.error, textAlign: 'center' },
 
   list: { flex: 1 },
   resultRow: {

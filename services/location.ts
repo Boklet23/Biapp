@@ -6,15 +6,31 @@ export interface DeviceLocation {
   placeName: string | null;
 }
 
+export function isValidCoordinate(lat: number, lng: number): boolean {
+  return (
+    Number.isFinite(lat) && lat >= -90 && lat <= 90 &&
+    Number.isFinite(lng) && lng >= -180 && lng <= 180
+  );
+}
+
 export async function getDeviceLocation(): Promise<DeviceLocation> {
   const servicesEnabled = await Location.hasServicesEnabledAsync();
   if (!servicesEnabled) throw new Error('SERVICES_DISABLED');
 
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') throw new Error('PERMISSION_DENIED');
+  // Pre-check before requesting — lets us distinguish "denied" from "not yet asked"
+  const { status: existing } = await Location.getForegroundPermissionsAsync();
+  if (existing === 'denied') throw new Error('PERMISSION_DENIED');
 
-  // Fast path: use cached position if < 5 min old
-  let pos = await Location.getLastKnownPositionAsync({ maxAge: 5 * 60 * 1000 });
+  if (existing !== 'granted') {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') throw new Error('PERMISSION_DENIED');
+  }
+
+  // Fast path: use recent cached position (2 min, ≤100 m accuracy)
+  let pos = await Location.getLastKnownPositionAsync({
+    maxAge: 2 * 60 * 1000,
+    requiredAccuracy: 100,
+  });
 
   if (!pos) {
     pos = await Promise.race([
@@ -24,6 +40,8 @@ export async function getDeviceLocation(): Promise<DeviceLocation> {
       ),
     ]);
   }
+
+  const { latitude: lat, longitude: lng } = pos.coords;
 
   let placeName: string | null = null;
   try {
@@ -36,13 +54,13 @@ export async function getDeviceLocation(): Promise<DeviceLocation> {
     // Coordinates were obtained — place name is non-critical
   }
 
-  return { lat: pos.coords.latitude, lng: pos.coords.longitude, placeName };
+  return { lat, lng, placeName };
 }
 
 export function locationErrorMessage(err: unknown): string {
   const msg = err instanceof Error ? err.message : '';
   if (msg === 'SERVICES_DISABLED') return 'Slå på stedstjenester i telefoninnstillingene og prøv igjen.';
-  if (msg === 'PERMISSION_DENIED') return 'GPS-tillatelse nektet. Gi tilgang i Innstillinger.';
+  if (msg === 'PERMISSION_DENIED') return 'GPS-tillatelse nektet. Åpne innstillinger og gi BiVokter posisjonstilgang.';
   if (msg === 'TIMEOUT') return 'GPS brukte for lang tid. Gå utendørs og prøv igjen.';
   return 'Kunne ikke hente posisjon. Prøv igjen.';
 }

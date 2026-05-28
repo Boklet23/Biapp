@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
@@ -43,6 +43,7 @@ export default function RedigerKube() {
   const [locationLat, setLocationLat] = useState<number | null>(null);
   const [locationLng, setLocationLng] = useState<number | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsUpdated, setGpsUpdated] = useState(false);
   const [nameError, setNameError] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoIsLocal, setPhotoIsLocal] = useState(false);
@@ -71,11 +72,24 @@ export default function RedigerKube() {
       const { lat, lng, placeName } = await getDeviceLocation();
       setLocationLat(lat);
       setLocationLng(lng);
+      setGpsUpdated(true);
       if (!locationName.trim() && placeName) {
         setLocationName(placeName);
       }
     } catch (err) {
-      showToast(locationErrorMessage(err), 'error');
+      const msg = err instanceof Error ? err.message : '';
+      if (msg === 'PERMISSION_DENIED' || msg === 'SERVICES_DISABLED') {
+        Alert.alert(
+          'GPS ikke tilgjengelig',
+          locationErrorMessage(err),
+          [
+            { text: 'Avbryt', style: 'cancel' },
+            { text: 'Åpne innstillinger', onPress: () => Linking.openSettings() },
+          ],
+        );
+      } else {
+        showToast(locationErrorMessage(err), 'error');
+      }
     } finally {
       setGpsLoading(false);
     }
@@ -146,9 +160,9 @@ export default function RedigerKube() {
       beeBreed,
       numBoxes,
       framesPerBox,
-      locationName: locationName.trim() || undefined,
-      locationLat: locationLat ?? undefined,
-      locationLng: locationLng ?? undefined,
+      locationName: locationName.trim() || null,
+      locationLat: locationLat,
+      locationLng: locationLng,
       notes: notes.trim() || undefined,
       ...(photoIsLocal && photoUri ? { localPhotoUri: photoUri } : {}),
     });
@@ -301,7 +315,7 @@ export default function RedigerKube() {
             <ActivityIndicator size="small" color={Colors.honey} />
           ) : (
             <Text style={styles.gpsBtnText}>
-              {locationLat ? '📍 Posisjon lagret' : '📍 Bruk min posisjon'}
+              {gpsUpdated ? '📍 Posisjon oppdatert' : locationLat ? '📍 Oppdater posisjon' : '📍 Bruk min posisjon'}
             </Text>
           )}
         </Pressable>

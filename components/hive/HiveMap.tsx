@@ -37,7 +37,15 @@ function geoJsonCircle(lat: number, lng: number, radiusMeters: number): number[]
 }
 
 export default function HiveMap({ hive }: HiveMapProps) {
-  if (isExpoGo || !hive.locationLat || !hive.locationLng || !mapboxLib) return null;
+  if (hive.locationLat == null || hive.locationLng == null) {
+    return (
+      <View style={styles.placeholder}>
+        <Text style={styles.placeholderText}>📍 Ingen posisjon registrert</Text>
+      </View>
+    );
+  }
+
+  if (isExpoGo || !mapboxLib) return null;
 
   const { MapView, Camera, PointAnnotation, ShapeSource, FillLayer, LineLayer } = mapboxLib as any;
   const Mapbox = mapboxLib.default;
@@ -109,6 +117,19 @@ export default function HiveMap({ hive }: HiveMapProps) {
 }
 
 const styles = StyleSheet.create({
+  placeholder: {
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: Colors.mid + '10',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  placeholderText: {
+    fontSize: 13,
+    color: Colors.mid,
+    fontFamily: FontFamily.regular,
+  },
   container: { marginBottom: 4 },
   mapWrap: { height: 220, borderRadius: 14, overflow: 'hidden' },
   map: { flex: 1 },

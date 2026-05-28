@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
@@ -56,7 +56,19 @@ export default function NyKube() {
         setLocationName(placeName);
       }
     } catch (err) {
-      showToast(locationErrorMessage(err), 'error');
+      const msg = err instanceof Error ? err.message : '';
+      if (msg === 'PERMISSION_DENIED' || msg === 'SERVICES_DISABLED') {
+        Alert.alert(
+          'GPS ikke tilgjengelig',
+          locationErrorMessage(err),
+          [
+            { text: 'Avbryt', style: 'cancel' },
+            { text: 'Åpne innstillinger', onPress: () => Linking.openSettings() },
+          ],
+        );
+      } else {
+        showToast(locationErrorMessage(err), 'error');
+      }
     } finally {
       setGpsLoading(false);
     }
