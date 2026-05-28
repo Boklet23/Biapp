@@ -3,6 +3,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { Redirect, Stack, router } from 'expo-router';
 import Constants from 'expo-constants';
 import { useAuthStore } from '@/store/auth';
+import { useToastStore } from '@/store/toast';
 import { GlobalToast } from '@/components/ui/Toast';
 import { Colors } from '@/constants/colors';
 import { requestNotificationPermission, registerPushToken, scheduleSeasonalReminders } from '@/services/notifications';
@@ -23,7 +24,10 @@ export default function AppLayout() {
       initPurchases(session.user.id)
         .then(mapEntitlementToTier)
         .then(syncTierToSupabase)
-        .catch(() => {});
+        .catch((err: unknown) => {
+          Sentry.captureException(err, { tags: { context: 'tier_sync_startup' } });
+          useToastStore.getState().show('Abonnementsstatus kunne ikke synkroniseres', 'error');
+        });
     }
   }, [session]);
 

@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
 import { LocationPickerModal, PickedLocation } from '@/components/home/LocationPickerModal';
 import { SeasonGuide } from '@/components/calendar/SeasonGuide';
+import { SeasonSummaryCard } from '@/components/home/SeasonSummaryCard';
 import { Colors } from '@/constants/colors';
 import { FontFamily } from '@/constants/typography';
 import { fetchHives } from '@/services/hive';
@@ -131,6 +132,12 @@ export default function Hjem() {
     queryKey: ['last-inspection-per-hive'],
     queryFn: fetchLastInspectionPerHive,
     staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: allInspections = [] } = useQuery({
+    queryKey: ['all-inspections'],
+    queryFn: fetchAllInspections,
+    staleTime: 10 * 60 * 1000,
   });
 
   const { data: harvests = [] } = useQuery({
@@ -467,6 +474,15 @@ export default function Hjem() {
               })}
             </View>
           </View>
+        )}
+
+        {/* ─── Sesongoversikt ─── */}
+        {allInspections.length > 0 && (
+          <SeasonSummaryCard
+            inspections={allInspections}
+            activeHiveCount={activeHives.length}
+            lastInspectionByHive={lastInspectionByHive}
+          />
         )}
 
         {/* ─── Sesongguide ─── */}

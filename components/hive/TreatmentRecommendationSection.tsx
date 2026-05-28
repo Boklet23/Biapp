@@ -27,8 +27,8 @@ function getRecommendations(
     const vMethod = latest.varroaMethod?.toLowerCase();
     const isPerHundred = vMethod === 'alkoholspyling' || vMethod === 'sukkerpuder';
     const isMitefall = vMethod === 'limbunn';
-    const critThresh = isPerHundred ? 3 : isMitefall ? 10 : 6;
-    const warnThresh = isPerHundred ? 2 : isMitefall ? 5 : 3;
+    const critThresh = isPerHundred ? 3 : isMitefall ? 3 : 5;
+    const warnThresh = isPerHundred ? 2 : isMitefall ? 1 : 2;
     const unit = isPerHundred ? ' per 100 bier' : isMitefall ? ' per dag' : '';
 
     if (latest.varroaCount >= critThresh) {

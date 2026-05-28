@@ -215,8 +215,8 @@ export default function NyInspeksjon() {
 
   const handleNext = () => {
     if (isLastStep) {
-      if (varroaCount !== '' && isNaN(Number(varroaCount))) {
-        showToast('Varroa-telling må være et tall', 'error');
+      if (varroaCount !== '' && (isNaN(Number(varroaCount)) || Number(varroaCount) < 0)) {
+        showToast('Varroa-telling må være et positivt tall', 'error');
         return;
       }
       mutation.mutate({
