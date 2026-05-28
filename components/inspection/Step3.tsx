@@ -18,7 +18,7 @@ import { useToastStore } from '@/store/toast';
 import type { VarroaAnalysis } from '@/types';
 import { sharedStyles } from './inspectionStyles';
 
-const VARROA_METHODS = ['vaskemetode', 'sukkerpuder', 'limbunn'];
+const VARROA_METHODS = ['alkoholspyling', 'sukkerpuder', 'limbunn'];
 
 const SEVERITY_META: Record<string, { label: string; color: string; bg: string }> = {
   none:   { label: 'Ingen',   color: Colors.success, bg: Colors.successSoft },
@@ -109,14 +109,32 @@ export function Step3({
 
       <View style={styles.aiSection}>
         {isAiLocked ? (
-          <Pressable
-            style={styles.aiBtnLocked}
-            onPress={onOpenUpgrade}
-            accessibilityLabel="AI-analyse krever Hobbyist-abonnement"
-          >
-            <Text style={styles.aiBtnText}>🔒  Analyser klisterplate med AI</Text>
-            <Text style={styles.aiBtnLockedSub}>Krever Hobbyist eller høyere</Text>
-          </Pressable>
+          <View>
+            <Pressable
+              style={styles.aiBtnLocked}
+              onPress={onOpenUpgrade}
+              accessibilityLabel="AI-analyse krever Hobbyist-abonnement"
+            >
+              <Text style={styles.aiBtnText}>🔒  Analyser klisterplate med AI</Text>
+              <Text style={styles.aiBtnLockedSub}>Krever Hobbyist eller høyere</Text>
+            </Pressable>
+            <View style={[styles.aiCard, styles.aiCardDemo, { borderLeftColor: '#D4891A' }]}>
+              <View style={styles.aiCardBody}>
+                <View style={styles.aiCardHeader}>
+                  <Text style={[styles.aiCount, styles.aiDemoText]}>12 mitter  (demo)</Text>
+                  <View style={[styles.severityBadge, { backgroundColor: '#FEF3E2' }]}>
+                    <Text style={[styles.severityText, { color: '#D4891A' }]}>Middels</Text>
+                  </View>
+                </View>
+                <Text style={[styles.aiRec, styles.aiDemoText]}>
+                  Varroa-nivå over anbefalt terskel. Vurder oksalsyrebehandling innen 2 uker.
+                </Text>
+                <Pressable style={styles.upgradeBtn} onPress={onOpenUpgrade}>
+                  <Text style={styles.upgradeBtnText}>Lås opp AI-analyse →</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
         ) : (
           <Pressable
             style={({ pressed }) => [styles.aiBtn, pressed && { opacity: 0.75 }]}
@@ -272,4 +290,15 @@ const styles = StyleSheet.create({
   },
   useResultText: { fontSize: 12, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark },
   aiUsage: { fontSize: 10, fontFamily: FontFamily.regular, color: Colors.mid + 'AA' },
+  aiCardDemo: { opacity: 0.72 },
+  aiDemoText: { opacity: 0.6 },
+  upgradeBtn: {
+    backgroundColor: Colors.honey,
+    borderRadius: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
+  upgradeBtnText: { fontSize: 12, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark },
 });

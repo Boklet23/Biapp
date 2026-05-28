@@ -17,7 +17,7 @@ export const SEASON_CHECKLISTS: MonthChecklist[] = [
     items: [
       { id: 'jan1', task: 'Sjekk mattilgang utenfra', detail: 'Lytt etter surring — forsiktig uten å åpne' },
       { id: 'jan2', task: 'Merk vekt om mulig', detail: 'Lett kube kan trenge påfôring' },
-      { id: 'jan3', task: 'Oxalsyre-drypp hvis yngelfri', detail: 'Mest effektivt i yngelfri periode' },
+      { id: 'jan3', task: 'oksalsyre-drypp hvis yngelfri', detail: 'Mest effektivt i yngelfri periode' },
       { id: 'jan4', task: 'Sjekk mus-sikring' },
     ],
   },
@@ -117,7 +117,7 @@ export const SEASON_CHECKLISTS: MonthChecklist[] = [
     month: 12, title: 'Desember', icon: '🎄',
     items: [
       { id: 'des1', task: 'Lytt etter surring (forsiktig)' },
-      { id: 'des2', task: 'Oksalsyre-drypp hvis yngelfri og ikke behandlet i januar' },
+      { id: 'des2', task: 'oksalsyre-drypp hvis yngelfri og ikke behandlet i januar' },
       { id: 'des3', task: 'Planlegg neste sesong og bestill dronningsmateriale' },
     ],
   },

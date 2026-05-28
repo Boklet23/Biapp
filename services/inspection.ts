@@ -34,7 +34,7 @@ export interface CreateInspectionData {
 export async function fetchInspections(hiveId: string): Promise<Inspection[]> {
   const { data, error } = await supabase
     .from('inspections')
-    .select('*')
+    .select('id,hive_id,user_id,inspected_at,weather_temp,weather_condition,num_frames_brood,num_frames_honey,num_frames_empty,queen_seen,queen_cells_found,varroa_count,varroa_method,varroa_ai_count,varroa_ai_severity,varroa_ai_recommendation,disease_observations,treatment_applied,treatment_product,notes,mood_score')
     .eq('hive_id', hiveId)
     .order('inspected_at', { ascending: false })
     .limit(200);
@@ -62,7 +62,7 @@ export async function fetchAllInspections(): Promise<Inspection[]> {
 
   const { data, error } = await supabase
     .from('inspections')
-    .select('*')
+    .select('id,hive_id,user_id,inspected_at,weather_temp,weather_condition,num_frames_brood,num_frames_honey,num_frames_empty,queen_seen,queen_cells_found,varroa_count,varroa_method,varroa_ai_count,varroa_ai_severity,varroa_ai_recommendation,disease_observations,treatment_applied,treatment_product,notes,mood_score')
     .gte('inspected_at', oneYearAgo.toISOString())
     .order('inspected_at', { ascending: false })
     .limit(500);

@@ -116,6 +116,7 @@ export default function NyInspeksjon() {
         setTreatmentProduct(draft.treatmentProduct ?? '');
         setNotes(draft.notes ?? '');
         setMoodScore(draft.moodScore ?? 0);
+        showToast('Utkast gjenopprettet', 'info');
       } catch {
         AsyncStorage.removeItem(draftKey(id)).catch(() => {});
       }

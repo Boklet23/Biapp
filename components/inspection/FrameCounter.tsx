@@ -64,9 +64,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   button: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.amber,
     alignItems: 'center',
     justifyContent: 'center',

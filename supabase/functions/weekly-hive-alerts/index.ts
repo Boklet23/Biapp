@@ -127,7 +127,6 @@ Deno.serve(async (req: Request) => {
             body: `${hive.name}: ${oldest}→${mid}→${newest} mitter/dag. Vurder behandling.`,
             data: { hiveId: hive.id, type: 'varroa_trend' },
           });
-          continue;
         }
       }
 

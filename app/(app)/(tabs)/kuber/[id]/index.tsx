@@ -167,6 +167,7 @@ export default function KubeProfil() {
   const queryClient = useQueryClient();
   const effectiveTier = useEffectiveTier();
   const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
+  const [showAllInspections, setShowAllInspections] = useState(false);
 
   const { data: hive, isLoading: hiveLoading, isError: hiveError } = useQuery({
     queryKey: ['hive', id],
@@ -315,9 +316,19 @@ export default function KubeProfil() {
               <Text style={styles.emptyHint}>Trykk "+ Inspeksjon" for å logge din første.</Text>
             </View>
           ) : (
-            inspections.map((insp) => (
-              <InspectionRow key={insp.id} item={insp} hiveId={id} />
-            ))
+            <>
+              {(showAllInspections ? inspections : inspections.slice(0, 50)).map((insp) => (
+                <InspectionRow key={insp.id} item={insp} hiveId={id} />
+              ))}
+              {!showAllInspections && inspections.length > 50 && (
+                <Pressable
+                  style={styles.showMoreBtn}
+                  onPress={() => setShowAllInspections(true)}
+                >
+                  <Text style={styles.showMoreText}>Vis alle ({inspections.length}) →</Text>
+                </Pressable>
+              )}
+            </>
           )}
         </View>
 
@@ -488,6 +499,8 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 15, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark },
   emptyHint: { fontSize: 13, fontFamily: FontFamily.regular, color: Colors.mid, textAlign: 'center' },
   emptyText: { fontSize: 14, fontFamily: FontFamily.regular, color: Colors.mid },
+  showMoreBtn: { paddingVertical: 12, alignItems: 'center' },
+  showMoreText: { fontSize: 13, fontFamily: FontFamily.medium, color: Colors.honeyDark },
   notesText: { fontSize: 14, fontFamily: FontFamily.regular, color: Colors.dark, lineHeight: 21 },
 
   retryBtn: {

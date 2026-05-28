@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Hive, Inspection, HiveWeight } from '@/types';
 import { Colors, Radii, Shadows } from '@/constants/colors';
@@ -50,17 +51,26 @@ interface HiveCardProps {
   onPress: () => void;
 }
 
-export function HiveCard({ hive, lastInspection, lastWeight, onPress }: HiveCardProps) {
+export const HiveCard = memo(function HiveCard({ hive, lastInspection, lastWeight, onPress }: HiveCardProps) {
   const totalFrames =
     (lastInspection?.numFramesBrood ?? 0) +
     (lastInspection?.numFramesHoney ?? 0) +
     (lastInspection?.numFramesEmpty ?? 0);
 
-  const healthScore = computeHealthScore(lastInspection);
-  const varroa = lastInspection?.varroaCount;
+  const healthScore = useMemo(() => computeHealthScore(lastInspection), [lastInspection]);
+  const varroa = lastInspection?.varroaCount ?? null;
   const varroaBad = varroa != null && varroa > 3;
   const weightKg = lastWeight?.weightKg ?? null;
   const numBoxes = hive.numBoxes ?? 1;
+  const varroaLabel = varroa == null ? null
+    : varroa === 0 ? 'Ingen'
+    : varroa <= 3 ? 'Lav'
+    : varroa <= 5 ? 'Moderat'
+    : varroa <= 10 ? 'Høy'
+    : 'Kritisk';
+  const varroaLabelColor = varroa == null || varroa <= 3 ? Colors.success
+    : varroa <= 5 ? '#D4891A'
+    : Colors.error;
 
   return (
     <Pressable
@@ -125,6 +135,9 @@ export function HiveCard({ hive, lastInspection, lastWeight, onPress }: HiveCard
           <Text style={[styles.statVal, varroaBad && styles.statValBad]}>
             {varroa != null ? varroa : '–'}
           </Text>
+          {varroaLabel != null && (
+            <Text style={[styles.varroaLabel, { color: varroaLabelColor }]}>{varroaLabel}</Text>
+          )}
         </View>
         <View style={[styles.stat, styles.statBorder]}>
           <Text style={styles.statKey}>RAMMER</Text>
@@ -137,7 +150,7 @@ export function HiveCard({ hive, lastInspection, lastWeight, onPress }: HiveCard
       </View>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {
@@ -193,7 +206,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '800',
     fontFamily: FontFamily.extrabold,
-    color: Colors.honey,
+    color: Colors.honeyDark,
     lineHeight: 10,
   },
 
@@ -217,7 +230,7 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: 12,
     fontFamily: FontFamily.medium,
-    color: Colors.honey,
+    color: Colors.honeyDark,
   },
   metaAlert: {
     color: Colors.error,
@@ -278,5 +291,12 @@ const styles = StyleSheet.create({
   },
   statValBad: {
     color: Colors.error,
+  },
+  varroaLabel: {
+    fontSize: 8,
+    fontWeight: '700',
+    fontFamily: FontFamily.bold,
+    letterSpacing: 0.5,
+    marginTop: 1,
   },
 });
