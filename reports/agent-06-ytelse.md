@@ -1,60 +1,32 @@
-# Agent 6 — Ytelse og React Native-optimalisering
+# Agent 6 — Ytelse
 
 ## Metainfo
-- Filer lest: `app/(app)/(tabs)/hjem/index.tsx`, `app/(app)/(tabs)/kuber/index.tsx`, `app/(app)/(tabs)/kuber/[id]/index.tsx`, `services/inspection.ts`, `services/hive.ts`, `services/harvest.ts`, `services/treatment.ts`, `components/hive/HiveCard.tsx`, `app/(app)/(tabs)/samfunn/index.tsx`, `lib/queryClient.ts`
-- Filer ikke funnet: ingen
-- Konfidensgrad: HØY
+- **Filer lest:** `app/(app)/(tabs)/hjem/index.tsx`, `app/(app)/(tabs)/kuber/index.tsx`, `app/(app)/(tabs)/kuber/[id]/index.tsx`, `services/inspection.ts`, `services/hive.ts`, `components/hive/HiveCard.tsx`, `app/(app)/(tabs)/samfunn/index.tsx`, migrasjoner 0012/0033/0038.
+- **Filer ikke funnet:** ingen (alle scope-filer eksisterer).
+- **Konfidensgrad:** Høy for lister/queries/N+1. Middels for bilde-caching (avhenger av native expo-image-oppførsel).
 
-## Sammendrag (78 ord)
-
-BiVokter har et solid fundament: `HiveCard` er memoized med `React.memo` og `useMemo`, `FlatList` brukes på kuberlisten, global `staleTime` er 5 min, og `fetchLastInspectionPerHive` er et korrekt batch-RPC-kall. Hoveddelen av ytelsesgjelden finnes i: (1) 15 `select('*')`-kall spredt over alle services, (2) ikke-virtualisert inspeksjonshistorikk i kube-detaljsiden med `.limit(200)`, og (3) `activeHives`/`hivesWithScore` beregnet inline uten `useMemo` i kuber-oversikten.
-
----
+## Sammendrag
+Arkitekturen er gjennomtenkt: `fetchLastInspectionPerHive` er ett ekte batch-RPC-kall (ingen N+1), kubelisten er virtualisert med FlatList, og HiveCard er `memo`-ert. Hovedsvakhetene er manglende DB-indeks for batch-RPC-ens `user_id`-filter, ustabile `onPress`-closures som bryter HiveCard-memoisering, og at hjem-skjermen henter samme tunge inspeksjonsdata to ganger. Skalerer trolig greit til 20 kuber / 500 inspeksjoner, men med unødvendige re-renders.
 
 ## Funn
 
-### KRITISK
+**[HØY]** `supabase/migrations/0012` + `0038:4` — `get_latest_inspections_per_hive()` filtrerer `where user_id = auth.uid()` og sorterer `order by hive_id, inspected_at desc`, men eneste relevante indeks er `(hive_id, inspected_at DESC)` — ingen indeks med `user_id` som ledende kolonne på `inspections`. Med 500 inspeksjoner gir det seq-scan + sort per kall. RPC-et kjøres på BÅDE hjem og kuber-fanen. — Konsekvens: tregere dashboard-last som vokser lineært med inspeksjonsmengde. — Løsning: `CREATE INDEX idx_inspections_user_hive_inspected ON inspections(user_id, hive_id, inspected_at DESC);` (matcher både DISTINCT ON og filter).
 
-**[KRITISK]** `services/inspection.ts:37` — `fetchInspections` bruker spesifikk kolonneseleksjon (bra), men returnerer opptil 200 rader per kube i `kuber/[id]/index.tsx:179`. Disse 200 radene rendres som ikke-virtualisert `.map()` i linje 320. Med 500 inspeksjoner (en aktiv bruker med 5 år + 20 kuber) rendres alle `InspectionRow`-komponenter opp-front, selv om kun 8-10 er synlige på skjermen. — Konsekvens: 400-600ms render-forsinkelse og 200+ off-screen noder binder JS-tråden. — Løsning: Erstatt `.map()` med `FlatList` (eller `FlashList`) på inspeksjonshistorikk-seksjonen, behold den eksisterende "vis mer"-logikken som pagineringstrinn.
+**[HØY]** `app/(app)/(tabs)/kuber/index.tsx:205-212` — `renderItem` pakker `HiveCard` i en `Pressable` med inline `onLongPress`/`onPress`-closures som lages på nytt hver render. Selv om `HiveCard` er `memo`-ert, får den ny `onPress`-referanse hver gang → memo treffer aldri. I tillegg reberegnes `activeHives`/`hivesWithScore`/`filtered` uten `useMemo` (linje 74-88). — Konsekvens: hele listen re-renderes ved hver `setFilter`/refresh; merkbart ved 20 kuber. — Løsning: trekk ut `renderItem`/`keyExtractor` med `useCallback`, memoiser `filtered`. Vurder `getItemLayout` for fast korthøyde.
 
-**[KRITISK]** `services/hive.ts:90` og `services/hive.ts:106` — `fetchHives` og `fetchHive` bruker `select('*')` mot `hives`-tabellen. Hives-tabellen inneholder trolig store feltdata inkludert `notes` (fritekst), `photo_url` og koordinatdata. Dashboard og kuberlisten bruker bare et fåtall felt for visning. — Konsekvens: Unødvendig payload (anslått 40-60% overhead) for alle brukere ved hver app-åpning. — Løsning: Bytt til `select('id,name,type,bee_breed,is_active,num_boxes,location_name,location_lat,location_lng,photo_url,notes,created_at')`.
+**[MEDIUM]** `app/(app)/(tabs)/hjem/index.tsx:132-142,398` — Henter både `fetchLastInspectionPerHive` (RPC) og `fetchAllInspections` (opptil 500 rader, alle kolonner). `fetchAllInspections` brukes til `allInspections.length` (linje 398 — aktiveringsguide), `SeasonSummaryCard` og rapport. Aktiveringsguiden trenger bare en count. — Konsekvens: tung 500-raders payload lastes ved hver dashboard-visning. — Løsning: `count: 'exact', head: true` for count-bruken; lazy-last `fetchAllInspections` kun når `SeasonSummaryCard`/rapport trengs.
 
-### HØY
+**[MEDIUM]** `services/hive.ts:93,109` + `services/inspection.ts:77` — `fetchHives`/`fetchHive`/`fetchInspection` bruker `select('*')`. `fetchHives` returnerer alle kuber med alle kolonner (inkl. `photo_url`, `notes`). `fetchInspections` (linje 37) bruker derimot korrekt eksplisitt kolonneliste. — Konsekvens: større listepayload enn nødvendig. — Løsning: eksplisitt kolonneliste på `fetchHives` etter samme mønster som `fetchInspections`.
 
-**[HØY]** `services/inspection.ts:77` — `fetchInspection` (enkel inspeksjon) bruker `select('*')`. Dette er et sekundærkall fra detaljsiden `inspeksjon/[inspId].tsx`. Bør spesifisere kolonner konsistent med `fetchInspections`. — Løsning: Bytt til samme column-liste som linje 37 i samme fil.
+**[MEDIUM]** `components/hive/HiveCard.tsx:86` + `app/(app)/(tabs)/kuber/[id]/index.tsx:244` — Bilder rendres med RN `Image`, ikke `expo-image` (som allerede er dependency, brukt i opplastingsflyt). RN `Image` har svakere disk-caching og ingen progressiv/placeholder-lasting. Thumbnails er signerte URL-er (1 års TTL, hive.ts:76). — Konsekvens: re-nedlasting av thumbnails, ingen blur-up. — Løsning: bytt til `expo-image` med `cachePolicy="memory-disk"` + `placeholder` for HiveCard-thumbnail og hero-foto.
 
-**[HØY]** `app/(app)/(tabs)/kuber/index.tsx:74-88` — `activeHives`, `hivesWithScore`, `freskeCount` og `varselCount` beregnes inline i render-funksjonen (ikke i `useMemo`). Med 20 kuber kjøres `computeHealthScore()` per kube ved hvert render, inkludert ved filter-endring, refresh, og FAB-press. — Konsekvens: Unødvendig CPU-arbeid for enhver state-endring på skjermen. — Løsning: Wrap `activeHives`, `hivesWithScore`, `freskeCount` og `varselCount` i `useMemo` med `[hives, lastInspectionByHive]` som avhengigheter.
+**[LAV]** `app/(app)/(tabs)/kuber/[id]/index.tsx:341-343` — Inspeksjonshistorikk rendres som `.map()` i `ScrollView` (ikke virtualisert), begrenset til 50 før "Vis alle". Ved "Vis alle" monteres alle (opptil 200) `InspectionRow` samtidig. `InspectionRow` er heller ikke memo-ert. — Konsekvens: hakkete utvidelse på datatunge kuber. — Løsning: 50-grensen er ok; ved "vis alle" vurder `FlatList`, og `memo`-er `InspectionRow`.
 
-**[HØY]** `services/harvest.ts:17`, `services/treatment.ts:19` og `services/treatment.ts:30` — Alle bruker `select('*')`. Harvest-tabellen hentes globalt på hjemskjermen (staleTime 5 min, bra), men betyr at siste 2 år med alle høstrekorder alltid lastes, selv om appen bare trenger `hive_id`, `harvested_at` og `quantity_kg`. — Løsning: Bytt til `select('id,hive_id,harvested_at,quantity_kg,notes')` i `fetchHarvests`.
+**[LAV]** `app/(app)/(tabs)/kuber/index.tsx:74` — `activeHives = hives.filter(h => h.isActive)` re-filtrerer på `isActive`, men `fetchHives` filtrerer allerede `.eq('is_active', true)` i DB (hive.ts:94). Redundant klientfilter. — Konsekvens: minimal. — Løsning: fjern dobbeltfiltrering eller dokumenter intensjonen.
 
-**[HØY]** `app/(app)/(tabs)/kuber/[id]/index.tsx:172-185` — Kubeprofil starter tre parallelle queries (`hive`, `inspections`, `treatments`) ved mount. `inspections`-queryen har ingen `staleTime` satt — arver global default (5 min, akseptabelt), men `['inspections', id]`-cachen invalideres ikke etter ny inspeksjon opprettes. Etter `createInspection()` bør `queryClient.invalidateQueries({ queryKey: ['inspections', id] })` kalles. Sjekk om mutasjonen i `ny.tsx` gjør dette. — Konsekvens: Etter å ha lagret ny inspeksjon kan historikken vise utdaterte data.
-
-### MEDIUM
-
-**[MEDIUM]** `app/(app)/(tabs)/kuber/index.tsx:198-225` — `FlatList` brukes (bra), men `renderItem` er en inline arrow-funksjon som wrapper `HiveCard` i `Pressable`. Selv om `HiveCard` er memoized med `React.memo`, vil den ikke-memoized `Pressable`-wrapper tvinge re-render fordi `onLongPress`-callback opprettes på nytt ved hvert render. — Løsning: Flytt `renderItem` ut av JSX eller wrap i `useCallback`.
-
-**[MEDIUM]** `services/associations.ts:37` og `services/associations.ts:56`, `services/diseases.ts:7` og `services/diseases.ts:17`, `services/queen.ts:27`, `services/profile.ts:27`, `services/weight.ts:14`, `services/swarmReport.ts:45`, `services/calendarEvent.ts:31` — Ytterligere 9 `select('*')`-kall i andre services. Særlig `swarmReport.ts` og `calendarEvent.ts` er i tabeller som kan vokse. — Løsning: Gjennomgå og spesifisere kolonnelister i alle services systematisk.
-
-**[MEDIUM]** `app/(app)/(tabs)/hjem/index.tsx:196-200` — `checkNearbySwarmAlerts(lats, lngs)` trigges i `useEffect` med `[hives.length]` som avhengighet. Alle kubedatas koordinater filtres og mappes på nytt ved hver render der `hives.length` endres. — Konsekvens: To separate `.filter().map()` over samme liste. Wrap i `useMemo` eller gjør filtreringen inne i selve effekten.
-
-**[MEDIUM]** `app/(app)/(tabs)/samfunn/index.tsx:101-143` — Lag-listen bruker `ScrollView` med `.map()` over potensielt 67 birøkterlag. Siden det er statiske data med 24t `staleTime` og 7d `gcTime` (bra), er ikke hyppige re-renders et problem, men selve listen er ikke virtualisert. — Konsekvens: Lav risiko nå, men vil trege ved 100+ lag. Vurder `FlatList` ved vekst.
-
-**[MEDIUM]** `lib/queryClient.ts:19` — Global `staleTime: 5 * 60 * 1000` er satt (bra). Men ingen global `gcTime` er definert — betyr at React Query bruker standardverdien 5 min, samme som `staleTime`. Dette betyr at cache slettes nesten umiddelbart etter stale-grensen passeres. For en app som BiVokter bør `gcTime` settes til 30 min eller mer for å bevare data under bakgrunnsnavigasjon. — Løsning: Legg til `gcTime: 30 * 60 * 1000` i `defaultOptions.queries`.
-
-### LAV
-
-**[LAV]** `app/(app)/(tabs)/kuber/[id]/index.tsx:244-248` — Heltebildet rendres med `<Image source={{ uri: hive.photoUrl }}>` uten eksplisitt størrelse på bredde/høyde i kilde. RN Image henter bildet og skalerer etterpå. Ingen `fadeDuration` eller progressiv loading. — Konsekvens: Synlig pop-in ved navigasjon til kubeprofil. — Løsning: Bruk `expo-image` i stedet for RN `Image` for innebygd blurhash/placeholder og disk-cache.
-
-**[LAV]** `components/hive/HiveCard.tsx:85-91` — Thumbnail-bilder (76×76) lastes via `<Image source={{ uri: hive.photoUrl }}>` for alle kuber i listen. Med 20 kuber med bilder trigges 20 parallelle HTTP-forespørsler. — Konsekvens: Nettverkskonkurranse og tregere initial list-render. — Løsning: Bytt til `expo-image` som har innebygd minne- og disk-cache; vurder preloading av thumbnails.
-
-**[LAV]** `app/(app)/(tabs)/hjem/index.tsx:204-212` — `handleGenerateReport` kaller `fetchAllInspections()` og `fetchAllTreatments()` on-demand (ved knappeklikk), ikke ved mount. Dette er korrekt mønster, men disse er ikke cachet med React Query — de er direkte Supabase-kall. — Konsekvens: Rapporten henter potensielt 500 inspeksjoner og 2 år behandlingsdata ukachet. For bruker med dårlig tilkobling kan dette ta 3-5 sekunder. — Løsning: Vurder `queryClient.fetchQuery()` med en query-nøkkel slik at Supabase-svaret caches hvis bruker genererer rapport to ganger.
-
----
+**[LAV]** `services/inspection.ts:165-182` — `fetchInspectionMedia` lager nye signerte URL-er (`createSignedUrls`, 3600s TTL) ved hvert kall. Hvis React Query cacher resultatet lengre enn 1t, kan cachede komponenter vise utløpte URL-er. — Konsekvens: potensielt brutte bilder etter 1t i lange økter. — Løsning: sett `staleTime < 3600s` på media-query og invalider før utløp.
 
 ## Topp-3 anbefalinger
-
-1. **Spesifiser kolonner i alle `select('*')`-kall** — 15 steder spredt over services bruker `select('*')`. Start med `services/hive.ts` (hentes ved enhver app-åpning) og `services/inspection.ts:77` (enkel inspeksjon). Dette reduserer payload-størrelse og Supabase-compute-tid for alle brukere. Estimert forbedring: 30-50% lavere nettverkstraffic per sesjon.
-
-2. **Virtualiser inspeksjonshistorikk i kubeprofil** — `app/(app)/(tabs)/kuber/[id]/index.tsx:320` rendrer opptil 200 `InspectionRow`-komponenter i en `ScrollView`. Bytt til `FlatList` eller `FlashList` med `initialNumToRender={10}` og `maxToRenderPerBatch={20}`. For brukere med 3+ års inspeksjonsdata er dette kritisk for scroll-ytelse.
-
-3. **Memoize inline beregninger i kuber-oversikten og legg til global `gcTime`** — Wrap `activeHives`, `hivesWithScore`, `freskeCount`, `varselCount` i `useMemo` i `kuber/index.tsx:74-88`, og legg til `gcTime: 30 * 60 * 1000` i `lib/queryClient.ts`. Disse to endringene krever 15 minutters arbeid og forbedrer responsiviteten ved filter-endring og reduserer unødvendige Supabase-refetcher etter bakgrunnsnavigasjon.
+1. **DB-indeks for batch-RPC** — `CREATE INDEX ... ON inspections(user_id, hive_id, inspected_at DESC)`. Største skalerings-gevinst; treffer både hjem og kuber-fanen. (~30 min inkl. migrasjon + EXPLAIN-verifisering.)
+2. **Stabiliser kubeliste-rendering** — `useCallback` på `renderItem`/`onPress`, `useMemo` på `filtered`, evt. `getItemLayout`. Gjør HiveCard-memoiseringen faktisk effektiv. (~1 t.)
+3. **expo-image + dropp dobbel inspeksjonshenting på hjem** — bytt HiveCard/hero til `expo-image` med disk-cache; erstatt `fetchAllInspections().length` med head-count. (~1,5 t.)

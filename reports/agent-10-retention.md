@@ -1,86 +1,34 @@
-# Agent 10 — Retention og brukerengasjement
+# Agent 10 — Retention
 
 ## Metainfo
-- Filer lest:
-  - `app/(app)/(tabs)/hjem/index.tsx`
-  - `services/notifications.ts`
-  - `supabase/functions/weekly-hive-alerts/index.ts`
-  - `app/(app)/(tabs)/kalender/index.tsx`
-  - `app/(app)/(tabs)/kuber/[id]/index.tsx` (første 200 linjer)
-  - `components/home/HiveStatusCard.tsx`
-  - `components/home/SeasonSummaryCard.tsx`
-  - `components/home/HoneyWidget.tsx`
-  - `components/home/WeatherCard.tsx`
-  - `components/home/LocationPickerModal.tsx`
-  - `constants/seasonReminders.ts`
-  - `services/collaboration.ts`
-  - `app/(app)/(tabs)/kuber/[id]/samarbeid.tsx`
-  - `app/(app)/_layout.tsx`
-- Filer ikke funnet: ingen — alle filer funnet
-- Konfidensgrad: HØY
-
----
+**Filer lest:** `app/(app)/(tabs)/hjem/index.tsx`, `services/notifications.ts`, `supabase/functions/weekly-hive-alerts/index.ts`, `app/(app)/(tabs)/kalender/index.tsx`, `app/(app)/(tabs)/kuber/[id]/index.tsx`, alle `components/home/*.tsx` (SeasonSummaryCard, ActivationGuide, HiveStatusCard, HoneyWidget, WeatherCard, LocationPickerModal), `constants/seasonReminders.ts`, `supabase/migrations/0016_weekly_alerts_cron.sql`, `app/(app)/(tabs)/samfunn/index.tsx`, `app/(app)/_layout.tsx`, `app/(app)/profil.tsx`.
+**Filer ikke funnet:** ingen (alle scope-filer fantes).
+**Konfidensgrad:** Høy for varslings-/dashboard-flyt. Middels for sosial retention (Lag-tier UI minimal, mest DB-only).
 
 ## Sammendrag
-
-BiVokter har solid retention-infrastruktur for aktive sesonger: overdue-varsler, varroa-trendvarsler fra Edge Function, sesongpåminnelser og flydagindikator på dashboardet. De største svakhetene er manglende re-engagement for inaktive brukere om vinteren, at mellom-inspeksjons-innhold er begrenset, og at samarbeidsfunksjonen (lag-tier) er gjemt bak betalingsmur uten sosial synlighet.
-
----
+Varslingsdekningen er solid: ukentlig server-cron for forfalte inspeksjoner + varroa-trend, lokale sesongpåminnelser (auto-på ved login) og svermvarsler. Dashboardet er informativt men statisk — samme tre tall hver dag uten daglig insentiv. Største hull: ingen år-for-år-progresjon/milepæler, ingen re-engagement for inaktive brukere, og Lag-tier gir null sosial retention (kubedeling er DB-only uten levende UI).
 
 ## Funn
 
-### Push-varslingsdekning
+**[HØY]** `services/notifications.ts:209` (+ `weekly-hive-alerts`) — Ingen win-back/re-engagement for inaktive brukere. Alle varsler forutsetter aktive kuber + nylige inspeksjoner. En bruker som slutter å logge inspeksjoner får kun "inspeksjon forfalt" (undertrykt nov–feb), ikke noe som drar dem tilbake etter f.eks. 30/60 dager total inaktivitet. — Konsekvens: Stille frafall fanges aldri opp. — Løsning: Legg til en "vi savner deg / kubene dine trenger deg"-gren i edge-funksjonen basert på siste app-aktivitet (last_seen i profiles).
 
-[HØY] `supabase/functions/weekly-hive-alerts/index.ts:9` — `OVERDUE_DAYS = 21` er for slapt. Varslingsterskelen i Edge Function er 21 dager, men dashboardet i appen viser "Haster"-chip etter 14 dager (`hjem/index.tsx:26`). Inkonsistens gjør at brukere ser alarmer i appen men ikke får push-varsel de 7 dagene i mellom. — Sett `OVERDUE_DAYS = 14` i Edge Function for å harmonisere.
+**[HØY]** `app/(app)/(tabs)/kuber/[id]/index.tsx:35` / `components/home/SeasonSummaryCard.tsx:30` — Ingen år-for-år-progresjon eller mestringsfølelse. VarroaTrend viser kun siste 6 målinger innen én kube; SeasonSummaryCard filtrerer hardt på `currentYear` uten sammenligning mot i fjor. Ingen milepæler ("100. inspeksjon", "første honninghøsting", "3 år som birøkter"). — Konsekvens: Erfarne brukere ser ikke fremgang sesong-til-sesong — kjernedriveren for langtidsretention mangler. — Løsning: Legg til honning år-for-år-graf og milepæl-badges (kan bygge på eksisterende harvest/inspection-data).
 
-[HØY] `services/notifications.ts:104–128` — `scheduleInspectionReminder` sender ett engangsvarsel til "i morgen kl 09" og sletter det aldri automatisk etter at inspeksjon er fullført. En bruker som inspiserer kube etter påminning vil ikke bli renullstilt med mindre `clearScheduledReminder` kalles eksplisitt. — Kall `clearScheduledReminder(hiveId)` ved vellykket lagring av ny inspeksjon i inspeksjonsformen.
+**[HØY]** `components/home/HoneyWidget.tsx:1` — Komponenten er bygget (honningprognose, årsestimat) men IKKE importert/montert på dashboardet (`hjem/index.tsx` bruker den ikke). Død retention-funksjon. — Konsekvens: Et ferdig engasjementselement med fremtidsrettet prognose vises aldri. — Løsning: Monter `HoneyWidget` på hjem, eller fjern død kode.
 
-[MEDIUM] `services/notifications.ts:138` + `app/(app)/_layout.tsx:19` — `scheduleSeasonalReminders()` kalles automatisk i `_layout.tsx` etter at push-tillatelse er innvilget (rettet fra tidligere versjon), men det finnes ingen sjekk på om sesongvarslene allerede er satt for inneværende år. Funksjon bruker `SEASONAL_IDS_KEY` i AsyncStorage, men nullstiller ikke ved nytt kalenderår. Sesongvarslene risikerer å forfalle og aldri bli reopprettet neste år. — Legg til en år-nøkkel i AsyncStorage og kall `scheduleSeasonalReminders` på nytt ved sesongstart (f.eks. 1. januar).
+**[MEDIUM]** `app/(app)/(tabs)/hjem/index.tsx:328` — Dashboardet mangler daglig variasjon ("daily driver"). Hero-stats (kuber/snitt/kg) endrer seg sjelden dag-til-dag; eneste dynamiske element er vær/fly-dag. Ingen "dagens tips", rotasjons-fakta, eller dagens oppgave-fokus. — Konsekvens: Lite grunn til å åpne appen på dager uten inspeksjon. — Løsning: Legg til daglig rotert lærings-/sesongtips-kort (kan gjenbruke `seasonGuide.ts`-data).
 
-[LAV] `constants/seasonReminders.ts` — Sesongdekning er god (mars, mai, juli, august, september, oktober), men mangler januarvarsel for "kontroller vinterklynge" og februar for "bestill nytt utstyr". Disse månedene er birøkternes planleggingsperiode.
+**[MEDIUM]** `supabase/functions/weekly-hive-alerts/index.ts:111` — Varslings-kadens er kun ukentlig (man 07:00 UTC) og vinterundertrykt for inspeksjoner. Svermtid (mai–juli) krever ukentlig dronningcelle-sjekk, men det finnes ingen forhøyet frekvens i høysesong. Sesongpåminnelser (`seasonReminders.ts`) dekker 6 nøkkeldatoer — bra — men er statiske datoer, ikke tilstandsbaserte (f.eks. "du har ikke logget varroabehandling i august"). — Konsekvens: Tidskritiske svermhendelser kan gå 7 dager uvarslet. — Løsning: Vurder 2x/uke cron i mai–juli; gjør "manglende vinterklargjøring/varroabehandling"-varsel tilstandsbasert.
 
-### Daily driver
+**[MEDIUM]** `app/(app)/(tabs)/kuber/[id]/index.tsx:300` / `samfunn/index.tsx` — Lag-tier (499 kr, samarbeid) gir ingen sosial retention. Samarbeidsraden er kun en låst CTA mot UpgradeModal; faktisk kubedeling er DB-only (CLAUDE.md bekrefter "ingen UI"). Samfunn-fanen er en statisk katalog (lag-liste, svermkart, utstyr) — ingen feed, kommentarer eller delte aktiviteter. — Konsekvens: Dyreste tier mangler de sosiale båndene som faktisk holder brukere; ingen nettverkseffekt. — Løsning: Aktiver minst lese-tilgang til delte kuber + aktivitetsnotis ("X inspiserte felleskuben").
 
-[HØY] `app/(app)/(tabs)/hjem/index.tsx:164–170` — `urgentInspHives` viser de 3 kubene sortert etter inspeksjonsdato (eldst først), men ingen daglig variasjon. Dashboardet ser identisk ut dag 2 til dag 13 mellom inspeksjoner — det finnes ingenting som gir brukeren ny informasjon daglig. Konsekvens: ingen årsak til å åpne appen på dager uten inspeksjon, noe som er realiteten 5–6 av 7 dager i uka. — Legg til en "Dagens tips"-modul som roterer fra sesongguideinnholdet.
+**[MEDIUM]** `app/(app)/(tabs)/hjem/index.tsx:196` — Lokal `scheduleInspectionReminderDeduped` og server-`weekly-hive-alerts` kan begge varsle om samme forfalte inspeksjon → duplikate push. Lokal dedup er per-hiveId i AsyncStorage, men koordineres ikke med serveren. — Konsekvens: Varslingstretthet → notifikasjoner skrus av → tap av primær retention-kanal. — Løsning: Velg én kilde for "inspeksjon forfalt" (helst server), fjern lokal duplikat.
 
-[MEDIUM] `components/home/HoneyWidget.tsx:17–27` — Honningprognosen bruker en fast `AVG_KG_PER_HIVE_PER_YEAR = 20` uten å ta hensyn til brukerens historiske avkastning. For en bruker med 5 kuber og 80 kg logget forrige sesong er estimatet meningsløst. — Bruk gjennomsnitt fra brukerens egne høstdata som basis.
+**[LAV]** `app/(app)/(tabs)/kalender/index.tsx:62` — Kalenderen er reaktiv (manuelt lagte hendelser + inspeksjonsmarkører) men foreslår ikke neste anbefalte inspeksjon-dato. SeasonChecklist/pollenkalender gir mellom-inspeksjons-verdi, men ingen "planlegg neste besøk"-handling som skaper kommende kalender-engasjement. — Konsekvens: Lavere mellom-inspeksjons-retur. — Løsning: Auto-foreslå neste inspeksjonsdato (siste + ~10 dager) som tappbar kalenderhendelse.
 
-[LAV] `app/(app)/(tabs)/hjem/index.tsx:233–235` — `flyDay` (flydag-indikatoren) er god daglig kontekst, men vises bare hvis brukeren har konfigurert en lokasjon. Brukere uten lokasjon ser ingen daglig vær-kontekst. Onboarding bør presse lokasjonskonfigurasjon hardere.
-
-### Mellom-inspeksjons-verdi
-
-[KRITISK] Ingen innhold mellom inspeksjoner — Det finnes ingen funksjonalitet som gir appen verdi i dagene mellom inspeksjoner utover statisk sesongguide og vær. Det er ingen: læringsinnhold knyttet til aktuelle kubers tilstand, fremgangsindikator mot neste inspeksjon, mini-quiz om birøkt eller "visste du at"-kort. Konsekvens: appen åpnes kun når noe er feil eller inspeksjon forfaller, og retention på dag 7–14 vil være lav. — Implementer en roterende "ukestips" basert på aktuell sesong og kubedata (f.eks. "Alfa-dronning i Kube 2 er over 2 år — vurder å avle ny").
-
-[MEDIUM] `app/(app)/(tabs)/kalender/index.tsx:262–280` — Pollenkalenderen er bra mellom-inspeksjons-innhold men er gjemt i Kalender-fanen og ikke referert fra dashboardet. Brukere som ikke åpner Kalender finner det aldri. — Legg en "Denne uken i naturen"-snuttwidget på Hjem-dashboardet.
-
-### Progresjon og mestring
-
-[HØY] `app/(app)/(tabs)/kuber/[id]/index.tsx:35–121` — VarroaTrend-grafen viser historisk utvikling per kube (opptil 6 punkter), men grafen er kun tilgjengelig per kube inne i kubeprofilen. Det finnes ingen sesong-aggregert varroa-trend på tvers av alle kuber, og ingen "årets beste kube"-statistikk. — Legg til et sesongsammendrag-kort på Hjem med varroa-snitt, honning og inspeksjonsfrekvens vs. forrige sesong.
-
-[MEDIUM] `components/home/SeasonSummaryCard.tsx:32–68` — Sesongkortet eksisterer som komponent men brukes ikke i `hjem/index.tsx` (ikke importert eller brukt i render-treet). Kortet viser inspeksjonsantall, gjennomsnittlig varroa og dronning-sett — verdifull fremgangsdata som aldri vises. — Importer og monter `SeasonSummaryCard` i Hjem-skjermen.
-
-[LAV] `components/home/HiveStatusCard.tsx` — Kortene viser kubens navn, dager siden sist inspeksjon og moodEmoji. Mangler helsepoeng-tall som er beregnet og tilgjengelig via `computeHealthScore`. Et helsescore-tall på kortet ville gitt umiddelbar progresjonsfølelse.
-
-### Churn-forebygging
-
-[KRITISK] Ingen vinterengasjement-strategi — Det finnes ingen kode som håndterer perioden november–februar spesifikt. `buildAlerts` i `hjem/index.tsx:62–82` baserer alle varsler på inspeksjonsintervall, noe som er irrelevant om vinteren (kubene skal ikke inspiseres). Konsekvens: brukere som slutter å inspisere om høsten mottar ingenting fra appen fra oktober til mars, og vil ha churn-sjanse svært høy til neste sesong. — Legg til vintermodus: erstat overdue-varsler med "Vintersjekk"-påminnelse en gang i måneden (november–februar), og send en "Sesongen starter snart"-push i slutten av februar.
-
-[HØY] `supabase/functions/weekly-hive-alerts/index.ts:110` — Edge Function sender `inspection_overdue`-push til brukere uten hensyn til sesong. Brukere som frivillig har lagt kubene til vinterro vil motta "inspisert"-varsler gjennom hele vinteren. Konsekvens: varseltrøtthet og varseldeprekering. — Sjekk gjeldende måned i Edge Function og hopp over overdue-varsler i november–februar.
-
-[HØY] `services/notifications.ts:81–93` — `scheduleInspectionReminderDeduped` sjekker om en reminder allerede eksisterer i AsyncStorage, men invaliderer aldri eksisterende ID-er som kan ha utløpt (en enkelt trigger til "i morgen kl 09" er ikke gjentakende). En bruker som har 14 dagers gammel kube og ikke inspiserer, mottar kun ett varsel totalt. — Bruk en ukentlig repeterende trigger i stedet for en one-shot dato-trigger.
-
-### Sosiale mekanismer
-
-[HØY] `app/(app)/(tabs)/kuber/[id]/samarbeid.tsx:59–76` — Samarbeidsfunksjonen er bak Lag-tier (499 kr/md) og er skjult i en sub-fane av kubeprofilen. Det finnes ingen sosial oppdagelsesflyt — ingen notifisering til inviterte medarbeidere via push eller e-post, ingen aktivitetsstrøm for delte kuber. En invitert samarbeidspartner har ingen annen måte å vite om ny aktivitet enn å åpne appen manuelt. — Send push-varsel til alle samarbeidspartnere når eier logger ny inspeksjon på delt kube.
-
-[MEDIUM] `services/collaboration.ts:42–70` — `addCollaboratorByEmail` krever at mottakeren allerede er registrert bruker. Det finnes ingen invite-by-link flyt. Dette blokkerer viral vekst og peer-to-peer onboarding. — Implementer unik invitasjonslenke som oppretter bruker og kobler samarbeid i én flyt.
-
----
+**[LAV]** `components/home/ActivationGuide.tsx:48` — God onboarding-guide, men forsvinner permanent etter 3 steg (eller dismiss) uten en "neste nivå"-progresjon. Etter aktivering finnes ingen videre gamification. — Konsekvens: Tomt engasjements-gap mellom onboarding og vane. — Løsning: Erstatt fullført guide med et lett ukentlig mål/streak-kort.
 
 ## Topp-3 anbefalinger
-
-1. **Implementer vintermodus i Edge Function og dashboardet** (`supabase/functions/weekly-hive-alerts/index.ts:110` og `hjem/index.tsx:62`) — Sesongbevisst logikk som bytter fra "inspeksjon forfalt" til "månedlig vintersjekk" i november–februar er den viktigste churn-forebyggende endringen. Uten dette mister appen kontakten med brukerne i 4 måneder hvert år og betaler prisen om våren med lav reaktivering.
-
-2. **Monter `SeasonSummaryCard` i Hjem-skjermen og legg til daglig innhold** (`components/home/SeasonSummaryCard.tsx` + `hjem/index.tsx`) — Komponenten er ferdigimplementert men aldri montert. Å vise sesongaggregert statistikk gir brukeren en daglig grunn til å åpne appen selv uten inspeksjon, og fremgangsdata er dokumentert som den sterkeste engasjementsdriveren i hobbypregede apper.
-
-3. **Harmoniser overdue-terskelen og gjør inspeksjonspåminneren gjentakende** (`supabase/functions/weekly-hive-alerts/index.ts:9` og `services/notifications.ts:113–128`) — `OVERDUE_DAYS = 21` i Edge Function mot 14 dager i dashboardet skaper inkonsistens. Kombinert med at `scheduleInspectionReminder` er en one-shot trigger betyr dette at en bruker som ignorerer det ene varselet mottar ingen oppfølging. Gjøres begge i en PR: sett `OVERDUE_DAYS = 14` og bruk ukentlig repeterende trigger.
+1. **År-for-år-progresjon + milepæl-badges** på hjem/kubeprofil (honning og varroa over flere sesonger). Sterkeste langtids-retention-driver, bruker eksisterende data. — Est. 1–2 dager.
+2. **Re-engagement-gren i `weekly-hive-alerts`** basert på total app-inaktivitet (last_seen), uavhengig av inspeksjonsstatus. Fanger stille frafall. — Est. 0,5–1 dag (krever `last_seen`-kolonne).
+3. **Monter HoneyWidget + daglig rotert tips-kort** på dashboardet for daglig variasjon. Lav innsats, HoneyWidget er allerede bygget. — Est. 0,5 dag.

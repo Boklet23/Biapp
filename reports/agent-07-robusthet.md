@@ -1,72 +1,32 @@
-# Agent 7 — Robusthet og feilhåndtering
+# Agent 7 — Robusthet
 
 ## Metainfo
-- Filer lest: `app/(app)/_layout.tsx`, `app/_layout.tsx`, `app/(app)/(tabs)/hjem/index.tsx`, `app/(app)/(tabs)/kuber/[id]/inspeksjon/ny.tsx`, `services/subscription.ts`, `services/hive.ts`, `services/inspection.ts`, `lib/supabase.ts`, `lib/queryClient.ts`, `components/ui/ErrorBoundary.tsx`
-- Filer ikke funnet: ingen
-- Konfidensgrad: HØY
+- **Filer lest:** `app/_layout.tsx`, `app/(app)/_layout.tsx`, `app/(app)/(tabs)/hjem/index.tsx`, `app/(app)/(tabs)/kuber/[id]/inspeksjon/ny.tsx`, `app/(app)/(tabs)/kuber/ny.tsx` (delvis), `services/subscription.ts`, `services/hive.ts`, `services/inspection.ts`, `lib/supabase.ts`, `lib/queryClient.ts`, `components/ui/ErrorBoundary.tsx`
+- **Filer ikke funnet:** ingen (alle scope-filer eksisterer)
+- **Konfidensgrad:** Høy for funn i leste filer; Middels for offline/JWT-atferd som avhenger av runtime.
 
 ## Sammendrag
-
-Appen har en solid grunnmur: global ErrorBoundary med Sentry, React Query med retry-logikk, draft-lagring i wizard og `Promise.allSettled` ved bilde-opplasting. Svakhetene er konsentrert rundt tre mønstre: (1) svelgte catch-blokker som skjuler tilstandskorrupsjon, (2) manglende negativ-validering av varroa-count, og (3) en enkelt `Promise.all` i rapport-generering som kan miste data lydløst ved nettverksfeil.
-
----
+Grunnmuren er god: global ErrorBoundary + Sentry, React Query med retry, draft-autolagring i wizard, GPS-feilhåndtering og `Promise.allSettled` ved bildeopplasting. Men det finnes én KRITISK krasj: `Sentry` brukes uimportert i `(app)/_layout.tsx` og kaster `ReferenceError` ved abonnementssync-feil under oppstart. Øvrige svakheter: ingen offline-cache, `Promise.all` i rapport, og rot-only ErrorBoundary.
 
 ## Funn
 
-### Kritisk
+**[KRITISK]** `app/(app)/_layout.tsx:28` — `Sentry.captureException(...)` kalles, men `Sentry` er **ikke importert** i filen (verifisert med grep — ingen `@sentry/react-native`-import). Når `initPurchases→syncTier`-kjeden (linje 24-30) feiler på produksjons-Android (RevenueCat-nettverksfeil, ikke-konfigurert offering, eller Supabase-feil i `syncTierToSupabase`), kaster `.catch`-handleren `ReferenceError: Sentry is not defined` inne i en `.catch` uten ytre boundary → ubehandlet promise-rejection. — **Konsekvens:** Feilen som skulle logges maskeres, toasten vises aldri, og oppstartsflyten kan krasje ved RevenueCat-feil. — **Løsning:** Legg til `import * as Sentry from '@sentry/react-native';` øverst i filen.
 
-**[KRITISK]** `app/(app)/_layout.tsx:26` — `initPurchases → syncTierToSupabase` svelges helt med `.catch(() => {})`. Dersom RevenueCat returnerer en tier og Supabase-sync feiler, bruker appen feil tier (f.eks. `starter` i stedet for `hobbyist`) uten at bruker eller Sentry varsles. Bruker mister tilgang til betalte funksjoner.
-- **Løsning:** Logg feilen til Sentry og vis en diskret toast: `catch((e) => { Sentry.captureException(e); showToast('Abonnement ikke synkronisert', 'warning'); })`.
+**[HØY]** `lib/queryClient.ts:17-22` + `lib/supabase.ts` — Ingen offline-persistering. React Query bruker kun in-memory cache (ingen `persistQueryClient`/AsyncStorage-persister, ingen `gcTime`/`networkMode`). Ved hard kill / Android bakgrunnsdrap tømmes hele cachen; uten nett viser hjem/kuber tomme tilstander i stedet for sist kjente data. — **Konsekvens:** Birøkteren i felt (dårlig dekning) ser «ingen kuber»/feilbanner i stedet for cachet data. — **Løsning:** Legg til `@tanstack/query-async-storage-persister` + `persistQueryClient` med AsyncStorage, og sett `networkMode: 'offlineFirst'`.
 
----
+**[HØY]** `app/(app)/(tabs)/hjem/index.tsx:215` — `Promise.all([fetchAllInspections(), fetchAllTreatments()])` i rapportgenerering. Feiler én, avbrytes begge og hele rapporten feiler med generisk «Kunne ikke generere rapport» (linje 229). — **Konsekvens:** Delvis tilgjengelig data går tapt; brukeren får ingen rapport selv om f.eks. kun behandlinger feilet. — **Løsning:** Bruk `Promise.allSettled`, generer rapport på det som lyktes, og varsle spesifikt om hva som manglet.
 
-### Høy
+**[MEDIUM]** `lib/queryClient.ts:20` — `retry: 2` gjelder *alle* query-feil, inkludert ikke-retriable 401/JWT-utløp og valideringsfeil fra `mapX()` (som kaster `Error`). Ved utløpt token retryes 3 ganger med backoff før feil vises; `mapX`-kast retryes meningsløst. — **Konsekvens:** Treg, forvirrende feilopplevelse ved utlogging/token-utløp. — **Løsning:** Gjør `retry` til en funksjon som ikke retryer på 401/PGRST301/«Ugyldig …»-meldinger.
 
-**[HØY]** `app/(app)/(tabs)/hjem/index.tsx:207` — `Promise.all([fetchAllInspections(), fetchAllTreatments()])` brukes i rapport-generering. Hvis én av kallene feiler, avbrytes begge og hele rapporten feiler. `Promise.allSettled` ville tillatt at delresultater brukes og at brukeren informeres spesifikt om hva som feilet.
-- **Løsning:** Bytt til `Promise.allSettled`, les `status === 'fulfilled'` og vis `'Behandlinger utilgjengelig — rapport ufullstendig'` ved behov.
+**[MEDIUM]** `lib/supabase.ts:16` (`autoRefreshToken: true`) — Ingen `AppState`-lytter som driver token-refresh når appen kommer fra bakgrunn. Ved lang inspeksjon (token utløper mens wizard `ny.tsx` er åpen) feiler `mutation.mutate` med JWT-feil. Draftet bevares (`ny.tsx:127-145`), så data tapes ikke — men første lagring feiler. — **Konsekvens:** Lagring feiler ved første forsøk etter lang inaktivitet; bruker må prøve igjen. — **Løsning:** Registrer `AppState`-lytter som kaller `supabase.auth.startAutoRefresh()`/`stopAutoRefresh()`.
 
-**[HØY]** `app/(app)/(tabs)/kuber/[id]/inspeksjon/ny.tsx:218–232` — Validering av `varroaCount` sjekker kun `isNaN`, men ikke negative verdier. En bruker kan taste inn `-5`, som passerer valideringen og sendes til Supabase som et negativt tall. Downstream beregner `computeHealthScore` og Varroa-trend feil, og varslingen i `buildAlerts` (terskel 3) fungerer ikke korrekt for negative verdier.
-- **Løsning:** Legg til: `if (Number(varroaCount) < 0) { showToast('Varroa-telling kan ikke være negativ', 'error'); return; }` mellom linje 218 og 222.
+**[MEDIUM]** `components/ui/ErrorBoundary.tsx:14` montert kun i `app/_layout.tsx:107` (rot). Kritiske enkeltskjermer (kubeprofil `kuber/[id]/index.tsx`, wizard `ny.tsx`) har ingen lokal boundary. Et uventet `throw` (f.eks. `mapInspection`/`mapHive` ved korrupt rad i et `.map`) propagerer til rot og nullstiller hele navigasjonsstacken. — **Konsekvens:** Bruker kastes ut til toppnivå; «Last inn på nytt» resetter `hasError` men ikke nødvendigvis underliggende feiltilstand. — **Løsning:** Wrap wizard og kubeprofil i lokal `<ErrorBoundary>`.
 
-**[HØY]** `app/(app)/_layout.tsx:19–20` — `requestNotificationPermission` og `registerPushToken` svelger sine catch-blokker uten logging. Push-token registreres kanskje aldri, og bruker mottar ingen varsler uten synlig feil. Det finnes ingen retry-mekanisme.
-- **Løsning:** Logg til Sentry minst på produksjon: `catch((e) => { if (!__DEV__) Sentry.captureException(e); })`.
+**[LAV]** `app/(app)/(tabs)/kuber/[id]/inspeksjon/ny.tsx:218` — Varroa-validering finnes (avviser NaN/negativ ved siste steg via `isNaN(Number(...)) || < 0`). `Number('1,5')=NaN` fanges korrekt, men brukeren får ingen inline-tilbakemelding før innsending, og desimaler med komma blokkeres stille. `mapInspection` håndterer nullable felt forsvarlig (`typeof === 'number'`). — **Konsekvens:** Mindre god UX ved feiltasting. — **Løsning:** Inline-validering i Step3 + `keyboardType="numeric"`.
 
----
-
-### Medium
-
-**[MEDIUM]** `app/(app)/(tabs)/kuber/[id]/inspeksjon/ny.tsx:99–124` — Draft-gjenoppretting ved mount mangler behandling av korrumperte partial drafts. Feltet `varroaCount` leses som streng fra JSON, men det finnes ingen validering av at verdien faktisk er et gyldig tall-streng. En korrupt draft kan sette `varroaCount` til `'undefined'` eller `'NaN'`, som passerer `isNaN`-sjekken på linje 218 siden `isNaN('undefined') === true` og blokkerer innlevering.
-- **Løsning:** Valider `draft.varroaCount` med `isNaN(Number(draft.varroaCount ?? '')) ? '' : draft.varroaCount` ved draft-restore, linje 113.
-
-**[MEDIUM]** `services/hive.ts:87–100` — `fetchHives` har en 10-sekunders timeout via `Promise.race`, men `fetchHive` (enkelt-oppslag brukt i wizard) har ingen timeout. En hengende nettverksforbindelse vil fryse wizard-skjermen uten at bruker informeres eller kan avbryte.
-- **Løsning:** Wrap `fetchHive` i samme timeout-mønster som `fetchHives`.
-
-**[MEDIUM]** `services/subscription.ts:71–92` — `syncTierToSupabase` henter session med `supabase.auth.getSession()` uten å håndtere utløpt JWT midt i flyten. Supabase-klienten er konfigurert med `autoRefreshToken: true`, men det er ingen garanti for at refresh er fullført når denne funksjonen kalles (f.eks. ved oppstart). Funnet at kallet er uten retry ved `401`-feil.
-- **Konsekvens:** Tier synces ikke; bruker havner på feil tier.
-- **Løsning:** Bruk `supabase.auth.refreshSession()` med fallback, eller sjekk `session.expires_at` før sync.
-
-**[MEDIUM]** `components/ui/ErrorBoundary.tsx` — ErrorBoundary dekker kun rot-nivå (i `app/_layout.tsx:107`). Kritiske enkelt-skjermer som kubeprofil (`kuber/[id]/index.tsx`) og inspeksjons-wizard (`ny.tsx`) har ingen lokal ErrorBoundary. En uventet `throw` i disse skjermene vil propagere opp til rot-ErrorBoundary og nullstille hele navigasjonsstacken, og bruker mister ulagret wizard-data.
-- **Løsning:** Wrap `NyInspeksjon`-skjermen og kubeprofil med en lokal `<ErrorBoundary>` som viser en skjerm-spesifikk feilmelding uten å resette stacks.
-
-**[MEDIUM]** `app/(app)/(tabs)/hjem/index.tsx:130–133` — `lastInspectionByHive`-query har ingen `isError`-sjekk i UI. Dersom RPC-kallet `get_latest_inspections_per_hive` feiler, vises `avgHealth = 0` og alle kuber fremstår som "ikke inspisert" i alert-logikken. Bruker ser feil varsler uten noen indikasjon på at data mangler.
-- **Løsning:** Destrukturer `isError: lastInspError` og vis en diskret advarsel om helse-data er utilgjengelig.
-
----
-
-### Lav
-
-**[LAV]** `app/(app)/(tabs)/hjem/index.tsx:192` — `scheduleInspectionReminderDeduped` svelges med `.catch(() => {})`. Hvis notifikasjon-scheduling feiler (f.eks. tillatelse trukket tilbake), vet ikke appen det, og bruker mottar ikke påminnelse.
-
-**[LAV]** `lib/supabase.ts:4` — `EXPO_PUBLIC_SUPABASE_URL!` bruker non-null assertion etter at null-sjekken er gjort på linje 7. Dette er logisk inkonsistent — throw-sjekken på linje 7–10 er korrekt defensiv programmering, men `!`-assertion på linje 4 er overflødig og misvisende for videre vedlikehold.
-
-**[LAV]** `app/(app)/(tabs)/kuber/[id]/inspeksjon/ny.tsx:147–159` — Vær-autoinnhenting ved wizard-åpning svelger feil med `.catch(() => {})`. Ingen visuell indikator vises dersom GPS eller Yr.no er utilgjengelig utover at feltene forblir tomme. `weatherLoading`-tilstanden er korrekt implementert, men ingen feilmelding vises.
-
----
+**[LAV]** `services/subscription.ts:75-81` — `syncTierToSupabase` gjør `.single()`-kall på `profiles` uten å sjekke `error`. Ved leseproblem er `profileCheck` undefined → `profileCheck?.tier_locked` faller gjennom og fortsetter til update. — **Konsekvens:** Tier-sync kan skrive selv ved leseproblem (overstyrer evt. tier_locked). — **Løsning:** Sjekk og kortslutt på `error` fra select-kallet.
 
 ## Topp-3 anbefalinger
-
-1. **Logg og varsle ved tier-sync-feil** (`app/(app)/_layout.tsx:26`). Den svelgte catch-blokken rundt `syncTierToSupabase` er den eneste kritiske feilen med direkte forretningskonsekvens — bruker mister betalte funksjoner lydløst. Bytt `.catch(() => {})` med Sentry-logging og en `'warning'`-toast.
-
-2. **Legg til lokal ErrorBoundary rundt inspeksjons-wizard** (`ny.tsx`). Rot-ErrorBoundary resetter hele navigasjonsstacken og sletter ulagret draft. En skjerm-lokal boundary kan fange crashes uten stack-reset og bevare AsyncStorage-draftet til brukeren.
-
-3. **Valider negativ varroa-count** (`ny.tsx:218`). Legg til en enlinjes sjekk `Number(varroaCount) < 0` før mutation kalles. Dette er en lav-kostnad fix som forhindrer korrupte data i Supabase som påvirker helse-score, Varroa-trend og alert-logikk i hele appen.
+1. **Importer Sentry i `(app)/_layout.tsx`** (KRITISK). Én linje. ~5 min. Fjerner produksjonskrasj/maskert feil ved abonnementssync.
+2. **Legg til offline-persistering av React Query-cache** (HØY). `persistQueryClient` + AsyncStorage + `networkMode: 'offlineFirst'`. ~2-3 t. Avgjørende for birøktere uten dekning i felt.
+3. **`Promise.all`→`allSettled` i rapport + retry-guard på 401/valideringsfeil** (HØY/MEDIUM). ~1-2 t. Hindrer total datatap i rapport og treg feilopplevelse ved token-utløp.

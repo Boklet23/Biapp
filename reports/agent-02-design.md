@@ -1,48 +1,37 @@
-# Agent 2 — Visuell design og komponentkonsistens
+# Agent 2 — Design
 
 ## Metainfo
-- Filer lest: `constants/colors.ts`, `components/hive/HiveCard.tsx`, `components/ui/Button.tsx`, `components/hive/WeightSection.tsx`, `components/hive/HealthScoreSection.tsx`, `app/(app)/(tabs)/hjem/index.tsx`, `app/(app)/(tabs)/kuber/[id]/index.tsx`
-- Filer ikke funnet: ingen
-- Konfidensgrad: HØY
+**Filer lest:** constants/colors.ts · constants/typography.ts · components/hive/HiveCard.tsx · components/ui/Button.tsx · components/hive/WeightSection.tsx · components/hive/HealthScoreSection.tsx · components/hive/HivesMapView.tsx · app/(app)/(tabs)/hjem/index.tsx · app/(app)/(tabs)/kuber/[id]/index.tsx (delvis)
+**Filer ikke funnet:** ingen
+**Konfidensgrad:** HØY (designsystem-filene + nøkkelskjermene lest direkte; bredde-funn via Grep over 43 komponenter)
 
 ## Sammendrag
-
-Designsystemet (Colors, Radii, Shadows) er godt definert og brukes konsistent i kjerne-komponentene HiveCard og Button. Svakheten er bredden: `hjem/index.tsx` alene har 14 hardkodede borderRadius-verdier, og 34+ komponenter bruker `fontWeight` uten `fontFamily` — inkonsistent typografi på Android. Emoji-ikoner i funksjonell UI og platform-native Alert er de tydeligste "billig"-signalene.
+Designsystemet er godt definert (Colors/Shadows/Radii/Typography/FontFamily), men dårlig håndhevet. `Typography`-skalaen brukes ingensteds og `Radii` kun i HiveCard — resten av appen hardkoder radier, fontstørrelser og farger. Verst er `HivesMapView` og `HiveMap` med rå hex-verdier (#1a1a1a, #fff, #666). 155 `fontWeight` mot bare 43 `fontFamily` betyr at Manrope-fonten ofte ikke trer i kraft. HiveCard og hjem-hero er polerte; kartet og enkelte seksjoner ser billige ut.
 
 ## Funn
 
-**[HØY]** `app/(app)/(tabs)/hjem/index.tsx:554,570,601,620,631,698,709,725,742,815,834,848` — 14 hardkodede `borderRadius`-verdier (8–28) uten `Radii.*` — Tilfeldig radius-landskap; divergens øker for hvert nytt feature-ship — Erstatt med nærmeste Radii-token: `28→Radii.hero`, `22→Radii.xl`, `14→Radii.md`, `12→Radii.sm`.
+**[KRITISK]** `constants/typography.ts:11-28` + hele app — `Typography`-skalaen importeres aldri (0 treff utenfor definisjon). Hver komponent hardkoder `fontSize`/`fontWeight` ad hoc → ingen typografisk konsistens. Konsekvens: tilfeldige størrelser (12/13/14/16/18/22/26/28/30/32 om hverandre), umulig å justere globalt. Løsning: refaktorer tekststiler til `Typography.*`-spreads.
 
-**[HØY]** `components/hive/HivesMapView.tsx:166,194,210–214,223,235` — 7 rå hex-verdier (`#1a1a1a`, `#fff`, `#999`, `#666`, `#444`) — Kart-UI ute av sync med brand — `#1a1a1a→Colors.ink`, `#fff→Colors.white`, `#999/#666→Colors.muted`, `#444→Colors.mid`.
+**[KRITISK]** Hele `components/` — 155 `fontWeight:` mot 43 `fontFamily:`. RN ignorerer numerisk `fontWeight` for custom-fonter; uten `fontFamily: FontFamily.bold` rendres Manrope alltid i Regular. Konsekvens: «bold» tekst i WeightSection, HealthScoreSection, HivesMapView m.fl. ser tynn/systemfont-aktig ut — direkte synlig billighet. Løsning: par alltid `fontWeight` med riktig `FontFamily`, eller bruk `Typography.*`.
 
-**[HØY]** `components/hive/HealthScoreSection.tsx:103–104` — `⚠️` emoji som funksjonelt ikon — Emoji varierer mellom Apple og Google; ser hobby-utviklet ut på Android — Bytt til `Ionicons` `warning` / `alert-circle`.
+**[HØY]** `components/hive/HivesMapView.tsx:166-235` — gjennomgående rå hex (`#1a1a1a`, `#fff`, `#666`, `#444`, `#999`, `#2196F3`, `#4CAF50`) i stedet for Colors.*. Callout-tekst mangler `fontFamily`. Konsekvens: kartet matcher ikke palettens honning/navy-toner; ser ut som en annen app. Løsning: erstatt med Colors.ink/white/muted/info/success + FontFamily.
 
-**[HØY]** `components/hive/WeightSection.tsx:39` — `Alert.alert()` for sletting — Native dialog bryter appens visuelle identitet — Lag `ConfirmSheet`-komponent basert på `Modal` + `Button`.
+**[HØY]** `app/.../kuber/[id]/index.tsx:31,70` + `HiveCard.tsx:72` + `HealthScoreSection.tsx:82-84` — hardkodet `'#F5A623'`, `'#D4891A'`, `'#5DB346'`, `'#E67E22'` for varroa/score-farger. `#F5A623` ER `Colors.honey`. Konsekvens: duplisert sannhet, drift ved palettendring. Løsning: bruk `Colors.sev*` (finnes allerede!) + introduser `Colors.scoreGood/scoreWarn`.
 
-**[HØY]** 34+ komponenter bruker `fontWeight` uten `fontFamily` — `WeightSection.tsx`, `HealthScoreSection.tsx`, `SeasonGuide.tsx`, `WeatherCard.tsx` m.fl. — Bold-tekst vises med systemvekt på Android — Koble `fontWeight:'700'→FontFamily.bold` i alle StyleSheet-objekter.
+**[MEDIUM]** `components/ui/Button.tsx:57-58,84,90` — `height: 52`, `borderRadius: 14`, `borderWidth: 1.5`, `fontSize: 16` hardkodet i den mest gjenbrukte primitiven. `borderRadius: 14` finnes ikke i `Radii` (mellom sm=12 og md=16). Konsekvens: knapper avviker fra radius-skalaen. Løsning: bruk `Radii.sm`/`Radii.md` + `Typography.bodyStrong`.
 
-**[MEDIUM]** `components/hive/HealthScoreSection.tsx:82` — `'#5DB346'` og `'#E67E22'` hardkodet i `scoreColor()` — Kan divergere ved brand-oppdatering — Legg til named tokens i colors.ts.
+**[MEDIUM]** `components/hive/WeightSection.tsx:238-276` — `borderRadius: 14` (3x), alle tekststiler uten `fontFamily`, `Colors.mid + '12'`/`'20'` opacity-hex inline (4x). Konsekvens: inkonsistent radius + ikke-Manrope tekst i en seksjon brukeren ser ofte. Løsning: `Radii`, `FontFamily`, og en `Colors.hair`-variant for kantlinjer.
 
-**[MEDIUM]** `components/hive/HiveCard.tsx:71–73` — `'#D4891A'` for moderat varroa-farge — Ikke et Colors-token — Definer named token og bruk det.
+**[MEDIUM]** Emoji som ikoner — `HealthScoreSection.tsx:104,111` (⚠️/✅), `WeightSection.tsx:195` (⚖️), `hjem/index.tsx` (🐝⏰⏳🚀). Konsekvens: emoji rendres plattform-spesifikt og ser leketøyaktig ut i en betalt app. Løsning: bytt til vektor-ikoner (lucide/feather) med palettfarge.
 
-**[MEDIUM]** `components/hive/HiveCard.tsx:279,296` — `fontSize: 8` på stat-etiketter (VEKT, VARROA, RAMMER, ETASJER) — Under anbefalt minimum; bryter WCAG 1.4.4 på lav-DPI-skjermer — Øk til `fontSize: 10` minimum.
+**[LAV]** `HiveCard.tsx:44,199,201` — `borderRadius: 1`/`6`, `'rgba(255,255,255,0.88)'` inline. Mindre, men avviker fra Radii/Colors.
 
-**[MEDIUM]** `components/hive/WeightSection.tsx:60` — Datoinput er vanlig `TextInput` med placeholder `ÅÅÅÅ-MM-DD` — Brukere må skrive ISO-dato manuelt — Integrer `@react-native-community/datetimepicker`.
-
-**[MEDIUM]** `components/inspection/Step3.tsx:25–26` — `'#D4891A'`, `'#E67E22'`, `'#FEF3E2'` for varroa-alvorlighet — Ikke Colors-tokens — Definer named tokens og bruk dem.
-
-**[LAV]** `app/(app)/(tabs)/kuber/[id]/index.tsx:314` — Tom inspeksjons-tilstand med `📋` emoji og plaintext — Erstatt med illustrert placeholder eller Lottie-animasjon.
-
-## Premium-muligheter
-
-1. **Skeletonlastere** — Erstatt `ActivityIndicator` med animated skeleton-cards. Gir følelse av rask app og profesjonell onboarding.
-2. **Konsistent haptic feedback** — HiveCard, InspectionRow og FAB mangler haptics. Lett haptic på `onPress`, medium på destruktive handlinger.
-3. **Gradient-hero med glassmorfisme** — Hjem-skjermens hero er flat `Colors.dark`. En subtil gradient + `expo-blur` glass-kort løfter nivået betraktelig.
-4. **Animert helseringen** — Reanimated-drevet oppstartsanimasjon (arc tegnes fra 0 til score ved mount) gir umiddelbar "wow"-effekt.
-5. **Fargekodet varroa-celle i HiveCard** — Bytt bakgrunnen på VARROA-cellen til lav-opacity alvorlighetsgrad-farge. Kommuniserer status visuelt uten at brukeren må huske tersklene.
+**[LAV]** `hjem/index.tsx:564,578,592,…` — mange `'rgba(255,255,255,0.xx)'` inline på navy-hero. Akseptabelt for overlay-toner, men bør samles i `Colors.onDark*`-konstanter.
 
 ## Topp-3 anbefalinger
 
-1. **Tving all `borderRadius` gjennom `Radii`-tokens** (~2 timer) — Opprett ESLint-regel. Prioriter `hjem/index.tsx` (14 brudd). Største langsiktige designkonsistens-gevinst med lavest kostnad.
-2. **Erstatt emoji-ikoner i funksjonell UI med vektorikoner** (~1 time) — `@expo/vector-icons` er allerede transitiv avhengighet. Enkeltste tiltak som løfter appen fra "hobby" til "profesjonell" på Android.
-3. **Legg til `fontFamily` overalt der `fontWeight` brukes** (~3 timer) — Lag `TextStyles`-eksport i `constants/typography.ts`. Android-typografisk konsistens er kritisk for et betalt produkt.
+1. **Innfør `Typography`-skalaen overalt** (kritisk visuell gevinst, sikrer Manrope-rendering). Refaktorer tekststiler i de 43 komponentene til `...Typography.x`. ~6-8t.
+
+2. **Eliminer rå hex** — start med `HivesMapView`/`HiveMap`, deretter score/varroa-fargene → Colors.*. Legg til manglende tokens (`scoreGood`, `border`, `onDark`). ~3-4t.
+
+3. **Bytt emoji-ikoner mot vektorikoner** (lucide-react-native) i helse-, vekt- og hjem-seksjonene; legg subtil gradient på HiveCard-thumbnail-fallback og report-CTA for premium-løft. ~4-5t.

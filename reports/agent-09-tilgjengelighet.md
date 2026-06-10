@@ -1,82 +1,42 @@
-# Agent 9 — Tilgjengelighet (WCAG 2.1 AA)
+# Agent 9 — Tilgjengelighet
 
 ## Metainfo
-- Filer lest: `constants/colors.ts`, `components/hive/HiveCard.tsx`, `app/(app)/(tabs)/hjem/index.tsx`, `app/(app)/(tabs)/kuber/[id]/inspeksjon/ny.tsx`, `components/inspection/Step4.tsx`, `app/(app)/(tabs)/kalender/index.tsx`, `components/ui/Button.tsx`, `components/inspection/FrameCounter.tsx`
-- Filer ikke funnet: ingen
-- Konfidensgrad: HØY
-
----
+- **Filer lest:** `constants/colors.ts`, `components/hive/HiveCard.tsx`, `components/ui/Button.tsx`, `components/inspection/Step4.tsx`, `components/inspection/FrameCounter.tsx`, `app/(app)/(tabs)/hjem/index.tsx`, `app/(app)/(tabs)/kuber/[id]/inspeksjon/ny.tsx`, `app/(app)/(tabs)/kalender/index.tsx`
+- **Filer ikke funnet:** ingen (alle målfiler eksisterte)
+- **Konfidensgrad:** Høy for kontrast/berøring/skjermleser (lest kode + Grep over 48 filer). Middels for dynamisk tekst (ingen runtime-test kjørt).
 
 ## Sammendrag
-
-BiVokter har god grunnstruktur for skjermleser-støtte på de mest kritiske navigasjonselementene (hjem, kalender, FrameCounter), men har alvorlige kontrastfeil i hele merkevarepaletten. `Colors.honey` (#F5A623) brukes som bakgrunn, tekst og ikonfarge, men gir kun 2.03:1 mot hvit — langt under WCAG AA-kravet på 4.5:1. Statistikk-etiketter og varroa-alvorlighetsfargene bryter alle krav. Rundt 40 % av Pressable-elementene mangler `accessibilityLabel`. Ingen filer bruker `allowFontScaling`.
-
----
+Skjermleser-dekning er overraskende god (128 a11y-props over 29 filer), og kjerneknapper (Button, FrameCounter, mood, avatar) har label + role + 44pt-størrelse. Hovedproblemene er: hvit tekst på honey (FAB ~2.1:1 — under AA), grå `muted`-tekst (~3.5:1), `allowFontScaling` brukes ingen steder (0 treff), og varroa-alvorlighet formidles delvis kun via farge. Norsk lov (WCAG 2.1 AA) krever utbedring av kontrast.
 
 ## Funn
 
-### Kontrastfeil
+### KRITISK
+**[KRITISK]** `app/(app)/(tabs)/kalender/index.tsx:423` (fabText) — Hvit tekst (`Colors.white`) på `Colors.honey #F5A623` gir kontrast ~2.1:1. FAB-en «+ Hendelse» feiler AA grovt. (`flyDayLabel`/`reportBtnText` bruker derimot mørk tekst og er OK.) — Konsekvens: knappen er uleselig for svaksynte; bryter WCAG 1.4.3. — Løsning: bruk `Colors.dark` på honey-bakgrunn (slik Button primary gjør), eller `honeyDark`-bakgrunn med hvit tekst.
 
-**[KRITISK]** `constants/colors.ts:3` + `app/(app)/(tabs)/hjem/index.tsx:867` — `Colors.honey` (#F5A623) brukes som bakgrunn pa rapport-CTA og FAB; hvit tekst pa honey gir kontrastforhold **2.03:1** (krav 4.5:1 for normalstorrelse, 3:1 for stor). FAB-tekst (`fabText`, fontSize 15) pa honey-bakgrunn er fullt ikke-leselig for svaksynte. Konsekvens: Lovpalagt WCAG 2.1 AA-brudd, ekskluderer svaksynte brukere. Losning: Bruk `Colors.dark` (#1A1A2E) som FAB-tekst (gir 8.42:1), eller endre FAB-bakgrunn til `Colors.honeyDark`.
+### HØY
+**[HØY]** `constants/colors.ts:23` (`muted #8A8A9A`) — Mot hvit ~3.5:1, mot `light #F8F4EF` ~3.3:1. Brukt utstrakt: `statKey`, `breed`, `heroStatSub`, `taskSub`, `legendText`, `emptyText`, kalender `inspSub`. — Konsekvens: brødtekst/etiketter feiler AA 4.5:1 (kun OK som «stor tekst» ≥18pt bold, men de fleste er 8–13pt). — Løsning: erstatt med `Colors.mid #4A4A6A` (~7:1) for tekst under 18pt.
 
-**[KRITISK]** `constants/colors.ts:4` + `components/ui/Button.tsx:103` — Ghost-knapp bruker `Colors.honeyDark` (#D4890A) som label-farge pa hvit/transparent bakgrunn: **2.84:1** — bryter AA. Brukes bredt som sekundaer interaksjonsknapp. Losning: Bruk `Colors.mid` (#4A4A6A, gir 8.47:1 mot hvit) som ghost-label.
+**[HØY]** Globalt — `allowFontScaling` finnes 0 steder (Grep over alle .tsx). Alle `fontSize` er hardkodet (9–30pt). Faste høyder dominerer: `Button.base height:52`, `FrameCounter.button 44x44`, `moodBtn`, hero-rader. — Konsekvens: ved 150–200% systemskrift klippes/overlapper tekst (mood `fontSize:12` i 44pt-boks, `statKey` 8pt, ring-score absolutt posisjonert). Bryter WCAG 1.4.4 (Resize Text). — Løsning: la tekst skalere; bytt faste `height` til `minHeight` + padding; test ved 200%.
 
-**[KRITISK]** `components/hive/HiveCard.tsx:279,300` — `statKey` (fontSize 8) og `varroaLabel` (fontSize 8) bruker `Colors.muted` (#8A8A9A) pa `Colors.light` (#F8F4EF)-bakgrunn: **3.10:1**. Tekst pa 8pt er ikke "stor tekst" (krav 18pt/14pt bold), saa kravet er 4.5:1. Dette er nokkeldata (VEKT, VARROA, RAMMER, ETASJER). Losning: Bruk `Colors.mid` pa statKey — gir 7.74:1.
+**[HØY]** `components/inspection/Step4.tsx:42` (photoRemoveBtn) — Slett-knapp er 20x20px med `hitSlop={6}` → effektivt ~32x32px, under 44pt. — Konsekvens: vanskelig treffmål (WCAG 2.5.5/2.5.8). — Løsning: øk `hitSlop` til 12 eller knapp til 44pt.
 
-**[HOY]** `constants/colors.ts:37-40` — Varroa-alvorlighetsskala: `sevLow` (#9CCC65) gir **1.87:1**, `sevMod` (#FFC107) **1.63:1**, `sevHigh` (#FF7043) **2.74:1** mot hvit — alle under 3:1. Kun `sevCrit` (#C62828) passerer AA med 5.62:1. Disse fargene formidler kritisk helseinformasjon. Konsekvens: Svaksynte og fargeblinde (ca. 8 % av menn) mister essensiell biehelseinformasjon. Losning: Kombiner alltid farger med tekst-etikett (varroaLabel i HiveCard er delvis implementert — bra), og okk kontrasten pa selve fargeflaten mot bakgrunn.
+### MEDIUM
+**[MEDIUM]** `components/hive/HiveCard.tsx:135-139,292` — `statValBad` (linje 292) gjør varroa-tallet rødt uten tekstendring. Tekst-label «Lav/Moderat/Høy» finnes (linje 138-139), så ikke fullt kun-farge, men selve tallet signaliserer alvorlighet kun via rødfarge. — Konsekvens: fargeblinde mister «dårlig»-signal på tallet. — Løsning: behold alltid tekst-label; vurder ikon/symbol ved siden av tallet.
 
-**[HOY]** `components/ui/Button.tsx:98` — `ghostLabel` farge `Colors.honeyDark` pa hvit: **2.84:1** mot hvit bakgrunn. Losning: Endre til `Colors.mid` eller `Colors.ink` som gir henholdsvis 8.47:1 og 17.06:1.
+**[MEDIUM]** `app/(app)/(tabs)/kalender/index.tsx:194-203` (legend + dots) — Inspeksjon vs hendelse skilles av honey- vs grønn 8px-prikk. Tekst-label finnes i legenden, men i `MonthView`-rutenettet formidles type trolig kun via farge. — Konsekvens: kalenderprikker uten tekst er kun-farge (WCAG 1.4.1). — Løsning: legg form/ikon på prikker eller a11y-label på datoceller.
 
-**[MEDIUM]** `components/hive/HiveCard.tsx:253-260` — `ringLabel` ("HELSE", fontSize 9) og ringScore bruker `Colors.muted` (#8A8A9A) pa hvit: **3.40:1** — bryter AA for sma tekster. Helsescoren er sentral i kortvisningen. Losning: Bruk `Colors.mid` for ringLabel.
+**[MEDIUM]** `components/ui/Button.tsx:100-102` (ghostLabel `honeyDark #D4890A`) — På hvit ~4.0:1 — borderline under 4.5:1 ved 16pt regular. Kommentar linje 98 viser bevissthet om problemet for secondary. — Konsekvens: ghost-knapper akkurat under AA. — Løsning: mørkere farge (`honeyDeep`) ved <18pt.
 
-**[MEDIUM]** `components/hive/HiveCard.tsx:209` — `boxCount` (fontSize 9) i `boxBadge`-overlay bruker `Colors.honeyDark` pa blandet bakgrunn (rgba(255,255,255,0.88) over honey-bilde): beregnet kontrast ca. **2.62:1**. Losning: Bruk `Colors.dark` som bokstav-farge.
+**[MEDIUM]** `app/(app)/(tabs)/kuber/[id]/inspeksjon/ny.tsx:336` (navBtnBack) — «Tilbake/Avbryt»-Pressable mangler `accessibilityRole`/`accessibilityLabel` (kun synlig tekst). — Konsekvens: skjermleser leser teksten men mister knapp-rolle. — Løsning: legg til `accessibilityRole="button"`.
 
-### Skjermleser-dekning
+### LAV
+**[LAV]** `components/inspection/Step4.tsx:61-70` (mood-emoji) — `moodBtn` mangler `accessibilityRole`/`Label`/`State`; kun emoji + tall. — Konsekvens: skjermleser leser emoji-navn uten kontekst og uten valgt-tilstand. — Løsning: `accessibilityLabel={'Humør ${score} av 5'}` + `accessibilityState={{ selected: moodScore === score }}`.
 
-**[HOY]** `app/(app)/(tabs)/kuber/[id]/inspeksjon/ny.tsx:336-340` — Tilbake/Avbryt-knapp (`navBtn`) mangler `accessibilityLabel` og `accessibilityRole`. En VoiceOver-bruker horer kun ingenting meningsbearende. Konsekvens: Blinde brukere kan ikke skille "Avbryt" fra "Neste"-knapp. Losning: Legg til `accessibilityRole="button"` og `accessibilityLabel={isFirstStep ? 'Avbryt inspeksjon' : 'Ga tilbake til forrige steg'}`.
+**[LAV]** `components/hive/HiveCard.tsx:97-100` (boxBadge/BoxStack) — Etasjeantall som visuelle striper uten a11y-label. — Konsekvens: redundant (RAMMER/ETASJER finnes i stats), lav risiko. — Løsning: valgfri label.
 
-**[HOY]** `app/(app)/(tabs)/kalender/index.tsx:226-250` — Inspeksjons-radene (`inspRow` Pressable) mangler `accessibilityLabel` og `accessibilityRole`. Skjermleser annonserer ingenting meningsbearende. Losning: `accessibilityRole="button" accessibilityLabel={\`Inspeksjon \${formatTime(insp.inspectedAt)} — apne detaljer\`}`.
-
-**[HOY]** `app/(app)/(tabs)/hjem/index.tsx:442-465` — Inspeksjon-tasklist (`taskRow`) har `accessibilityRole="button"` men mangler `accessibilityLabel`. Skjermleser leser ikke kubenavnet eller hastegrad. Losning: `accessibilityLabel={\`\${hive.name}, \${label}\${urgent ? ', haster' : ''}\`}`.
-
-**[MEDIUM]** `components/inspection/Step4.tsx:48-53` — Foto-legg-til-knappen mangler `accessibilityLabel` og `accessibilityRole`. Fotoopplasting er en kjerneflyt. Losning: `accessibilityRole="button" accessibilityLabel="Legg til inspeksjonsbilde"`.
-
-**[MEDIUM]** `components/inspection/Step4.tsx:42-45` — Fotofjern-knappen mangler `accessibilityLabel`. VoiceOver-bruker kan ikke fjerne bilder. Losning: `accessibilityLabel={\`Fjern bilde\`}`.
-
-**[MEDIUM]** `components/hive/HarvestSection.tsx` + `components/hive/QueenSection.tsx` — Modal-lukke-knapper mangler `accessibilityLabel`. Kun `hitSlop={12}` er satt (positivt for beroring), men uten label horer VoiceOver-brukere ingenting. 60 Pressable-forekomster i `components/hive/`, kun 2 accessibilityLabel-forekomster (kun HiveCard.tsx).
-
-**Dekningsoppsummering:** 64 `accessibilityLabel`-forekomster mot 382 `Pressable`-forekomster pa tvers av 47 filer: ca. **17 % element-dekning**. 20 filer med Pressable mangler enhver accessibilityLabel.
-
-### Berøringsstørrelser
-
-**[POSITIV]** `components/inspection/FrameCounter.tsx:67-73` — Stepper-knapper er noyaktig 44x44pt. Oppfyller WCAG 2.5.5.
-
-**[HOY]** `components/inspection/Step4.tsx:93-97` — Fotofjern-knappen (`photoRemoveBtn`) er 20x20pt med `hitSlop={6}` — gir effektiv touch-area 32x32pt, under 44pt-kravet. Konsekvens: Liten malflatje for motorisk utfordrede brukere. Losning: Bruk `hitSlop={12}` (gir 44pt) eller okk knappestorrelsen til `width: 32, height: 32` + `hitSlop={6}`.
-
-**[MEDIUM]** `components/inspection/Step4.tsx:61-70` — Kubehumor-emoji-knapper (`moodBtn`) bruker `flex: 1` med `padding: 10`. Pa iPhone SE (320pt) med 5 emojier: effektiv bredde ca. 56pt — men ved tekstskalering kan dette bli smalere. Losning: Legg til `minWidth: 44` pa moodBtn.
-
-**[MEDIUM]** `app/(app)/(tabs)/kalender/index.tsx:330` — Maanedsnavigasjons-knapper (`navBtn`) har `padding: 8` uten eksplisitt `minWidth`/`minHeight`. Tekststorrelse 28pt kompenserer noe, men bor ha `minWidth: 44, minHeight: 44` for garantert 44pt touch-area.
-
-### Dynamisk tekst
-
-**[POSITIV]** Ingen filer har `allowFontScaling={false}` — alle tekster skalerer med systeminnstillinger, som er korrekt WCAG 1.4.4-atferd.
-
-**[MEDIUM]** `components/hive/HiveCard.tsx:279` — `statKey` fontSize 8 er allerede pa grensen for lesbarhet ved normal skalering. Ved 2x systemtekstskalering kan tall i statval-celler presse ut av kortvisningen fordi flex-layouten ikke har `flexWrap`. Losning: Legg til `numberOfLines={1}` og `adjustsFontSizeToFit` pa statVal, og vurder `minimumFontScale={0.75}`.
-
-### Informasjon kun via farge
-
-**[HOY]** `app/(app)/(tabs)/hjem/index.tsx:329` — heroStatVal for snitt-helse bruker betinget `Colors.success` vs `Colors.honey` som eneste differensiator mellom "god helse" og "under gjennomsnittet". Fargeblinde (deuteranopi) vil ikke oppdage forskjellen. Losning: Legg til et ikon (f.eks. pil opp/ned) eller tekst som supplement til fargen.
-
-**[MEDIUM]** `app/(app)/(tabs)/kalender/index.tsx:194-203` — Kalender-legenden bruker kun farget prikk (honey vs success-gronn) for a skille inspeksjon fra hendelse. For rod-gronn fargeblinde er dette problematisk. Losning: Legg til former (sirkel for inspeksjon, kvadrat for hendelse) i tillegg til farge.
-
-**[LAV]** `components/hive/HiveCard.tsx:71-73` — Varroa-tekstetiketten ("Ingen", "Lav", "Moderat", "Hoy", "Kritisk") er implementert — dette er bra for fargeblinde. Risiko: Dersom varroaLabel-visning fjernes i en fremtidig refaktorering forblir kun farge.
-
----
+**[LAV]** `app/(app)/(tabs)/hjem/index.tsx` — Mange dekorative emoji (🐝⏰✅🚀⏳) i tekst uten skjuling for skjermleser. — Konsekvens: emoji-navn leses opp. — Løsning: marker dekorativ emoji med `accessibilityElementsHidden`/`importantForAccessibility="no"`.
 
 ## Topp-3 anbefalinger
-
-1. **Reparer `Colors.honey`/`Colors.honeyDark` som tekstfarge** — Erstatt all bruk av disse som tekst pa hvit/lys bakgrunn med godkjente alternativer (`Colors.mid` for subtil tekst, `Colors.dark` for primaer tekst). Prioriter: `statKey`, `ghostLabel`, `varroaLabel`, `boxCount`. Dette er det eneste funnet som er et direkte juridisk brudd (uuastilsynet.no handhever WCAG 2.1 AA for norske digitale tjenester jf. likestillings- og diskrimineringsloven § 17), og rammer storst brukergruppe.
-
-2. **Systematisk `accessibilityLabel` pa alle interaktive elementer** — Installer `eslint-plugin-react-native-a11y` i CI med regelen `no-interactive-element-to-noninteractive-role` og `accessible` satt til required pa Pressable. Fokuser forst pa de tre kritiske hullene: `inspRow` i kalender, `taskRow` i hjem, og Tilbake/Avbryt i inspeksjonsflyten. Mal: >90 % element-dekning (fra dagens ca. 17 %).
-
-3. **Fikse `photoRemoveBtn` og dokumentere minimumsstorrelsestandard** — Fotofjernknappen (20pt effektiv) er den mest alvorlige beroring-feilen. Definer en intern standard: alle interaktive elementer skal ha effektiv beroringsflate 44x44pt. Kodifiser i `CLAUDE.md` og vurder en `<TouchTarget minSize={44}>`-wrapper-komponent for automatisk hitSlop-beregning.
+1. **Fiks FAB-kontrast + audit hvit-på-honey** (1t) — Bytt `fabText` til mørk tekst; grep `color: Colors.white` mot honey-bakgrunner. Løser KRITISK WCAG 1.4.3.
+2. **Erstatt `muted` med `mid` for liten tekst + aktiver fontskalering** (3–4t) — Global erstatt på tekststiler <18pt; bytt faste `height` til `minHeight` på Button/FrameCounter/moodBtn; test ved 200%. Løser to HØY-funn (1.4.3 + 1.4.4).
+3. **A11y-labels på mood-emoji, kalenderceller og navBtnBack + større hitSlop på fotosletting** (2t) — Legg til manglende `accessibilityRole`/`Label`/`State` og øk treffmål til 44pt.
