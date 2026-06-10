@@ -14,6 +14,7 @@ import { fetchHives, deleteHive } from '@/services/hive';
 import { fetchLastInspectionPerHive } from '@/services/inspection';
 import { useAuthStore } from '@/store/auth';
 import { useToastStore } from '@/store/toast';
+import { useEffectiveTier, tierAtLeast } from '@/hooks/useEffectiveTier';
 import { Hive } from '@/types';
 import { computeHealthScore } from '@/utils/health';
 
@@ -26,11 +27,22 @@ export default function KuberOversikt() {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
+  const [upgradeCopy, setUpgradeCopy] = useState<{ title?: string; subtitle?: string }>({});
   const [filter, setFilter] = useState<Filter>('alle');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const showToast = useToastStore((s) => s.show);
   const profile = useAuthStore((s) => s.profile);
   const isStarter = (profile?.subscriptionTier ?? 'starter') === 'starter';
+  const effectiveTier = useEffectiveTier();
+  const hasPro = tierAtLeast(effectiveTier, 'profesjonell');
+
+  const openProUpgrade = () => {
+    setUpgradeCopy({
+      title: 'Oppgrader til Profesjonell',
+      subtitle: 'Sammenligning av kuber og sesonger er en Profesjonell-funksjon.',
+    });
+    setUpgradeModalVisible(true);
+  };
 
   const { data: hives = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['hives'],
@@ -162,16 +174,16 @@ export default function KuberOversikt() {
         {/* Analysis shortcuts + view toggle */}
         <View style={styles.tools}>
           <Pressable
-            onPress={() => router.push('/kuber/sammenlign' as any)}
+            onPress={() => hasPro ? router.push('/kuber/sammenlign' as any) : openProUpgrade()}
             style={({ pressed }) => [styles.toolBtn, pressed && { opacity: 0.65 }]}
           >
-            <Text style={styles.toolText}>📊 Sammenlign</Text>
+            <Text style={styles.toolText}>{hasPro ? '📊 Sammenlign' : '🔒 Sammenlign'}</Text>
           </Pressable>
           <Pressable
-            onPress={() => router.push('/kuber/sesongsammenligning' as any)}
+            onPress={() => hasPro ? router.push('/kuber/sesongsammenligning' as any) : openProUpgrade()}
             style={({ pressed }) => [styles.toolBtn, pressed && { opacity: 0.65 }]}
           >
-            <Text style={styles.toolText}>📈 Sesong</Text>
+            <Text style={styles.toolText}>{hasPro ? '📈 Sesong' : '🔒 Sesong'}</Text>
           </Pressable>
           <View style={styles.viewToggle}>
             <Pressable
@@ -230,6 +242,10 @@ export default function KuberOversikt() {
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
         onPress={() => {
           if (isStarter && hives.length >= STARTER_HIVE_LIMIT) {
+            setUpgradeCopy({
+              title: 'Oppgrader for flere kuber',
+              subtitle: 'Starter er begrenset til 3 kuber. Oppgrader for ubegrenset antall.',
+            });
             setUpgradeModalVisible(true);
           } else {
             router.push('/kuber/ny');
@@ -244,6 +260,8 @@ export default function KuberOversikt() {
       <UpgradeModal
         visible={upgradeModalVisible}
         onClose={() => setUpgradeModalVisible(false)}
+        title={upgradeCopy.title}
+        subtitle={upgradeCopy.subtitle}
       />
     </Screen>
   );

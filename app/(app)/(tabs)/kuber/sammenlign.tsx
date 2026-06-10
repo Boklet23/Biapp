@@ -1,10 +1,12 @@
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
+import { ProGate } from '@/components/ui/ProGate';
 import { Colors, Shadows } from '@/constants/colors';
 import { MOOD_EMOJI } from '@/constants/ui';
 import { fetchHives } from '@/services/hive';
 import { fetchAllInspections } from '@/services/inspection';
+import { useEffectiveTier, tierAtLeast } from '@/hooks/useEffectiveTier';
 import { Hive, Inspection } from '@/types';
 
 function daysSince(iso: string): number {
@@ -21,10 +23,18 @@ interface Row {
 }
 
 export default function SammenlignKuber() {
-  const { data: hives = [], isLoading: hivesLoading } = useQuery({ queryKey: ['hives'], queryFn: fetchHives });
+  const effectiveTier = useEffectiveTier();
+  const hasPro = tierAtLeast(effectiveTier, 'profesjonell');
+
+  const { data: hives = [], isLoading: hivesLoading } = useQuery({
+    queryKey: ['hives'],
+    queryFn: fetchHives,
+    enabled: hasPro,
+  });
   const { data: allInspections = [], isLoading: inspLoading } = useQuery({
     queryKey: ['all-inspections'],
     queryFn: fetchAllInspections,
+    enabled: hasPro,
   });
   const isLoading = hivesLoading || inspLoading;
 
@@ -33,6 +43,8 @@ export default function SammenlignKuber() {
     if (!existing || insp.inspectedAt > existing.inspectedAt) acc[insp.hiveId] = insp;
     return acc;
   }, {});
+
+  if (!hasPro) return <ProGate feature="Sammenligning av kuber" />;
 
   const rows: Row[] = hives
     .filter((h) => h.isActive)

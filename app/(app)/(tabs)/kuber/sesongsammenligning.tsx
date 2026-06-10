@@ -3,10 +3,12 @@ import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-n
 import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
 import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
+import { ProGate } from '@/components/ui/ProGate';
 import { Colors, Shadows } from '@/constants/colors';
 import { fetchHives } from '@/services/hive';
 import { fetchAllInspections } from '@/services/inspection';
 import { fetchHarvests } from '@/services/harvest';
+import { useEffectiveTier, tierAtLeast } from '@/hooks/useEffectiveTier';
 import { Inspection, HarvestRecord } from '@/types';
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -102,9 +104,12 @@ export default function SesongSammenligning() {
   const currentYear = new Date().getFullYear();
   const years = [currentYear, currentYear - 1, currentYear - 2];
 
-  const { data: hives = [] } = useQuery({ queryKey: ['hives'], queryFn: fetchHives });
-  const { data: inspections = [] } = useQuery({ queryKey: ['all-inspections'], queryFn: fetchAllInspections });
-  const { data: harvests = [] } = useQuery({ queryKey: ['harvests'], queryFn: fetchHarvests });
+  const effectiveTier = useEffectiveTier();
+  const hasPro = tierAtLeast(effectiveTier, 'profesjonell');
+
+  const { data: hives = [] } = useQuery({ queryKey: ['hives'], queryFn: fetchHives, enabled: hasPro });
+  const { data: inspections = [] } = useQuery({ queryKey: ['all-inspections'], queryFn: fetchAllInspections, enabled: hasPro });
+  const { data: harvests = [] } = useQuery({ queryKey: ['harvests'], queryFn: fetchHarvests, enabled: hasPro });
 
   const activeHives = hives.filter((h) => h.isActive);
 
@@ -133,6 +138,8 @@ export default function SesongSammenligning() {
         : null;
       return { year: y, inspCount: yearInsp.length, totalKg: Math.round(totalKg * 10) / 10, varroaMean };
     }), [inspections, harvests, years]);
+
+  if (!hasPro) return <ProGate feature="År-over-år sammenligning" />;
 
   return (
     <Screen style={styles.screen}>

@@ -48,8 +48,8 @@ const TIERS: TierInfo[] = [
     features: [
       'Alt i Hobbyist',
       'Ubegrenset AI-varroaanalyse — ingen månedsgrense',
+      'Sammenlign kuber og år-over-år sesonger',
       'Full eksport (PDF/CSV) til Mattilsynet og regnskap',
-      'For deg med mange kuber',
       'Prioritert support',
     ],
   },
