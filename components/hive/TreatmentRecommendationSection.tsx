@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Colors, Shadows } from '@/constants/colors';
+import { varroaThresholds } from '@/constants/varroa';
 import { Inspection, Treatment } from '@/types';
 
 interface Rec {
@@ -22,27 +23,22 @@ function getRecommendations(
   );
   const latest = sorted[0];
 
-  // Varroa-basert anbefaling (metodespesifikke terskler)
+  // Varroa-basert anbefaling (delte, metodespesifikke terskler)
   if (latest?.varroaCount != null) {
-    const vMethod = latest.varroaMethod?.toLowerCase();
-    const isPerHundred = vMethod === 'alkoholspyling' || vMethod === 'sukkerpuder';
-    const isMitefall = vMethod === 'limbunn';
-    const critThresh = isPerHundred ? 3 : isMitefall ? 3 : 5;
-    const warnThresh = isPerHundred ? 2 : isMitefall ? 1 : 2;
-    const unit = isPerHundred ? ' per 100 bier' : isMitefall ? ' per dag' : '';
+    const { elevated, critical, unit } = varroaThresholds(latest.varroaMethod);
 
-    if (latest.varroaCount >= critThresh) {
+    if (latest.varroaCount >= critical) {
       recs.push({
         icon: '🚨',
         title: 'Behandling nødvendig',
-        detail: `Varroatall ${latest.varroaCount}${unit} overskrider terskelen (${critThresh}). Vurder oksalsyre-fordamping eller Apivar umiddelbart.`,
+        detail: `Varroatall ${latest.varroaCount}${unit} overskrider terskelen (${critical}). Vurder oksalsyre-fordamping eller Apivar umiddelbart.`,
         urgency: 'critical',
       });
-    } else if (latest.varroaCount >= warnThresh) {
+    } else if (latest.varroaCount >= elevated) {
       recs.push({
         icon: '👁',
         title: 'Følg med på varroa',
-        detail: `Varroatall ${latest.varroaCount}${unit} nærmer seg terskelen. Tell igjen om 2 uker.`,
+        detail: `Varroatall ${latest.varroaCount}${unit} nærmer seg terskelen (${critical}). Tell igjen om 2 uker.`,
         urgency: 'warn',
       });
     }

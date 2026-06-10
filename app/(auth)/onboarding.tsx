@@ -10,13 +10,12 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import Constants from 'expo-constants';
 import { Colors } from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 
 export const ONBOARDING_KEY = 'bivokter_onboarding_done';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const isExpoGo = Constants.appOwnership === 'expo';
 
 const SLIDES = [
   {
@@ -67,31 +66,9 @@ function Slide({ emoji, title, body }: SlideProps) {
   );
 }
 
-async function completeOnboarding(addFirstHive = false) {
+async function finishOnboarding(destination: string) {
   await AsyncStorage.setItem(ONBOARDING_KEY, 'true').catch(() => {});
-  if (addFirstHive) {
-    router.replace('/(app)/(tabs)/kuber/ny' as any);
-  } else {
-    router.replace('/(app)/(tabs)/hjem' as any);
-  }
-}
-
-async function startTrial() {
-  if (isExpoGo) {
-    await completeOnboarding();
-    return;
-  }
-  try {
-    const { fetchOfferings, purchasePackage } = await import('@/services/subscription');
-    const packages = await fetchOfferings();
-    const hobbyist = packages.find((p) => p.identifier === 'hobbyist_monthly');
-    if (hobbyist) {
-      await purchasePackage(hobbyist);
-    }
-  } catch {
-    // User cancelled or error — proceed anyway
-  }
-  await completeOnboarding();
+  router.replace(destination as any);
 }
 
 export default function OnboardingScreen() {
@@ -136,20 +113,22 @@ export default function OnboardingScreen() {
       {isLast ? (
         <View style={styles.ctaBox}>
           <Pressable
-            style={({ pressed }) => [styles.trialBtn, pressed && { opacity: 0.85 }]}
-            onPress={() => completeOnboarding(true)}
+            style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}
+            onPress={() => finishOnboarding('/(auth)/register')}
           >
-            <Text style={styles.trialBtnText}>Legg til din første kube →</Text>
+            <Text style={styles.primaryBtnText}>Kom i gang →</Text>
           </Pressable>
+          <Text style={styles.trialNote}>
+            ✓ Få 14 dager gratis Hobbyist når du registrerer deg — prøv AI-varroaanalyse
+          </Text>
           <Pressable
-            style={({ pressed }) => [styles.addHiveBtn, pressed && { opacity: 0.8 }]}
-            onPress={startTrial}
-            hitSlop={8}
+            onPress={() => { void finishOnboarding('/(auth)/login'); }}
+            hitSlop={12}
+            style={styles.skipBtn}
           >
-            <Text style={styles.addHiveBtnText}>Start 30 dager gratis Hobbyist</Text>
-          </Pressable>
-          <Pressable onPress={() => { void completeOnboarding(false); }} hitSlop={12} style={styles.skipBtn}>
-            <Text style={styles.skipText}>Utforsk appen først</Text>
+            <Text style={styles.skipText}>
+              Har du allerede konto? <Text style={styles.skipLink}>Logg inn</Text>
+            </Text>
           </Pressable>
         </View>
       ) : (
@@ -160,7 +139,11 @@ export default function OnboardingScreen() {
           >
             <Text style={styles.nextBtnText}>Neste →</Text>
           </Pressable>
-          <Pressable onPress={() => { void completeOnboarding(); }} hitSlop={12} style={styles.skipBtn}>
+          <Pressable
+            onPress={() => { void finishOnboarding('/(auth)/register'); }}
+            hitSlop={12}
+            style={styles.skipBtn}
+          >
             <Text style={styles.skipText}>Hopp over</Text>
           </Pressable>
         </View>
@@ -180,8 +163,21 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   slideEmoji: { fontSize: 80 },
-  slideTitle: { fontSize: 26, fontWeight: '800', color: Colors.dark, textAlign: 'center', lineHeight: 32 },
-  slideBody: { fontSize: 16, color: Colors.mid, textAlign: 'center', lineHeight: 24 },
+  slideTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    fontFamily: FontFamily.extrabold,
+    color: Colors.dark,
+    textAlign: 'center',
+    lineHeight: 32,
+  },
+  slideBody: {
+    fontSize: 16,
+    fontFamily: FontFamily.regular,
+    color: Colors.mid,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
 
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 16 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.mid + '40' },
@@ -189,22 +185,28 @@ const styles = StyleSheet.create({
 
   ctaBox: { paddingHorizontal: 24, paddingBottom: 48, gap: 12, alignItems: 'center' },
 
-  trialBtn: {
+  primaryBtn: {
     backgroundColor: Colors.honey,
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 24,
     alignItems: 'center',
     width: '100%',
-    gap: 4,
     shadowColor: Colors.honey,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 5,
   },
-  trialBtnText: { fontSize: 17, fontWeight: '800', color: Colors.white },
-  trialBtnSub: { fontSize: 12, color: Colors.white, opacity: 0.8 },
+  primaryBtnText: { fontSize: 17, fontWeight: '800', fontFamily: FontFamily.extrabold, color: Colors.dark },
+  trialNote: {
+    fontSize: 13,
+    fontFamily: FontFamily.regular,
+    color: Colors.mid,
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: 8,
+  },
 
   nextBtn: {
     backgroundColor: Colors.dark,
@@ -214,17 +216,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  nextBtnText: { fontSize: 17, fontWeight: '700', color: Colors.white },
+  nextBtnText: { fontSize: 17, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.white },
 
-  addHiveBtn: {
-    backgroundColor: Colors.dark,
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    width: '100%',
-  },
-  addHiveBtnText: { fontSize: 16, fontWeight: '700', color: Colors.white },
   skipBtn: { paddingVertical: 4 },
-  skipText: { fontSize: 13, color: Colors.mid },
+  skipText: { fontSize: 13, fontFamily: FontFamily.regular, color: Colors.mid },
+  skipLink: { color: Colors.honeyDark, fontFamily: FontFamily.bold, fontWeight: '700' },
 });

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Colors, Shadows } from '@/constants/colors';
+import { varroaThresholds } from '@/constants/varroa';
 import { Inspection } from '@/types';
 
 function computeScore(inspections: Inspection[]): { score: number; label: string; issues: string[] } {
@@ -31,20 +32,15 @@ function computeScore(inspections: Inspection[]): { score: number; label: string
   }
 
   if (latest.varroaCount != null) {
-    const vMethod = latest.varroaMethod?.toLowerCase();
-    const isPerHundred = vMethod === 'alkoholspyling' || vMethod === 'sukkerpuder';
-    const isMitefall = vMethod === 'limbunn';
-    const critThresh = isPerHundred ? 3 : isMitefall ? 10 : 8;
-    const warnThresh = isPerHundred ? 2 : isMitefall ? 5 : 5;
-    const modThresh = isPerHundred ? 1 : isMitefall ? 2 : 3;
+    const { moderate, elevated, critical } = varroaThresholds(latest.varroaMethod);
 
-    if (latest.varroaCount > critThresh) {
+    if (latest.varroaCount >= critical) {
       score -= 25;
       issues.push(`Høyt varroatall (${latest.varroaCount})`);
-    } else if (latest.varroaCount > warnThresh) {
+    } else if (latest.varroaCount >= elevated) {
       score -= 15;
       issues.push(`Forhøyet varroatall (${latest.varroaCount})`);
-    } else if (latest.varroaCount > modThresh) {
+    } else if (latest.varroaCount >= moderate) {
       score -= 5;
       issues.push(`Moderat varroatall (${latest.varroaCount})`);
     }

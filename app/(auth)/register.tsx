@@ -87,6 +87,22 @@ export default function Register() {
     }
   };
 
+  // Best-effort: open the device's mail app so the user can confirm without hunting.
+  const openMailApp = async () => {
+    const candidates = Platform.OS === 'ios'
+      ? ['message://']
+      : ['googlegmail://', 'ms-outlook://'];
+    for (const url of candidates) {
+      try {
+        if (await Linking.canOpenURL(url)) {
+          await Linking.openURL(url);
+          return;
+        }
+      } catch { /* try next candidate */ }
+    }
+    Linking.openURL('mailto:').catch(() => {});
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -98,18 +114,34 @@ export default function Register() {
         {serverError ? <Text style={styles.serverError}>{serverError}</Text> : null}
         {pendingVerification && (
           <View style={styles.verificationBox}>
+            <Text style={styles.verificationTitle}>Sjekk e-posten din 📬</Text>
             <Text style={styles.verificationText}>
-              Sjekk e-posten din og bekreft kontoen, deretter logg inn.
+              Vi sendte en bekreftelseslenke til {email}. Åpne den, så er du klar — kom
+              tilbake hit og logg inn.
             </Text>
             <Pressable
-              style={({ pressed }) => [styles.resendBtn, pressed && { opacity: 0.8 }]}
+              style={({ pressed }) => [styles.mailBtn, pressed && { opacity: 0.85 }]}
+              onPress={openMailApp}
+              accessibilityLabel="Åpne e-postappen"
+            >
+              <Text style={styles.mailBtnText}>Åpne e-postappen</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.loginBtn, pressed && { opacity: 0.8 }]}
+              onPress={() => router.replace('/(auth)/login')}
+              accessibilityLabel="Gå til innlogging"
+            >
+              <Text style={styles.loginBtnText}>Jeg har bekreftet — logg inn</Text>
+            </Pressable>
+            <Pressable
               onPress={handleResend}
               disabled={resendLoading}
+              hitSlop={8}
               accessibilityLabel="Send bekreftelsesepost på nytt"
             >
               {resendLoading
-                ? <ActivityIndicator size="small" color={Colors.honey} />
-                : <Text style={styles.resendBtnText}>Send bekreftelsesepost på nytt</Text>
+                ? <ActivityIndicator size="small" color={Colors.honeyDark} />
+                : <Text style={styles.resendLink}>Fikk du ingen e-post? Send på nytt</Text>
               }
             </Pressable>
           </View>
@@ -244,10 +276,14 @@ const styles = StyleSheet.create({
   consentText: { flex: 1, fontSize: 13, color: Colors.mid, lineHeight: 20 },
   consentLink: { color: Colors.honeyDark, fontWeight: '600' },
   termsError: { fontSize: 13, color: Colors.error, marginTop: -8 },
-  verificationBox: { backgroundColor: '#EBF5FB', borderRadius: 10, padding: 16, marginBottom: 16, gap: 12 },
+  verificationBox: { backgroundColor: '#EBF5FB', borderRadius: 12, padding: 16, marginBottom: 16, gap: 12 },
+  verificationTitle: { fontSize: 16, color: Colors.dark, fontWeight: '700' },
   verificationText: { fontSize: 14, color: Colors.dark, lineHeight: 20 },
-  resendBtn: { alignItems: 'center', paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: Colors.honeyDark },
-  resendBtnText: { color: Colors.honeyDark, fontSize: 14, fontWeight: '600' },
+  mailBtn: { alignItems: 'center', paddingVertical: 12, borderRadius: 10, backgroundColor: Colors.honey },
+  mailBtnText: { color: Colors.dark, fontSize: 15, fontWeight: '700' },
+  loginBtn: { alignItems: 'center', paddingVertical: 11, borderRadius: 10, borderWidth: 1.5, borderColor: Colors.honeyDark },
+  loginBtnText: { color: Colors.honeyDark, fontSize: 14, fontWeight: '600' },
+  resendLink: { color: Colors.honeyDark, fontSize: 13, fontWeight: '600', textAlign: 'center', paddingTop: 2 },
 
   divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 20 },
   dividerLine: { flex: 1, height: 1, backgroundColor: Colors.mid + '25' },

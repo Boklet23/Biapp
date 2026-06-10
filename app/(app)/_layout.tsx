@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Redirect, Stack, router } from 'expo-router';
 import Constants from 'expo-constants';
+import * as Sentry from '@sentry/react-native';
 import { useAuthStore } from '@/store/auth';
 import { useToastStore } from '@/store/toast';
 import { GlobalToast } from '@/components/ui/Toast';
@@ -57,9 +58,7 @@ export default function AppLayout() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Stack screenOptions={{ headerShown: false }} initialRouteName="splash">
-        <Stack.Screen name="splash" />
-        <Stack.Screen name="onboarding" />
+      <Stack screenOptions={{ headerShown: false }} initialRouteName="(tabs)">
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="profil"

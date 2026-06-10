@@ -47,8 +47,9 @@ const TIERS: TierInfo[] = [
     color: Colors.success,
     features: [
       'Alt i Hobbyist',
-      'AI varroa — ubegrenset',
-      'Full CSV/PDF-eksport',
+      'Ubegrenset AI-varroaanalyse — ingen månedsgrense',
+      'Full eksport (PDF/CSV) til Mattilsynet og regnskap',
+      'For deg med mange kuber',
       'Prioritert support',
     ],
   },
