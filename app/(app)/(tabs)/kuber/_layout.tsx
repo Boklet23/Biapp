@@ -18,6 +18,7 @@ export default function KuberLayout() {
       <Stack.Screen name="[id]/rediger" options={{ title: 'Rediger kube', presentation: 'modal' }} />
       <Stack.Screen name="[id]/inspeksjon/ny" options={{ title: 'Ny inspeksjon' }} />
       <Stack.Screen name="[id]/inspeksjon/[inspId]" options={{ title: 'Inspeksjon' }} />
+      <Stack.Screen name="[id]/samarbeid" options={{ title: 'Samarbeid' }} />
       <Stack.Screen name="sammenlign" options={{ title: 'Sammenlign kuber' }} />
       <Stack.Screen name="sesongsammenligning" options={{ title: 'Sesong-sammenligning' }} />
     </Stack>

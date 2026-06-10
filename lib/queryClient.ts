@@ -10,8 +10,13 @@ export const queryClient = new QueryClient({
     },
   }),
   mutationCache: new MutationCache({
-    onError: (error) => {
+    onError: (error, _variables, _context, mutation) => {
       Sentry.captureException(error);
+      // Only surface a toast when the mutation has no local onError handler,
+      // so mutations that already show their own toast/alert don't double-fire.
+      if (!mutation.options.onError) {
+        useToastStore.getState().show(error.message, 'error');
+      }
     },
   }),
   defaultOptions: {

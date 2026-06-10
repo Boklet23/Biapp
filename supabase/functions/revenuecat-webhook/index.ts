@@ -68,13 +68,17 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
 
-  // Idempotency check — skip duplicate deliveries from RevenueCat retries
+  // Idempotency check — skip duplicate deliveries from RevenueCat retries.
+  // We only READ here; the event is marked processed AFTER the tier update
+  // succeeds, so a transient DB failure can be safely retried by RevenueCat
+  // instead of being permanently swallowed as "already processed".
   if (eventId) {
-    const { error: insertError } = await supabase
+    const { data: existing } = await supabase
       .from('revenuecat_processed_events')
-      .insert({ event_id: eventId });
-    if (insertError?.code === '23505') {
-      // Duplicate — already processed
+      .select('event_id')
+      .eq('event_id', eventId)
+      .maybeSingle();
+    if (existing) {
       return new Response('Already processed', { status: 200 });
     }
   }
@@ -101,8 +105,17 @@ Deno.serve(async (req: Request) => {
     .eq('id', userId);
 
   if (error) {
+    // Not marked processed — RevenueCat will retry this event.
     console.error('Failed to update tier:', error.message);
     return new Response('DB error', { status: 500 });
+  }
+
+  // Tier update succeeded — now mark the event processed so retries are ignored.
+  // The update above is idempotent, so a rare concurrent duplicate is harmless.
+  if (eventId) {
+    await supabase
+      .from('revenuecat_processed_events')
+      .insert({ event_id: eventId });
   }
 
   console.log(`Updated user ${userId} to tier "${tier}" (event: ${eventType})`);

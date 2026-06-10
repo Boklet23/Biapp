@@ -420,5 +420,5 @@ const styles = StyleSheet.create({
     ...Shadows.fab,
   },
   fabPressed: { transform: [{ scale: 0.96 }], opacity: 0.9 },
-  fabText: { fontSize: 15, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.white },
+  fabText: { fontSize: 15, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark },
 });
