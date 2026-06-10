@@ -18,21 +18,12 @@
     "preview": {
       "channel": "preview",
       "distribution": "internal",
+      "autoIncrement": true,
       "ios": {
         "simulator": false
       },
       "android": {
         "buildType": "app-bundle"
-      }
-    },
-    "preview-apk": {
-      "channel": "preview",
-      "distribution": "internal",
-      "ios": {
-        "simulator": false
-      },
-      "android": {
-        "buildType": "apk"
       }
     },
     "production": {
