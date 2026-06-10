@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { Colors } from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 import { fetchMapHives } from '@/services/hive';
 import { MapHiveEntry } from '@/types';
 
@@ -23,8 +24,8 @@ const HIVE_TYPE_LABELS: Record<string, string> = {
 
 function markerStyle(relationship: MapHiveEntry['relationship']): { bg: string; emoji: string } {
   if (relationship === 'own') return { bg: Colors.honey, emoji: '🏠' };
-  if (relationship === 'team') return { bg: '#2196F3', emoji: '🐝' };
-  return { bg: '#4CAF50', emoji: '📍' };
+  if (relationship === 'team') return { bg: Colors.info, emoji: '🐝' };
+  return { bg: Colors.success, emoji: '📍' };
 }
 
 export function HivesMapView() {
@@ -143,11 +144,11 @@ export function HivesMapView() {
           <Text style={styles.legendLabel}>Mine</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#2196F3' }]} />
+          <View style={[styles.legendDot, { backgroundColor: Colors.info }]} />
           <Text style={styles.legendLabel}>Lag</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#4CAF50' }]} />
+          <View style={[styles.legendDot, { backgroundColor: Colors.success }]} />
           <Text style={styles.legendLabel}>Delt</Text>
         </View>
       </View>
@@ -163,12 +164,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: Colors.dark,
     padding: 32,
   },
   emptyEmoji: { fontSize: 48 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#fff', textAlign: 'center' },
-  emptyText: { fontSize: 14, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 20 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.white, textAlign: 'center' },
+  emptyText: { fontSize: 14, fontFamily: FontFamily.regular, color: 'rgba(255,255,255,0.6)', textAlign: 'center', lineHeight: 20 },
   pin: {
     width: 38,
     height: 38,
@@ -176,7 +177,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: Colors.white,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   callout: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 16,
     shadowColor: '#000',
@@ -207,11 +208,11 @@ const styles = StyleSheet.create({
     right: 12,
     padding: 4,
   },
-  calloutCloseText: { fontSize: 16, color: '#999' },
-  calloutName: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', marginRight: 28 },
-  calloutType: { fontSize: 13, color: '#666' },
-  calloutOwner: { fontSize: 13, color: '#444', marginTop: 2 },
-  calloutLocation: { fontSize: 13, color: '#666', marginTop: 2 },
+  calloutCloseText: { fontSize: 16, color: Colors.muted },
+  calloutName: { fontSize: 18, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark, marginRight: 28 },
+  calloutType: { fontSize: 13, fontFamily: FontFamily.regular, color: Colors.mid },
+  calloutOwner: { fontSize: 13, fontFamily: FontFamily.regular, color: Colors.mid, marginTop: 2 },
+  calloutLocation: { fontSize: 13, fontFamily: FontFamily.regular, color: Colors.mid, marginTop: 2 },
   calloutBtn: {
     marginTop: 12,
     backgroundColor: Colors.honey,
@@ -220,7 +221,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignSelf: 'flex-start',
   },
-  calloutBtnText: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
+  calloutBtnText: { fontSize: 14, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark },
   legend: {
     position: 'absolute',
     top: 16,
@@ -232,5 +233,5 @@ const styles = StyleSheet.create({
   },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
-  legendLabel: { fontSize: 12, color: '#fff', fontWeight: '600' },
+  legendLabel: { fontSize: 12, fontFamily: FontFamily.semibold, color: Colors.white, fontWeight: '600' },
 });

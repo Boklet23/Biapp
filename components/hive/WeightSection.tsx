@@ -3,6 +3,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Colors, Shadows } from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 import { createWeight, deleteWeight, fetchWeights } from '@/services/weight';
 import { HiveWeight } from '@/types';
 
@@ -138,7 +139,7 @@ function WeightChart({ weights }: WeightChartProps) {
 
       {/* Data points */}
       {pts.map((p) => (
-        <Circle key={p.id} cx={p.x} cy={p.y} r={3.5} fill={Colors.info} stroke="#fff" strokeWidth={1.5} />
+        <Circle key={p.id} cx={p.x} cy={p.y} r={3.5} fill={Colors.info} stroke={Colors.white} strokeWidth={1.5} />
       ))}
 
       {/* Date labels — sparse to avoid overlap */}
@@ -233,24 +234,24 @@ export function WeightSection({ hiveId }: WeightSectionProps) {
 const styles = StyleSheet.create({
   section: { marginBottom: 24 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: Colors.mid, textTransform: 'uppercase', letterSpacing: 0.8 },
-  addBtn: { fontSize: 14, color: Colors.honey, fontWeight: '700' },
+  sectionTitle: { fontSize: 13, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.mid, textTransform: 'uppercase', letterSpacing: 0.8 },
+  addBtn: { fontSize: 14, color: Colors.honey, fontWeight: '700', fontFamily: FontFamily.bold },
   card: { backgroundColor: Colors.white, borderRadius: 14, padding: 16, ...Shadows.card },
   latestRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  latestKg: { fontSize: 28, fontWeight: '800', color: Colors.dark },
-  latestDate: { fontSize: 12, color: Colors.mid, marginTop: 2 },
+  latestKg: { fontSize: 28, fontWeight: '800', fontFamily: FontFamily.extrabold, color: Colors.dark },
+  latestDate: { fontSize: 12, fontFamily: FontFamily.regular, color: Colors.mid, marginTop: 2 },
   diffBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   diffPos: { backgroundColor: Colors.success + '20' },
   diffNeg: { backgroundColor: Colors.error + '20' },
-  diffText: { fontSize: 13, fontWeight: '700', color: Colors.dark },
+  diffText: { fontSize: 13, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark },
   historyList: { marginTop: 12 },
   histRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 9 },
   histBorder: { borderBottomWidth: 1, borderBottomColor: Colors.mid + '12' },
-  histDate: { fontSize: 13, color: Colors.mid },
-  histKg: { fontSize: 13, fontWeight: '600', color: Colors.dark },
+  histDate: { fontSize: 13, fontFamily: FontFamily.regular, color: Colors.mid },
+  histKg: { fontSize: 13, fontWeight: '600', fontFamily: FontFamily.semibold, color: Colors.dark },
   empty: { alignItems: 'center', paddingVertical: 20, gap: 4 },
   emptyEmoji: { fontSize: 28 },
-  emptyText: { fontSize: 14, color: Colors.mid },
+  emptyText: { fontSize: 14, fontFamily: FontFamily.regular, color: Colors.mid },
 });
 
 const modal = StyleSheet.create({
@@ -260,17 +261,17 @@ const modal = StyleSheet.create({
     paddingHorizontal: 20, paddingVertical: 16,
     backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.mid + '15',
   },
-  title: { fontSize: 16, fontWeight: '700', color: Colors.dark },
-  cancel: { fontSize: 16, color: Colors.mid },
-  save: { fontSize: 16, color: Colors.honey, fontWeight: '700' },
+  title: { fontSize: 16, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark },
+  cancel: { fontSize: 16, fontFamily: FontFamily.regular, color: Colors.mid },
+  save: { fontSize: 16, color: Colors.honey, fontWeight: '700', fontFamily: FontFamily.bold },
   saveDisabled: { opacity: 0.4 },
   scroll: { flex: 1 },
   content: { padding: 20, gap: 6, paddingBottom: 40 },
-  label: { fontSize: 12, fontWeight: '700', color: Colors.mid, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 12, marginBottom: 4 },
+  label: { fontSize: 12, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.mid, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 12, marginBottom: 4 },
   input: {
     backgroundColor: Colors.white, borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 15, color: Colors.dark,
+    fontSize: 15, fontFamily: FontFamily.regular, color: Colors.dark,
     borderWidth: 1, borderColor: Colors.mid + '20',
   },
   textArea: { minHeight: 80, textAlignVertical: 'top' },

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Colors, Shadows } from '@/constants/colors';
+import { FontFamily } from '@/constants/typography';
 import { varroaThresholds } from '@/constants/varroa';
 import { Inspection } from '@/types';
 
@@ -118,6 +119,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
+    fontFamily: FontFamily.bold,
     color: Colors.mid,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -130,12 +132,12 @@ const styles = StyleSheet.create({
     gap: 12,
     ...Shadows.card,
   },
-  label: { fontSize: 16, fontWeight: '700' },
+  label: { fontSize: 16, fontWeight: '700', fontFamily: FontFamily.bold },
   issueList: { gap: 6, borderTopWidth: 1, borderTopColor: Colors.mid + '12', paddingTop: 12 },
   issueRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   issueIcon: { fontSize: 14 },
-  issueText: { fontSize: 13, color: Colors.mid, flex: 1, lineHeight: 18 },
+  issueText: { fontSize: 13, fontFamily: FontFamily.regular, color: Colors.mid, flex: 1, lineHeight: 18 },
   allGoodRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   allGoodIcon: { fontSize: 16 },
-  allGoodText: { fontSize: 13, color: Colors.success, fontWeight: '600' },
+  allGoodText: { fontSize: 13, color: Colors.success, fontWeight: '600', fontFamily: FontFamily.semibold },
 });
