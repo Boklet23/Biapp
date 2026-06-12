@@ -32,8 +32,9 @@ export default function KuberOversikt() {
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const showToast = useToastStore((s) => s.show);
   const profile = useAuthStore((s) => s.profile);
-  const isStarter = (profile?.subscriptionTier ?? 'starter') === 'starter';
   const effectiveTier = useEffectiveTier();
+  // Effektiv tier (inkl. aktiv prøveperiode) — trial-brukere har Hobbyist-kubegrense
+  const isStarter = effectiveTier === 'starter';
   const hasPro = tierAtLeast(effectiveTier, 'profesjonell');
 
   const openProUpgrade = () => {

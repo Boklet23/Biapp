@@ -2,7 +2,7 @@ import { useState } from 'react';
 import * as Sentry from '@sentry/react-native';
 import { ActivityIndicator, Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, Shadows } from '@/constants/colors';
-import { fetchOfferings, purchasePackage, restorePurchases, mapEntitlementToTier, syncTierToSupabase } from '@/services/subscription';
+import { applyCustomerInfo, fetchOfferings, purchasePackage, restorePurchases } from '@/services/subscription';
 import { useAuthStore } from '@/store/auth';
 import { useQuery } from '@tanstack/react-query';
 
@@ -111,6 +111,13 @@ export function UpgradeModal({ visible, onClose, title, subtitle }: UpgradeModal
       );
 
     if (!pkg) {
+      Sentry.captureException(new Error('RevenueCat-pakke ikke funnet'), {
+        extra: {
+          entitlement,
+          cycle,
+          availablePackages: packages.map((p) => p.product.identifier),
+        },
+      });
       Alert.alert(
         'Produkt ikke tilgjengelig',
         'Abonnementet er ikke konfigurert ennå. Prøv igjen senere.',
@@ -121,8 +128,8 @@ export function UpgradeModal({ visible, onClose, title, subtitle }: UpgradeModal
     setPurchasing(entitlement);
     try {
       const info = await purchasePackage(pkg);
-      const tier = mapEntitlementToTier(info);
-      await syncTierToSupabase(tier).catch((e) => Sentry.captureException(e));
+      // UI låses opp umiddelbart via lokal RC-tier; DB synces av RevenueCat-webhooken
+      const tier = applyCustomerInfo(info);
       if (profile) setProfile({ ...profile, subscriptionTier: tier });
       onClose();
     } catch (e: unknown) {
@@ -137,8 +144,7 @@ export function UpgradeModal({ visible, onClose, title, subtitle }: UpgradeModal
     setPurchasing('restore');
     try {
       const info = await restorePurchases();
-      const tier = mapEntitlementToTier(info);
-      await syncTierToSupabase(tier).catch((e) => Sentry.captureException(e));
+      const tier = applyCustomerInfo(info);
       if (profile) setProfile({ ...profile, subscriptionTier: tier });
       Alert.alert('Kjøp gjenopprettet', `Abonnement: ${tier}`);
       onClose();

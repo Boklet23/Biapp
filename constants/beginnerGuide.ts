@@ -75,7 +75,7 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
       },
       {
         heading: 'Ny vs. brukt kube',
-        body: 'Brukte kuber er billige, men kan skjule sykdom — spesielt Amerikansk yngelrotte (AFB) som overlever tiår i voks og tre. Krev alltid friskmelding fra selger. Flass av alt gammelt voks og flabbe innvendig med gassbrenner (flambér) før bruk. Ny kube er tryggere for nybegynnere.',
+        body: 'Brukte kuber er billige, men kan skjule sykdom — spesielt amerikansk yngelråte (AFB) som overlever tiår i voks og tre. Krev alltid friskmelding fra selger. Skrap av alt gammelt voks og flambér innvendig med gassbrenner før bruk. Ny kube er tryggere for nybegynnere.',
       },
       {
         heading: 'Antall kuber å starte med',
@@ -139,7 +139,7 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
       },
       {
         heading: 'Sen vår / forsommer (mai–jun)',
-        body: 'Birøktens travleste periode. Svermesesongen er i gang — inspiser ukentlig for å hindre svirming. Sett på honningrom når yngelrommet er nesten fullt. Varroa-kontroll er viktig nå.',
+        body: 'Birøktens travleste periode. Svermesesongen er i gang — inspiser ukentlig for å hindre sverming. Sett på honningrom når yngelrommet er nesten fullt. Varroa-kontroll er viktig nå.',
       },
       {
         heading: 'Høysesong (jul–aug)',
@@ -178,12 +178,12 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
         body: 'Droner er hannbier og har én oppgave: paring med dronninger fra andre kolonier. De har ingen brodd og gjør ikke husarbeid. Om høsten, når ressurser er knappe, jager arbeiderbiene dronene ut av kuben.',
       },
       {
-        heading: 'Svirming',
-        body: 'Svirming er bienes naturlige formeringsmetode. Halvparten av kolonien forlater kuben med den gamle dronningen og danner et sverm. For birøkteren betyr det halvert styrke og tapt honningpotensial. Regelmessige inspeksjoner og svermforebygging (f.eks. kunstig svirming) er viktig.',
+        heading: 'Sverming',
+        body: 'Sverming er bienes naturlige formeringsmetode. Halvparten av kolonien forlater kuben med den gamle dronningen og danner en sverm. For birøkteren betyr det halvert styrke og tapt honningpotensial. Regelmessige inspeksjoner og svermforebygging (f.eks. kunstig sverming) er viktig.',
       },
       {
         heading: 'Kommunikasjon',
-        body: 'Bier kommuniserer gjennom feromoner og dans. Vokseldansen forteller retning og avstand til matkilder. Alarmferomonet (fra broddapparatet) er grunnen til at én stikk kan utløse flere — hold roen og bruk røyk for å maskere det.',
+        body: 'Bier kommuniserer gjennom feromoner og dans. Vrikkedansen forteller retning og avstand til matkilder. Alarmferomonet (fra broddapparatet) er grunnen til at ett stikk kan utløse flere — hold roen og bruk røyk for å maskere det.',
       },
       {
         heading: 'Dronningskifte',
@@ -195,7 +195,7 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
       },
       {
         heading: 'Å finne dronningen',
-        body: 'Se ytterst på rammen og langs bunnen — dronningen trekker seg bort fra lys og bevegelse. Se etter en ring av arbeiderbier rundt henne (hofstaten). Dronningen er lenger og smalere enn en drone, med kortere vinger relativt til kroppen. En merket dronning er langt lettere å finne.',
+        body: 'Se ytterst på rammen og langs bunnen — dronningen trekker seg bort fra lys og bevegelse. Se etter en ring av arbeiderbier rundt henne (hoffstaten). Dronningen er lengre og smalere enn en drone, med kortere vinger relativt til kroppen. En merket dronning er langt lettere å finne.',
       },
     ],
   },
@@ -299,7 +299,7 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
       },
       {
         heading: 'Hva du ikke skal gjøre',
-        body: 'Gi aldri ubehandlet honning fra ukjent kilde — det kan overføre Amerikansk yngelrotte (AFB). Gi ikke melk, juice eller annen mat. Fôr alltid om kvelden for å unngå røveri. Slutt å fôre i god tid før honninginnsamlingen begynner om våren.',
+        body: 'Gi aldri ubehandlet honning fra ukjent kilde — det kan overføre amerikansk yngelråte (AFB). Gi ikke melk, juice eller annen mat. Fôr alltid om kvelden for å unngå røveri. Slutt å fôre i god tid før honninginnsamlingen begynner om våren.',
       },
       {
         heading: 'Aminosyretilskudd',
@@ -318,20 +318,20 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
     intro: 'Svermesesongen er birøkterens mest krevende periode — her er hvordan du håndterer den.',
     sections: [
       {
-        heading: 'Hvorfor sverver bier?',
-        body: 'Svirming er bienes naturlige formeringsmåte. En koloni sverver vanligvis når: yngelrommet er fullt, det er mye bier og lite plass, eller kolonien er i god vekst på forsommeren. Alder på dronningen, genetikk og været påvirker svermtilbøyeligheten.',
+        heading: 'Hvorfor svermer bier?',
+        body: 'Sverming er bienes naturlige formeringsmåte. En koloni svermer vanligvis når: yngelrommet er fullt, det er mye bier og lite plass, eller kolonien er i god vekst på forsommeren. Alder på dronningen, genetikk og været påvirker svermtilbøyeligheten.',
       },
       {
         heading: 'Svermceller — varseltegn',
         body: 'Inspiser ukentlig i mai–juni for svermceller. De lages langs kanten og bunnen av rammen, og ligner en peanøtt. Finnes en ferdig lukket dronningcelle uten åpen nok celle — kolonien har sannsynligvis allerede svermet. Åpne celler gir deg fremdeles tid.',
       },
       {
-        heading: 'Kunstig svirming',
+        heading: 'Kunstig sverming',
         body: 'Enkleste forebygging: del kolonien i to. Flytt dronningen med 3–4 rammer bier og yngel til en ny kube. La svermcellene i den gamle kuben klekke ny dronning. Begge kolonier tror de har svermet og sverminstinktet avtar. Begge kan vokse seg sterke.',
       },
       {
         heading: 'Andre svermforebyggingsmetoder',
-        body: 'Gi mer plass (legg på ekstra kasse) før det er fullt. Klipp svermceller — men vær konsekvent, én oversett celle og kuben sverver. Bytte dronning til ung dronning av svermfattig rase (f.eks. Buckfast). Avl på kolonier som sjelden sverver.',
+        body: 'Gi mer plass (legg på ekstra kasse) før det er fullt. Klipp svermceller — men vær konsekvent, én oversett celle og kuben svermer. Bytte dronning til ung dronning av svermfattig rase (f.eks. Buckfast). Avl på kolonier som sjelden svermer.',
       },
       {
         heading: 'Fange et sverm',

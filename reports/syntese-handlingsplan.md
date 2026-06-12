@@ -1,172 +1,154 @@
-# Syntese — Konsolidert handlingsplan for BiVokter
+# Syntese — Prioritert handlingsplan for BiVokter
 
-Multi-agent gjennomgang (12 agenter) konsolidert til én prioritert handlingsplan.
-Generert: 2026-06-10. Status: pre-lansering, mål 100 betalende brukere.
+Multi-agent review v3 (13 agenter) konsolidert. Generert: 2026-06-12.
+Kontekst: pre-lansering (intern testing, versionCode ~19), én utvikler + Claude, mål 100 betalende første sesong. Juni = svermetid — time-to-market har egenverdi.
 
----
-
-## 1. Metainfo
-
-**Rapporter lest (12/12):**
-agent-01-navigasjon · agent-02-design · agent-03-konvertering · agent-04-domene · agent-05-arkitektur · agent-06-ytelse · agent-07-robusthet · agent-08-sikkerhet · agent-09-tilgjengelighet · agent-10-retention · agent-11-onboarding · agent-12-database
-
-**Funn per alvorlighetsgrad (på tvers av alle agenter):**
-
-| Agent | KRITISK | HØY | MEDIUM | LAV | Sum |
-|-------|:--:|:--:|:--:|:--:|:--:|
-| 01 Navigasjon | 1 | 2 | 4 | 2 | 9 |
-| 02 Design | 2 | 2 | 3 | 2 | 9 |
-| 03 Konvertering | 1 | 2 | 3 | 2 | 8 |
-| 04 Domene | 0 | 3 | 3 | 2 | 8 |
-| 05 Arkitektur | 0 | 2 | 4 | 3 | 9 |
-| 06 Ytelse | 0 | 2 | 3 | 3 | 8 |
-| 07 Robusthet | 1 | 2 | 3 | 2 | 8 |
-| 08 Sikkerhet | 1 | 2 | 3 | 2 | 8 |
-| 09 Tilgjengelighet | 1 | 3 | 4 | 3 | 11 |
-| 10 Retention | 0 | 3 | 4 | 2 | 9 |
-| 11 Onboarding | 1 | 2 | 3 | 3 | 9 |
-| 12 Database | 0 | 3 | 5 | 4 | 12 |
-| **TOTALT** | **8** | **28** | **42** | **30** | **108** |
-
-8 KRITISKE, 28 HØY, 42 MEDIUM, 30 LAV = **108 funn totalt.**
+**Rapporter lest:** agent-01 … agent-13 (13/13) + arkivert syntese 2026-06-10.
+**Status siden sist:** 8 av 10 «denne uken»-punkter fra forrige plan er verifisert fikset (Sentry-import, samarbeid-rute, trial-onboarding, webhook-rekkefølge, FAB-kontrast, mutation-toast, varroa-terskler, 0040–0045). Men 0039-ytelsesmigrasjonen innførte samtidig en **regresjon** som fjernet server-side kubegrense, og forrige plans DB-indeks ble aldri kjørt.
 
 ---
 
-## 2. Konsensus-funn (3+ agenter — høyeste reliabilitet)
+## 1. Konsensus-funn (matrise)
 
-Disse funnene rapporteres uavhengig av flere agenter og bør prioriteres høyest.
+13 agenter med stramt adskilte scope gir få 3+-overlapp; funn rapportert uavhengig av 2+ agenter regnes her som konsensus og vektes opp. Ett funn har 3 agenter.
 
-**K1 — `revenuecat-webhook` idempotens-race (tapt tier-oppgradering)**
-Agenter: **8 (HØY)**, **12 (HØY)**. Idempotens-INSERT skjer FØR `profiles.update`; feiler update med 500, markeres eventet som prosessert og RevenueCat-retry hoppes over → kunde betaler men beholder starter-tier.
-Fil: `supabase/functions/revenuecat-webhook/index.ts:72-101`. Direkte inntektslekkasje.
-
-**K2 — Manglende indeks `inspections(user_id, hive_id, inspected_at DESC)`**
-Agenter: **6 (HØY)**, **12 (MEDIUM)**. Batch-RPC `get_latest_inspections_per_hive` filtrerer på `user_id` men 0038 indekserte kun `(hive_id, inspected_at)`. Kjøres på BÅDE hjem og kuber-fanen → seq-scan + sort per dashboard-last.
-Fil: `supabase/migrations/0012` + `0038:4`.
-
-**K3 — Utbredt `.select('*')`**
-Agenter: **6 (MEDIUM)**, **12 (MEDIUM)**, **5 (implisitt, mapX-robusthet)**. 15 queries henter alle kolonner inkl. tunge `disease_observations` jsonb / `notes` / `photo_url`. `fetchInspections` gjør det allerede riktig med eksplisitt kolonneliste — bruk samme mønster.
-Fil: `services/hive.ts:93,109`, `services/inspection.ts:77`, treatment/harvest/queen/weight.
-
-**K4 — Trial-forvirring (14 vs 30 dager + betalt kjøp i onboarding)**
-Agenter: **3 (KRITISK)**, **11 (MEDIUM)**. Onboarding-knapp «Start 30 dager gratis» kaller `purchasePackage` (et betalt kjøp), mens DB-trigger gir 14-dagers trial til alle. Villedende markedsføring (Play Store-brudd) + utilsiktet betalingsdialog.
-Fil: `app/(app)/onboarding.tsx:79-95,149` + `0017_trial_period.sql:9`.
-
-**K5 — Kontrast/WCAG-svikt (hvit på honey + design-token-drift)**
-Agenter: **9 (KRITISK)**, **2 (HØY)**. FAB hvit-på-honey ~2.1:1 (feiler AA grovt). Samme honey-farge (`#F5A623`) er både hardkodet hex (design) og kontrastproblem (a11y). Felles løsning: mørk tekst på honey + sentraliser i `Colors.*`.
-Fil: `app/(app)/(tabs)/kalender/index.tsx:423` (a11y) · `HiveCard.tsx:72`, `HealthScoreSection.tsx:82-84` (design).
-
-**K6 — Stille feil ved mutasjoner**
-Agenter: **5 (HØY)**, **1 (MEDIUM, mangler isError i laer/samfunn)**, **7 (relatert: maskert feil)**. Global `mutationCache.onError` logger kun til Sentry, viser ingen toast → bruker tror sletting/lagring lyktes når den feilet.
-Fil: `lib/queryClient.ts:12-16`.
-
-**K7 — Samarbeid/Lag-tier er død funksjonalitet**
-Agenter: **1 (KRITISK, manglende rute)**, **3 (MEDIUM, prematur gate)**, **10 (MEDIUM, null sosial retention)**. Lag-tier (499 kr) gates overalt men kubedeling er DB-only uten UI; ruten `[id]/samarbeid` er ikke registrert i `_layout`.
-Fil: `kuber/_layout.tsx:14-23` · `kuber/[id]/index.tsx:300-319`.
-
-**K8 — `weekly-hive-alerts` global sweep + duplikat-varsling**
-Agenter: **12 (HØY)**, **10 (MEDIUM, duplikat push)**. Henter ALLE brukere/kuber/inspeksjoner i én sweep (degraderer ~5–10k brukere); lokal + server-varsling dupliserer «inspeksjon forfalt».
-Fil: `supabase/functions/weekly-hive-alerts/index.ts:51-82,111`.
+| # | Funn | Agenter | Grad |
+|---|------|---------|------|
+| K1 | **Server-side tier-håndhevelse er brutt**: profiles-UPDATE uten WITH CHECK/kolonnebegrensning (bruker kan sette egen tier='lag'+tier_locked) + 0039 droppet 3-kube-grensen fra 0013/0020 | 8 (KRITISK), 12 (HØY REGRESJON), 3 (relatert: tier-gates inkonsistente) | KRITISK |
+| K2 | **Push med `hiveId` deep-linker ingen steder** — kun `eventId` håndteres; ingen kald-start-håndtering | 1 (HØY ×2), 10 (HØY) | HØY |
+| K3 | **Kubefoto lagres som 1-årig signed URL** — dør etter 365 dager | 7 (LAV), 8 (LAV), 12 (MEDIUM) — *eneste 3-agent-funn* | MEDIUM |
+| K4 | **Trial gir ikke det onboarding lover** — kubegrense/statistikk sjekker rå `subscription_tier`, ikke `useEffectiveTier` | 3 (HØY), 11 (implisitt: trial-løftet «innfris» kun for AI-gaten) | HØY |
+| K5 | **ProGate er konverterings-blindvei** (kun «Tilbake»-knapp) | 1 (MEDIUM), 3 (MEDIUM) | MEDIUM |
+| K6 | **ActivationGuide steg 1+2 peker begge på kubelisten**, ikke ny-kube/wizard | 1 (LAV), 11 (MEDIUM) | MEDIUM |
+| K7 | **analyze-varroa mangler timeout begge veier** + ubeskåret base64-foto (2–4 MB) | 6 (MEDIUM), 7 (MEDIUM), 12 (MEDIUM) | MEDIUM |
+| K8 | **`select('*')` i 15 queries** | 6 (MEDIUM), 12 (MEDIUM) | MEDIUM |
+| K9 | **DB-indeks `inspections(user_id, hive_id, inspected_at DESC)` mangler** — ufikset fra forrige review | 6 (HØY), 12 (MEDIUM) | HØY |
+| K10 | **tier_locked respekteres ikke konsekvent** — webhook-update ignorerer flagget; klient-sync svelger lesefeil | 12 (MEDIUM), 7 (LAV) | MEDIUM |
 
 ---
 
-## 3. Motstridende anbefalinger
+## 2. Konflikter — løst eksplisitt
 
-Få reelle konflikter. To spenninger verdt å løse eksplisitt:
+**Konflikt 1: Polere vs. shippe (Agent 2/9 vs. 13).** Agent 2 vil ha Typography-migrering (L) og ikonsett; Agent 9 vil ha fullt a11y-løft; Agent 13 viser at Play-policy-blokkere og null tester er den reelle risikoen. **Avgjørelse:** Ship-blokkere først. Av design/a11y gjøres KUN det som treffer konverteringsflater og lovrisiko billig: kontrast-tokens (S–M) og fontFamily på UpgradeModal/auth (M). Typography-/Radii-migrering og lucide-ikoner utsettes — de flytter ikke 100-betalende-målet i juni.
 
-**Konflikt 1 — Trial-timing: tydeliggjør vs. utsett.**
-Agent 3 vil gjøre den automatiske trialen tydelig synlig tidlig (forankre verdi). Agent 11 vil utsette trial-tilbudet til ETTER første kube/inspeksjon (aha-moment først).
-**Løsning:** Ikke i konflikt — kombinér. Fjern det villedende betalte kjøpet fra onboarding-knappen umiddelbart (begge enige), kommuniser «14 dager gratis er aktiv» passivt, men reserver det aktive *oppgraderings*-tilbudet til etter aha-momentet. Ett konsistent budskap, riktig timing.
+**Konflikt 2: Varseltillatelse tidlig (retention-kanal) vs. sent (aksept-rate) (Agent 10 vs. 11).** Agent 10 er avhengig av push som primær retention-kanal; Agent 11 vil fjerne OS-prompten fra oppstart. **Avgjørelse:** Følg Agent 11 — Android 13+ gir i praksis ett forsøk, og prompt-før-verdi senker aksept, som *skader* Agent 10s kanal. Flytt prompten til ActivationGuide steg 3 (etter første kube) med forklarende pre-prompt. Dette maksimerer kanalen begge agenter bryr seg om.
 
-**Konflikt 2 — `select('*')` vs. defensiv mapX.**
-Agent 5 roser `mapHive`/`mapInspection` for å validere alle felt; agent 6/12 vil slanke payload via eksplisitte kolonnelister. Risiko: dropper man en kolonne som `mapX` krever, kaster mappingen.
-**Løsning:** Ikke en konflikt, men en rekkefølge-avhengighet — kolonnelistene må inkludere alle felt `mapX()` leser. Utled listen fra mapper-funksjonen, ikke omvendt.
+**Konflikt 3: Flere varsler (oksalsyre, win-back) vs. varslingstretthet (Agent 10 internt + 7).** **Avgjørelse:** Legg til de to sesongkritiske vinterpåminnelsene nå (S, domene-naturlige), men utsett win-back/last_seen til etter lansering, og la server eie «forfalt inspeksjon» når dedup-arbeidet gjøres — ikke øk volum før kilde-konsolidering.
 
-**Ingen øvrige reelle konflikter.** Design (agent 2) vil ha vektorikoner mens andre ikke nevner emoji — komplementært, ikke motstridende. Retention (agent 10) vil ha mer varsling mens samme agent advarer mot varslingstretthet — løses ved å konsolidere kilder, ikke legge til volum.
+**Konflikt 4: Trial-synlighet nå vs. etter aha (Agent 3 vs. 11).** Som i forrige syntese: ikke reell konflikt. Trialen kommuniseres passivt (banner finnes), aktiv selger-CTA ved utløp (dag 12–14). Nytt i denne runden: trialen må først faktisk *virke* (K4) før utløps-funnelen bygges — avhengighet, ikke konflikt.
+
+**Konflikt 5: `select('*')`-slanking vs. defensiv mapX (Agent 6/12 vs. 5).** Samme løsning som sist: kolonnelister utledes fra mapX()-feltene. Rekkefølge-avhengighet. Utsettes til etter lansering (lav reell gevinst ved <100 brukere).
 
 ---
 
-## 4. Topp-20 ROI-rangering
+## 3. Falsifisering — stikkprøve 5 KRITISK/HØY-funn
 
-Formel: Konverteringseffekt × (1 / Implementeringskostnad) × (1 + Sikkerhetsrisiko).
-Effekt/Kostnad: H=høy, M=middels, L=lav.
+Alle 5 lest i koden av syntese-agenten selv:
 
-| Rang | Funn | Agent(er) | Effekt | Kostnad | Fil:linje |
-|:--:|------|:--:|:--:|:--:|------|
-| 1 | Importer Sentry (produksjonskrasj ved sync-feil) | 7 | H | L (5 min) | `app/(app)/_layout.tsx:28` |
-| 2 | Fjern betalt kjøp fra onboarding + synk «14 dager» | 3,11 | H | L (2-3t) | `app/(app)/onboarding.tsx:79-95,149` |
-| 3 | DB-indeks `inspections(user_id,hive_id,inspected_at)` | 6,12 | H | L (30 min) | `migrations/0012`+`0038` |
-| 4 | revenuecat-webhook idempotens-race (tapt inntekt) | 8,12 | M | L (1-2t) | `revenuecat-webhook:72-101` |
-| 5 | Toast i global `mutationCache.onError` | 5 | H | L (1t) | `lib/queryClient.ts:12-16` |
-| 6 | FAB-kontrast hvit→mørk på honey (WCAG) | 9,2 | M | L (1t) | `kalender/index.tsx:423` |
-| 7 | Registrer `[id]/samarbeid`-rute i `_layout` | 1 | M | L (15 min) | `kuber/_layout.tsx:14-23` |
-| 8 | Manglende indekser swarm_reports.status + hives geo | 12 | M | L (1t) | `migrations/0001:191` |
-| 9 | Fjern hardkodet anon-JWT i 0035 + verifiser rotasjon | 8 | L | L (45 min) | `0035_rotate_alerts_secret.sql:35` |
-| 10 | Eksplisitte kolonnelister (drop `select('*')`) | 6,12,5 | M | M (2t) | `hive.ts:93,109`, `inspection.ts:77` |
-| 11 | Styrk Profesjonell-verdiforslag i UpgradeModal | 3 | H | M (3-4t) | `UpgradeModal.tsx:46-54` |
-| 12 | Sentraliser varroaterskler (faglig tillit) | 4 | M | M (3t) | `HealthScoreSection.tsx:37` + `TreatmentRec:30` |
-| 13 | Onboarding/splash ut av auth-guard (intro før reg.) | 11 | H | M (2-4t) | `app/(app)/_layout.tsx:54-56` |
-| 14 | Fjern e-postbekreftelse-blokkering (auto-confirm) | 11 | H | M (1-3t) | `register.tsx:70-74` |
-| 15 | Stabiliser kubeliste-render (useCallback/useMemo) | 6 | M | L (1t) | `kuber/index.tsx:205-212,74` |
-| 16 | Promise.all→allSettled i rapport + retry-guard 401 | 7 | M | L (1-2t) | `hjem/index.tsx:215` |
-| 17 | Monter HoneyWidget + daglig tips-kort (daily driver) | 10 | M | L (0.5d) | `components/home/HoneyWidget.tsx:1` |
-| 18 | DELETE-policy hive_disease_flags + slett Storage-fil | 8 | L | L (30 min) | `0001:251-257`, `inspection.ts:184` |
-| 19 | Konsolider 3 «kom i gang»-CTAer til én flyt | 11,1 | M | M (3-5t) | `onboarding.tsx` + `ActivationGuide` + empty-state |
-| 20 | Offline-persistering React Query (felt uten dekning) | 7 | M | M (2-3t) | `lib/queryClient.ts:17-22` |
+| Funn | Kilde | Verifikat | Holdt? |
+|------|-------|-----------|--------|
+| profiles-UPDATE uten WITH CHECK/kolonnebegrensning | A8 KRITISK | `0039_rls_subselect_auth_uid.sql:9` — `FOR UPDATE USING ((SELECT auth.uid()) = id)`, ingen WITH CHECK, ingen GRANT-begrensning | ✅ |
+| 0039 droppet 3-kube-grensen | A12 HØY | `0039:12-16` gjenskaper `hives: opprett egne`/`oppdater egne` med kun uid-sjekk; `0013:8-18` og `0020:19-29` hadde tier+count-logikken | ✅ |
+| Push `hiveId` rutes ingen steder | A1+A10 HØY | `app/(app)/_layout.tsx:39-44` — kun `eventId` håndteres; ingen `getLastNotificationResponseAsync` | ✅ |
+| Trial-gates sjekker rå tier | A3 HØY | `kuber/ny.tsx:137` — `profile?.subscriptionTier === 'starter' && cachedHives.length >= 3` (ikke useEffectiveTier) | ✅ |
+| READ_MEDIA_IMAGES + ubrukt expo-media-library | A13 HØY | `app.json:32-33` (begge permissions) + `:59` (plugin) | ✅ |
+
+**Resultat: 5/5 holdt vann.** Full tillit til agentenes funn; ingen nedjustering.
 
 ---
 
-## 5. Denne uken (< 4 timer hver — gjør umiddelbart)
+## 4. Topp-20 ROI-tabell
 
-Rask-fixer med høy verdi og lav risiko:
+Score = (2E + 2R) × I / 10. E = effekt på lansering/konvertering/retention, R = risikoreduksjon (5 ved KRITISK), I = innsats invertert (5=S … 1=XL).
 
-1. **Importer Sentry** i `app/(app)/_layout.tsx:28` — én linje, fjerner produksjonskrasj. (5 min, agent 7)
-2. **Registrer `[id]/samarbeid`-rute** i `kuber/_layout.tsx` — `<Stack.Screen name="[id]/samarbeid" options={{ title: 'Samarbeid' }} />`. (15 min, agent 1)
-3. **DB-indeks** `CREATE INDEX idx_inspections_user_hive_inspected ON inspections(user_id, hive_id, inspected_at DESC);` + partielle indekser for `swarm_reports.status` og `hives` geo. (1t, agent 6/12)
-4. **Toast i global `mutationCache.onError`** + fjern repeterte per-mutation onError. (1t, agent 5)
-5. **FAB-kontrast** `kalender/index.tsx:423` til mørk tekst + grep andre hvit-på-honey. (1t, agent 9)
-6. **Fjern betalt kjøp fra onboarding-knapp** + rett «30 dager»→«14 dager» overalt. (2-3t, agent 3/11)
-7. **revenuecat-webhook**: flytt idempotens-INSERT etter vellykket update. (1-2t, agent 8/12)
-8. **Fjern hardkodet anon-JWT i 0035** + verifiser secret-rotasjon i Dashboard. (45 min, agent 8)
-9. **DELETE-policy hive_disease_flags** + slett Storage-fil i `deleteInspectionMedia`. (30 min, agent 8)
-10. **Ensrett fanenavn** «Info»→«Lær» + Kuber tom-tilstand til trykkbar CTA. (1t, agent 1)
+| # | Tiltak | E | R | I | Score | Agent(er) | Fil-referanser |
+|---|--------|---|---|---|-------|-----------|----------------|
+| 1 | Fjern `READ_MEDIA_IMAGES` + `expo-media-library` | 5 | 3 | 5 | **8.0** | 13 | `app.json:32-33,59`, `package.json` |
+| 2 | Gjenopprett 3-kube-grense i hives-RLS (0039-regresjon) | 3 | 5 | 5 | **8.0** | 12, 8 | ny migrasjon; jf. `0013`, `0020`, `0039:12-17` |
+| 3 | Steng profiles-tier-bypass (kolonne-GRANT eller BEFORE UPDATE-trigger) | 4 | 5 | 4 | **7.2** | 8 | `0039:9`, ny migrasjon |
+| 4 | Wizard-draft: lagre foto/AI-resultat/dato | 3 | 4 | 5 | **7.0** | 7 | `inspeksjon/ny.tsx:40-54` |
+| 5 | Konto-slette-web-URL + Data safety-skjema | 5 | 3 | 4 | **6.4** | 13 | ekstern side; `profil.tsx:93` |
+| 6 | Flytt/guard `reset_and_rebuild.sql` | 1 | 5 | 5 | **6.0** | 12 | `supabase/migrations/reset_and_rebuild.sql` |
+| 7 | `queryClient.clear()` ved SIGNED_OUT | 2 | 4 | 5 | **6.0** | 7 | `store/auth.ts:32-41`, `app/_layout.tsx:62-71` |
+| 8 | EFB `isNotifiable: true` + liten kubebille/steinyngel | 2 | 4 | 5 | **6.0** | 4 | `constants/diseases.ts:53` |
+| 9 | Webhook: respekter `tier_locked`, fjern SUBSCRIBER_ALIAS fra downgrade + fiks svelget lesefeil i klient-sync | 3 | 3 | 5 | **6.0** | 12, 7 | `revenuecat-webhook/index.ts:7,102-105`, `subscription.ts:75-81` |
+| 10 | Trial = ekte Hobbyist (useEffectiveTier overalt + trial-sjekk i DB-policy) | 5 | 2 | 4 | **5.6** | 3 | `kuber/index.tsx:35`, `ny.tsx:137`, `laer/index.tsx:99`, 0013-erstatter |
+| 11 | Fiks stille `fetchProfile`-feil (betalende nedgraderes ved transient feil) | 4 | 3 | 4 | **5.6** | 5 | `services/profile.ts:31`, `app/_layout.tsx:53` |
+| 12 | Push deep-link `hiveId` + kald-start (`getLastNotificationResponseAsync`) | 4 | 1 | 5 | **5.0** | 1, 10 | `app/(app)/_layout.tsx:35-47` |
+| 13 | Varseltillatelse ut av oppstart → ActivationGuide steg 3 | 4 | 1 | 5 | **5.0** | 11 | `app/(app)/_layout.tsx:18-23`, `ActivationGuide.tsx:79-90` |
+| 14 | DB-indekser ×3 (user/hive/date-composite, swarm-status, hives-geo) | 3 | 2 | 5 | **5.0** | 6, 12 | ny migrasjon; jf. `0038:4` |
+| 15 | Oksalsyre- (nov) + vintersjekk-påminnelse (jan) | 3 | 2 | 5 | **5.0** | 10, 4 | `constants/seasonReminders.ts:10-53` |
+| 16 | Sentry-logging ved RC-pakke-miss | 3 | 2 | 5 | **5.0** | 3 | `UpgradeModal.tsx:113-119` |
+| 17 | Kontrast-pass: `honeyText`-token, muted→mid, fanetekst, Toast | 3 | 3 | 4 | **4.8** | 9, 2 | `constants/colors.ts:23`, `Button.tsx:101`, `hjem:868`, `_layout.tsx:19` |
+| 18 | Trial-utløps-funnel (push dag 12 + utløpsmodal) | 4 | 1 | 4 | **4.0** | 3 | `useEffectiveTier.ts:28-35`, `hjem:381-413` |
+| 19 | Analytics: 8 events (app_open … purchase_completed) | 4 | 1 | 4 | **4.0** | 10, 13 | nytt; PostHog/Amplitude |
+| 20 | Glemt passord + stille Google-feil på welcome | 4 | 1 | 4 | **4.0** | 11 | `login.tsx`, `welcome.tsx:114` |
 
----
-
-## 6. Sprint 1 (2 uker) — 5 viktigste for konvertering
-
-1. **Fiks aktiveringstrakten** (agent 11): onboarding/splash ut av auth-guard så AI-aha-momentet vises før registrering + auto-confirm av e-post. Største enkeltgevinst på aktivering. (~4-7t)
-2. **Trial-konsistens fullført** (agent 3/11): trial tydelig + aktivt oppgraderingstilbud flyttet til etter første inspeksjon. Lukk villedende-markedsføring-risikoen. (inkluderer denne-uken-punkt 6)
-3. **Styrk Profesjonell + Lag verdiforslag** (agent 3): konkret statistikk/høst/vekt-verdi i UpgradeModal, per-dag-prisforankring, social proof; betinget Lag-gate (skjul for små Starter-brukere) + Sentry-logging på manglende RC-pakke. (~5-6t)
-4. **Øk oppdagbarhet av AI-varroa** (agent 1/3): teaser på Hjem/kubeprofil + tydeligere demo-styling i Step3. AI er hovddifferensiatoren men ligger 3+ trykk dypt. (~2-3t)
-5. **Ytelse + robusthet for felt** (agent 6/7): expo-image disk-cache, stabiliser kubeliste-render, dropp dobbel inspeksjonshenting på hjem, offline-persistering av cache. Birøkteren i felt med dårlig dekning må se cachet data. (~4-5t)
-
----
-
-## 7. Roadmap (3 måneder) — strategisk
-
-- **Skaler `weekly-hive-alerts`** (agent 12): paginer per brukerbatch eller flytt utvelgelse til SQL-RPC/materialized view. Primær skaleringsblokkering forbi ~5k brukere — kritisk før vekst mot 100→1000+ brukere. Velg samtidig én kilde for «inspeksjon forfalt» (server) og fjern lokal duplikat (agent 10).
-- **Langtidsretention** (agent 10): år-for-år honning/varroa-progresjon + milepæl-badges (bruker eksisterende harvest/inspection-data); re-engagement-gren basert på `last_seen`; aktiver lese-tilgang til delte Lag-kuber for faktisk nettverkseffekt.
-- **Faglig domeneutvidelse** (agent 4): sentraliser varroaterskler med kilder; utvid inspeksjonsskjema (droneyngel, lukt, koble `diseaseObservations` til sykdomslista); strukturer behandlingslogg for Mattilsynet-journalplikt (virkestoff-enum, dose, tilbakeholdelse) — også et reelt Profesjonell-tier-salgsargument.
-- **Designsystem-håndhevelse** (agent 2): innfør `Typography`-skalaen overalt (sikrer Manrope-rendering — 155 fontWeight vs 43 fontFamily), eliminer rå hex i kart/score-farger, bytt emoji til vektorikoner.
-- **A11y-løft til WCAG 2.1 AA** (agent 9): erstatt `muted`→`mid` for liten tekst, aktiver fontskalering (minHeight i stedet for faste høyder), a11y-labels på mood/kalender/navBtn. Norsk lovkrav.
-- **Arkitektur-opprydding** (agent 5): ekstraher `lib/storageUpload.ts` (duplisert opplasting), del opp `hjem/index.tsx` (976 linjer) i seksjoner + `useDashboardData`-hook, lokale ErrorBoundaries på wizard/kubeprofil (agent 7).
-- **TTL-cleanup** `revenuecat_processed_events` + analyze-varroa TOCTOU-fiks (agent 8/12).
+Like under streken (score 4.0, gjøres når naturlig): AI-foto-resize + timeout/retry (6/7/12, K7), «Start inspeksjon» ≤2 trykk (1), ActivationGuide-deep-links + CTA-konsolidering (1, 11), jest-expo + 10 tester + CI (13 — løftes inn i sprinten av risikohensyn), dataeksport + AI-transparens (8).
 
 ---
 
-## 8. Ikke-prioriter nå (unngå prematur optimalisering)
+## 5. Denne uken (< 8 t totalt)
 
-- **Pris-A/B-test (Pro 99kr, lavere Lag)** — vent til faktisk konverteringsdata fra reelle brukere finnes (agent 3).
-- **Paginering av inspeksjonshistorikk / Flat+memo InspectionRow** — 50-grensen holder ved nåværende datavolum (agent 1/6 LAV).
-- **`get_map_hives` partiell geo-indeks utover de tre kjerneindeksene** — akseptabelt per-bruker nå (agent 12 MEDIUM).
-- **CORS-innstramming på Edge Functions** — native-app, auth kreves; kun relevant ved web-klient (agent 8 LAV).
-- **Soneavhengig sesong-checklist, avlslinje-felt, separat aggresjon/ro-skala** — verdifullt men nisje; etter kjerneaktivering virker (agent 4 LAV).
-- **Splash-optimalisering, passordkrav-konsistens, dekorativ-emoji-skjuling** — kosmetisk polish, samle i én bolk senere.
-- **Konstant-tid webhook-compare, pg_net header-logging** — lav reell risiko bak auth; gjør sammen med webhook-transaksjonsfiksen, ikke separat (agent 8).
+| Tiltak | Tid | Slik verifiserer du |
+|--------|-----|---------------------|
+| 1. Migrasjon: gjenopprett hives-INSERT/UPDATE-policy med tier+count (0013/0020-logikk i subselect-form) **og** trial-vindu (`OR trial_expires_at > now()`) | 1,5 t | Som starter-bruker uten trial: REST-kall som inserter kube #4 → skal feile med RLS-error. Med aktiv trial → skal lykkes |
+| 2. Migrasjon: lås profiles-kolonner (`REVOKE UPDATE ON profiles FROM authenticated; GRANT UPDATE (display_name, experience_level, push_token) ...`) | 1,5 t | Innlogget testbruker: `supabase.from('profiles').update({ subscription_tier: 'lag' })` → skal feile. Push-token-registrering og profilredigering i appen skal fortsatt virke |
+| 3. Fjern `READ_MEDIA_IMAGES`/`READ_MEDIA_VISUAL_USER_SELECTED` + `expo-media-library` fra app.json/package.json | 0,5 t | Nytt preview-bygg: bildevalg i kube/inspeksjon virker fortsatt (Photo Picker); sjekk manifest at permissions er borte |
+| 4. Flytt `reset_and_rebuild.sql` til `scripts/dev/` | 0,2 t | Filen finnes ikke lenger under `supabase/migrations/` |
+| 5. Push-ruting: `hiveId` → `/kuber/[id]` + `getLastNotificationResponseAsync` ved oppstart | 1 t | Send testpush med `{hiveId}`; trykk med appen drept → lander på riktig kubeprofil |
+| 6. `queryClient.clear()` ved SIGNED_OUT-event (+ ved bruker-ID-bytte) | 0,3 t | Logg ut konto A (revoker sesjon server-side), logg inn konto B → kubelisten viser aldri As kuber |
+| 7. EFB `isNotifiable: true` (+ legg inn liten kubebille-oppføring) | 0,5 t | Åpne «Europeisk yngelråte» i Info-fanen → meldeplikt-banner med Mattilsynet-nummer vises |
+| 8. Webhook: `.eq('tier_locked', false)` + fjern SUBSCRIBER_ALIAS fra DOWNGRADE_EVENTS; kortslutt tier-sync ved lesefeil i `subscription.ts:75-81` | 0,7 t | Simuler EXPIRATION-event mot testbruker med `tier_locked=true` → tier uendret i DB |
+| 9. Utvid wizard-`DraftState` med `photoUris`/`varroaAiResult`/`inspectedAt` | 1 t | Velg foto + kjør AI-analyse i wizard, drep appen, åpne igjen → foto og AI-resultat gjenopprettet |
+
+Sum: ~7,2 t. Punkt 1+2 er **lanseringsblokkere** — gjør dem først.
 
 ---
 
-## 9. Appens nåværende tilstand
+## 6. Sprint (2 uker) — i rekkefølge, med avhengigheter
 
-BiVokter har et solid, faglig sterkt domene og en gjennomtenkt arkitektur, men er **ikke helt klar til å nå 100 betalende brukere før denne-uken-fiksene er gjort** — særlig Sentry-krasjen, trial-forvirringen (Play Store-risiko) og webhook-inntektslekkasjen; med disse pluss aktiveringstrakt-fiksene i Sprint 1 er den godt posisjonert for målet.
+1. **Tier-integritet komplett** (avhenger av uke-punkt 1+2): bytt til `useEffectiveTier`/`tierAtLeast` i kubegrense (`kuber/index.tsx:35`, `ny.tsx:137`) og statistikk (`laer/index.tsx:99`); fiks stille `fetchProfile`-feil (retry / React Query). Trialen leverer da det onboarding lover, og betalende mister aldri tilgang ved transient feil. (~5 t)
+2. **Play-/GDPR-pakken** (uavhengig, kan parallellføres): konto-slette-webside publiseres (samme GitHub Pages som privacy), Data safety-skjema fylles (posisjon deles med andre via svermkart = «shared»), AI-transparenstekst ved analyse + synlighetsnotis i svermrapport-modal, gratis dataeksport-funksjon (art. 20). (~1 dag)
+3. **Konverteringsfunnel**: trial-utløps-push (dag 12, lokal scheduled) + utløpsmodal med årstilbud; ProGate får oppgrader-CTA; Sentry på RC-pakke-miss; prisanker i hjem-nudge. (avhenger av 1 — trialen må virke før den selges) (~1 dag)
+4. **Aktivering/onboarding**: varseltillatelse flyttes til ActivationGuide steg 3; glemt passord-lenke; Google-feil på welcome vises; ActivationGuide steg 1→`/kuber/ny`, steg 2→wizard; «Start inspeksjon» ≤2 trykk fra Hjem; trykkbar tom-tilstand i Kuber. (~1 dag)
+5. **Måling + sikkerhetsnett**: analytics-events (8 stk — uten dette kan effekten av alt over ikke måles); DB-indeks-migrasjonen (×3); jest-expo + de 10 testene fra Agent 13 + GitHub Actions med `tsc --noEmit` + jest; AI-foto-resize + 30 s timeout/«Prøv igjen»; kontrast-pass på tokens; Sentry `environment`. (~2 dager)
+
+---
+
+## 7. Etter lansering (3 mnd) — strategisk
+
+- **Offline-persistering** av React Query-cache + NetInfo-banner (A7) — viktigste felt-robusthetsløft; bevisst rett etter lansering fremfor før.
+- **Skaler weekly-hive-alerts** (paginering/RPC) + konsolider «forfalt»-varsling til server-eid kilde (A12, A10). Irrelevant under ~5k brukere.
+- **Retention-progresjon**: monter HoneyWidget, år-for-år i SeasonSummaryCard, milepæler, `last_seen_at` + win-back (A10).
+- **Domeneutvidelse**: sykdoms-/droneyngel-/lukt-felt i wizarden (datalaget finnes), strukturert behandlingsjournal med virkestoff/tilbakeholdelse (Mattilsynet-journal = Profesjonell-salgsargument), maursyre i anbefalingene, korrektur («yngelrotte»/«svirming») (A4).
+- **Designsystem-håndhevelse**: Typography-migrering via AppText-wrapper, Radii-opprydding, lucide-ikoner i tab-bar, severityColor()-util, skeletons (A2).
+- **A11y-fullføring**: tekstskalering (minHeight + maxFontSizeMultiplier), a11y-labels i Weight/Treatment/Queen/Harvest-modaler, Toast-liveRegion (A9). Lovkrav — påbegynt via kontrast-passet i sprinten.
+- **Teknisk gjeld**: splitt `hjem/index.tsx` (976 linjer), felles `storageUpload`/`useHiveForm`/datoformat-lib, kolonnelister i stedet for `select('*')`, photo_url → storage-path med on-demand signering (K3, 3 agenter), TTL på `revenuecat_processed_events`, CHECK-constraints, AI-kvote-atomisitet, timing-safe webhook-compare.
+
+---
+
+## 8. Ikke gjør (nå)
+
+- **Ikke aktiver feed-fanen** — tom feed ved <100 brukere skader mer enn den gagner (A10s egen anbefaling). Behold sovende.
+- **Ikke kjør Typography-/Radii-fullmigrering eller ikonsett-bytte før lansering** (A2) — L-innsats, null effekt på blokkere. Kun fontFamily på UpgradeModal/auth tas i sprinten.
+- **Ikke paginer weekly-hive-alerts nå** (A12 HØY) — degraderer først ved 5–10k brukere; målet er 100.
+- **Ikke endre priser eller trial-lengde til 30 dager** (A3 MEDIUM) — vent på konverteringsdata fra faktiske brukere; analytics må først finnes.
+- **Ikke splitt `hjem/index.tsx`/`ny.tsx` nå** (A5) — refaktorering uten brukereffekt; gjøres når tester finnes som sikrer den.
+- **Ikke bytt til expo-image eller slank `select('*')` nå** (A6/A12 MEDIUM) — målbar gevinst først ved datavolum; husk mapX-avhengigheten når det gjøres.
+- **Ikke bygg win-back/last_seen før analytics** (A10) — kan ikke måle effekten uten events.
+- **Ikke gjør konstant-tid webhook-compare som egen oppgave** (A8 HØY, men konfidens MEDIUM og reell utnyttbarhet lav) — ta den i samme commit som webhook-tier_locked-fiksen.
+- **Ikke skill sukkerrull/sukkerpuder eller bygg soneavhengig sjekkliste** (A4 LAV) — nisje; etter at kjerneaktivering beviselig virker.
+
+---
+
+## 9. Go/no-go
+
+**NO-GO for åpen testing/produksjon i dag — men blokkerlisten er kort og billig.**
+
+Blokkere (kun det som faktisk hindrer lansering):
+1. **Paywall-bypass server-side** (A8 KRITISK + A12 REGRESJON): enhver bruker kan sette egen tier til 'lag' permanent, og 3-kube-grensen håndheves ikke i DB. Å lansere betalt abonnement med åpen gratis-bakdør undergraver hele forretningsmodellen. — *2 migrasjoner, ~3 t inkl. test.*
+2. **Play-policy**: `READ_MEDIA_IMAGES` uten galleri-kjernefunksjon (sannsynlig avslag) + manglende konto-slette-web-URL (hard blokk for produksjonsspor). — *~0,5 + 3 t.*
+3. **Manuelle dashboard-punkter** (verifiseres, ikke kodes): Supabase Pro (free tier auto-pauser → appen dør), RevenueCat-produkter aktive i Play Console, webhook-secret + EAS env-vars satt. — *~1 t sjekk.*
+
+**Samlet innsats til GO: ~1 arbeidsdag.** Trial-inkonsistensen (K4) og push-deep-link (K2) er ikke formelle blokkere, men bør med i samme bygg siden de treffer det første betalende brukere opplever. Appen er ellers i klart bedre stand enn for to dager siden: domenet er faglig sterkt, arkitekturen sunn, og 8/10 av forrige plans straksfikser er gjennomført og verifisert. Etter blokkerne + sprintens punkt 1–3 er appen klar for åpen testing med reell sjanse på 100 betalende i sesong.

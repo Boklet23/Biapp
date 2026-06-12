@@ -13,6 +13,7 @@ import { createHive, normalizePhotoUri, uploadHivePhoto } from '@/services/hive'
 import { supabase } from '@/lib/supabase';
 import { useToastStore } from '@/store/toast';
 import { useAuthStore } from '@/store/auth';
+import { useEffectiveTier } from '@/hooks/useEffectiveTier';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { BeeBreed, Hive, HiveType } from '@/types';
 
@@ -31,6 +32,7 @@ export default function NyKube() {
   const queryClient = useQueryClient();
   const showToast = useToastStore((s) => s.show);
   const profile = useAuthStore((s) => s.profile);
+  const effectiveTier = useEffectiveTier();
   const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
   const [name, setName] = useState('');
   const [type, setType] = useState<HiveType>('langstroth');
@@ -134,7 +136,8 @@ export default function NyKube() {
     setNameError('');
 
     const cachedHives = queryClient.getQueryData<Hive[]>(['hives']) ?? [];
-    if (profile?.subscriptionTier === 'starter' && cachedHives.length >= 3) {
+    // Effektiv tier (inkl. aktiv prøveperiode) — DB-trigger håndhever samme grense server-side
+    if (effectiveTier === 'starter' && cachedHives.length >= 3) {
       setUpgradeModalVisible(true);
       return;
     }

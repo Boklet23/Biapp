@@ -38,6 +38,7 @@ const TOTAL_STEPS = 4;
 const draftKey = (hiveId: string) => `bivokter_insp_draft_${hiveId}`;
 
 interface DraftState {
+  inspectedAt: string;
   weatherTemp: string;
   weatherCondition: string;
   framesBrood: number;
@@ -49,8 +50,11 @@ interface DraftState {
   varroaMethod: string;
   treatmentApplied: boolean;
   treatmentProduct: string;
+  // AI-resultatet koster kvote — må overleve prosessdrap
+  varroaAiResult: VarroaAnalysis | null;
   notes: string;
   moodScore: number;
+  photoUris: string[];
 }
 
 export default function NyInspeksjon() {
@@ -103,6 +107,9 @@ export default function NyInspeksjon() {
       if (!raw) return;
       try {
         const draft: DraftState = JSON.parse(raw);
+        if (draft.inspectedAt && !Number.isNaN(new Date(draft.inspectedAt).getTime())) {
+          setInspectedAt(new Date(draft.inspectedAt));
+        }
         setWeatherTemp(draft.weatherTemp ?? '');
         setWeatherCondition(draft.weatherCondition ?? '');
         setFramesBrood(draft.framesBrood ?? 0);
@@ -114,8 +121,10 @@ export default function NyInspeksjon() {
         setVarroaMethod(draft.varroaMethod ?? '');
         setTreatmentApplied(draft.treatmentApplied ?? false);
         setTreatmentProduct(draft.treatmentProduct ?? '');
+        setVarroaAiResult(draft.varroaAiResult ?? null);
         setNotes(draft.notes ?? '');
         setMoodScore(draft.moodScore ?? 0);
+        setPhotoUris(Array.isArray(draft.photoUris) ? draft.photoUris : []);
         showToast('Utkast gjenopprettet', 'info');
       } catch {
         AsyncStorage.removeItem(draftKey(id)).catch(() => {});
@@ -127,21 +136,26 @@ export default function NyInspeksjon() {
   useEffect(() => {
     if (!id || !draftRestored.current) return;
     const draft: DraftState = {
+      inspectedAt: inspectedAt.toISOString(),
       weatherTemp, weatherCondition,
       framesBrood, framesHoney, framesEmpty,
       queenSeen, queenCells,
       varroaCount, varroaMethod,
       treatmentApplied, treatmentProduct,
+      varroaAiResult,
       notes, moodScore,
+      photoUris,
     };
     AsyncStorage.setItem(draftKey(id), JSON.stringify(draft)).catch(() => {});
   }, [
-    id, weatherTemp, weatherCondition,
+    id, inspectedAt, weatherTemp, weatherCondition,
     framesBrood, framesHoney, framesEmpty,
     queenSeen, queenCells,
     varroaCount, varroaMethod,
     treatmentApplied, treatmentProduct,
+    varroaAiResult,
     notes, moodScore,
+    photoUris,
   ]);
 
   useEffect(() => {

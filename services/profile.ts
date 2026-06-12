@@ -18,18 +18,31 @@ function mapProfile(row: Record<string, unknown>): User {
   };
 }
 
-export async function fetchProfile(): Promise<User | null> {
+/**
+ * Henter profilen for innlogget bruker. Returnerer null kun når ingen er
+ * innlogget; nettverks-/DB-feil kastes videre etter retry slik at kalleren
+ * kan skille «ikke innlogget» fra «transient feil» (og ikke stille
+ * nedgradere en betalende bruker til starter).
+ */
+export async function fetchProfile(retries = 2): Promise<User | null> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return null;
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', session.user.id)
-    .single();
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
 
-  if (error) return null;
-  return mapProfile({ ...data, email: session.user.email ?? '' });
+    if (!error) return mapProfile({ ...data, email: session.user.email ?? '' });
+    lastError = error;
+    if (attempt < retries) {
+      await new Promise((resolve) => setTimeout(resolve, 600 * (attempt + 1)));
+    }
+  }
+  throw lastError;
 }
 
 export interface UpdateProfileData {

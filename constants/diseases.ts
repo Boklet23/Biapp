@@ -49,7 +49,7 @@ export const DISEASES: Disease[] = [
     id: '3',
     slug: 'europeisk-yngelraate',
     nameNo: 'Europeisk yngelråte',
-    isNotifiable: false,
+    isNotifiable: true,
     severity: 'alvorlig',
     description:
       'Europeisk yngelråte (EFB) skyldes bakterien Melissococcus plutonius. Rammer åpen yngel og gir tap av yngelrammer og kolonier.',
@@ -211,6 +211,27 @@ export const DISEASES: Disease[] = [
       { uri: `${BASE}mus-01.png?v=1`, caption: 'Husmus (Mus musculus) — søker varme og mat i kuber om vinteren', bg: '#F8F8F8' },
       { uri: `${BASE}mus-02.png?v=1`, caption: 'Gnageskader på kubekasse og kaker', bg: '#F5F0E8' },
       { uri: `${BASE}mus-03.png?v=1`, caption: 'Muserist i flyåpning — maks 9–10 mm høyde', bg: '#F0F8FF' },
+    ],
+  },
+  {
+    id: '11',
+    slug: 'liten-kubebille',
+    nameNo: 'Liten kubebille',
+    isNotifiable: true,
+    severity: 'kritisk',
+    description:
+      'Liten kubebille (Aethina tumida) er en eksotisk skadegjører som ennå ikke er påvist i Norge. Larvene borer seg gjennom kaker, ødelegger honning og pollen, og kan få hele kolonien til å kollapse. Påvisning er meldepliktig til Mattilsynet (A-sykdom) og må varsles umiddelbart ved mistanke.',
+    symptoms:
+      'Små (5–7 mm) mørkebrune til svarte biller som løper raskt unna lys på bunnbrett og mellom rammer. Hvite larver med ryggpigger i kakene. Gjæret, slimete honning som renner ut av cellene og lukter råtne appelsiner.',
+    treatment:
+      'Ingen behandling i Norge — påvisning utløser offentlig bekjempelse. Mistanke MÅ varsles Mattilsynet umiddelbart (tlf. 22 40 00 00). Ikke flytt kuber, utstyr eller bifolk ved mistanke.',
+    prevention:
+      'Kjøp aldri bier eller brukt utstyr fra utlandet uten godkjenning. Kontroller bunnbrett jevnlig for raske, mørke biller. Vær ekstra årvåken i importutsatte områder og havnenære standplasser.',
+    thumbnailPath: null,
+    // Emoji-fallback — det finnes ingen opplastede bilder for kubebille ennå
+    photos: [
+      { emoji: '🪲', caption: 'Aethina tumida — voksen liten kubebille', bg: '#F5F0E8' },
+      { emoji: '🐛', caption: 'Billelarver med ryggpigger i ødelagt kake', bg: '#FFF8E1' },
     ],
   },
 ];

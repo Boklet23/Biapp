@@ -19,7 +19,7 @@ import { fetchForecast, fetchWeather, ForecastDay } from '@/services/weather';
 import { generateAndShareReport } from '@/services/report';
 import { useAuthStore } from '@/store/auth';
 import { useToastStore } from '@/store/toast';
-import { useTrialDaysLeft } from '@/hooks/useEffectiveTier';
+import { useEffectiveTier, useTrialDaysLeft } from '@/hooks/useEffectiveTier';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { scheduleInspectionReminderDeduped, checkNearbySwarmAlerts } from '@/services/notifications';
 import { Hive, Inspection } from '@/types';
@@ -107,6 +107,7 @@ export default function Hjem() {
   const profile = useAuthStore((s) => s.profile);
   const showToast = useToastStore((s) => s.show);
   const trialDaysLeft = useTrialDaysLeft();
+  const effectiveTier = useEffectiveTier();
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
@@ -378,8 +379,10 @@ export default function Hjem() {
           </Pressable>
         )}
 
-        {/* ─── Permanent upgrade nudge for Starter (no active trial) ─── */}
-        {trialDaysLeft === null && profile?.subscriptionTier === 'starter' && (
+        {/* ─── Permanent upgrade nudge for Starter (no active trial) ───
+            Effektiv tier: en som nettopp kjøpte (webhook ikke synket ennå)
+            skal ikke se oppgrader-nudge */}
+        {trialDaysLeft === null && effectiveTier === 'starter' && (
           <Pressable
             style={styles.upgradeNudge}
             onPress={() => setUpgradeModalVisible(true)}
