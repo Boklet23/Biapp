@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slett konto — BiVokter</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1A1A2E;
+      color: #F8F4EF;
+      line-height: 1.7;
+      padding: 0 16px 60px;
+    }
+    header {
+      background: #1A1A2E;
+      border-bottom: 1px solid #2D2D4E;
+      padding: 24px 0 20px;
+      margin-bottom: 40px;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo svg { width: 40px; height: 40px; }
+    .logo-text { font-size: 22px; font-weight: 700; color: #F5A623; }
+    .container { max-width: 740px; margin: 0 auto; }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: #fff; }
+    .updated { font-size: 14px; color: #F5A623; margin-bottom: 40px; }
+    h2 { font-size: 18px; font-weight: 600; color: #F5A623; margin: 36px 0 12px; }
+    p, li { font-size: 15px; color: #c8c4c0; margin-bottom: 10px; }
+    ul, ol { padding-left: 20px; }
+    li { margin-bottom: 6px; }
+    a { color: #F5A623; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .card {
+      background: #2D2D4E;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+    }
+    .warning {
+      background: #3E2D2D;
+      border: 1px solid #8a4b3a;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+    .warning p { color: #f0c9b8; margin-bottom: 0; }
+    .contact-email {
+      display: inline-block;
+      background: #F5A623;
+      color: #1A1A2E;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="logo">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#F5A623"/>
+            <stop offset="100%" stop-color="#D4890A"/>
+          </linearGradient>
+        </defs>
+        <polygon points="50,5 93,27.5 93,72.5 50,95 7,72.5 7,27.5" fill="url(#g)"/>
+        <ellipse cx="50" cy="48" rx="10" ry="14" fill="#FFF3DC"/>
+        <rect x="41" y="46" width="18" height="3" fill="#D4890A" rx="1"/>
+        <rect x="41" y="51" width="18" height="3" fill="#D4890A" rx="1"/>
+        <ellipse cx="36" cy="39" rx="10" ry="5" fill="#FFF3DC" opacity="0.8" transform="rotate(-20 36 39)"/>
+        <ellipse cx="64" cy="39" rx="10" ry="5" fill="#FFF3DC" opacity="0.8" transform="rotate(20 64 39)"/>
+        <circle cx="50" cy="34" r="6" fill="#FFF3DC"/>
+      </svg>
+      <span class="logo-text">BiVokter</span>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <h1>Slett kontoen din</h1>
+  <p class="updated">Gjelder appen BiVokter (no.biapp.app) — utviklet av André Haukeland</p>
+
+  <div class="card">
+    <p>Du kan når som helst slette BiVokter-kontoen din og alle tilhørende data. Slettingen er permanent og kan ikke angres.</p>
+  </div>
+
+  <h2>Alternativ 1: Slett kontoen direkte i appen (anbefalt)</h2>
+  <ol>
+    <li>Åpne <strong>BiVokter</strong> og logg inn</li>
+    <li>Trykk på <strong>profilikonet</strong> øverst på Hjem-skjermen</li>
+    <li>Bla helt ned og trykk <strong>«Slett konto»</strong></li>
+    <li>Bekreft i dialogen som vises</li>
+  </ol>
+  <p>Kontoen og alle data slettes umiddelbart, og du logges ut.</p>
+
+  <h2>Alternativ 2: Be om sletting via e-post</h2>
+  <p>Hvis du ikke lenger har tilgang til appen, kan du sende en slette­forespørsel fra e-postadressen kontoen er registrert med:</p>
+  <p><a class="contact-email" href="mailto:andre.haukeland@gmail.com?subject=Slett%20BiVokter-konto">andre.haukeland@gmail.com</a></p>
+  <p>Merk e-posten med <strong>«Slett BiVokter-konto»</strong>. Forespørselen behandles innen <strong>30 dager</strong>, og du får bekreftelse når slettingen er gjennomført.</p>
+
+  <h2>Hva slettes?</h2>
+  <p>Ved sletting fjernes alle personopplysninger og alt innhold knyttet til kontoen permanent:</p>
+  <ul>
+    <li>Kontoopplysninger (e-postadresse, navn, profilinnstillinger)</li>
+    <li>Alle kuber, inspeksjoner, behandlinger, vektlogger, høstingsdata og dronning­registreringer</li>
+    <li>Alle opplastede bilder (kubebilder og inspeksjonsbilder)</li>
+    <li>Kalenderhendelser, svermerapporter og samarbeids­koblinger</li>
+    <li>Push-varslingstoken og abonnementsstatus i våre systemer</li>
+  </ul>
+
+  <h2>Hva beholdes, og hvor lenge?</h2>
+  <ul>
+    <li><strong>Tekniske feillogger (Sentry):</strong> anonymiserte krasj­rapporter slettes automatisk etter leverandørens oppbevaringstid (maks 90 dager)</li>
+    <li><strong>Kjøps- og betalingshistorikk:</strong> behandles av Google Play og RevenueCat etter deres egne vilkår — BiVokter lagrer ikke betalingsopplysninger</li>
+    <li><strong>Lovpålagt oppbevaring:</strong> eventuelle regnskapsdata beholdes så lenge bokføringsloven krever</li>
+  </ul>
+
+  <div class="warning">
+    <p><strong>Viktig om abonnement:</strong> Sletting av kontoen avslutter ikke et løpende abonnement automatisk. Si opp abonnementet i <strong>Google Play → Betalinger og abonnementer</strong> før eller etter at du sletter kontoen, ellers kan du fortsatt bli belastet.</p>
+  </div>
+
+  <h2>Spørsmål?</h2>
+  <p>Se vår <a href="privacy.html">personvernerklæring</a> for full oversikt over hvordan vi behandler data, eller kontakt oss på <a href="mailto:andre.haukeland@gmail.com">andre.haukeland@gmail.com</a>.</p>
+</div>
+</body>
+</html>
