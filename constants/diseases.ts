@@ -228,9 +228,10 @@ export const DISEASES: Disease[] = [
     prevention:
       'Kjøp aldri bier eller brukt utstyr fra utlandet uten godkjenning. Kontroller bunnbrett jevnlig for raske, mørke biller. Vær ekstra årvåken i importutsatte områder og havnenære standplasser.',
     thumbnailPath: null,
+    // Emoji-fallback — det finnes ingen opplastede bilder for kubebille ennå
     photos: [
-      { uri: `${BASE}liten-kubebille-01.png?v=1`, caption: 'Aethina tumida — voksen liten kubebille', bg: '#F5F0E8' },
-      { uri: `${BASE}liten-kubebille-02.png?v=1`, caption: 'Billelarver med ryggpigger i ødelagt kake', bg: '#FFF8E1' },
+      { emoji: '🪲', caption: 'Aethina tumida — voksen liten kubebille', bg: '#F5F0E8' },
+      { emoji: '🐛', caption: 'Billelarver med ryggpigger i ødelagt kake', bg: '#FFF8E1' },
     ],
   },
 ];

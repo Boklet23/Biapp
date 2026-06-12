@@ -13,6 +13,7 @@ import {
   getSeasonalRemindersEnabled,
 } from '@/services/notifications';
 import { useAuthStore } from '@/store/auth';
+import { useEffectiveTier, useTrialDaysLeft } from '@/hooks/useEffectiveTier';
 import { useToastStore } from '@/store/toast';
 import { supabase } from '@/lib/supabase';
 import { ExperienceLevel } from '@/types';
@@ -32,6 +33,11 @@ const SUBSCRIPTION_LABELS: Record<string, string> = {
 
 export default function ProfilModal() {
   const { profile, setProfile, signOut } = useAuthStore();
+  const effectiveTier = useEffectiveTier();
+  const trialDaysLeft = useTrialDaysLeft();
+  // Trial-brukere har effektiv Hobbyist men har ikke betalt — vis oppgrader-CTA
+  const isOnTrial = trialDaysLeft !== null;
+  const tierLabel = SUBSCRIPTION_LABELS[effectiveTier] + (isOnTrial ? ' (prøveperiode)' : '');
   const showToast = useToastStore((s) => s.show);
 
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '');
@@ -157,7 +163,7 @@ export default function ProfilModal() {
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Abonnement</Text>
-          {profile?.subscriptionTier === 'starter' || !profile?.subscriptionTier ? (
+          {effectiveTier === 'starter' || isOnTrial ? (
             <Pressable
               style={({ pressed }) => [styles.upgradeRow, pressed && { opacity: 0.85 }]}
               onPress={() => setUpgradeModalVisible(true)}
@@ -165,18 +171,14 @@ export default function ProfilModal() {
               accessibilityLabel="Oppgrader abonnement"
             >
               <View>
-                <Text style={styles.upgradeRowTier}>
-                  {SUBSCRIPTION_LABELS[profile?.subscriptionTier ?? 'starter']}
-                </Text>
+                <Text style={styles.upgradeRowTier}>{tierLabel}</Text>
                 <Text style={styles.upgradeRowSub}>Trykk for å oppgradere</Text>
               </View>
               <Text style={styles.upgradeRowCta}>Oppgrader →</Text>
             </Pressable>
           ) : (
             <View style={styles.readOnly}>
-              <Text style={styles.readOnlyText}>
-                {SUBSCRIPTION_LABELS[profile?.subscriptionTier ?? 'starter']}
-              </Text>
+              <Text style={styles.readOnlyText}>{tierLabel}</Text>
             </View>
           )}
         </View>
