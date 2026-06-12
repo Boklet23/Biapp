@@ -16,6 +16,7 @@ import { fetchDiseases } from '@/services/diseases';
 import { fetchHives } from '@/services/hive';
 import { fetchHarvests, createHarvest, deleteHarvest } from '@/services/harvest';
 import { useAuthStore } from '@/store/auth';
+import { useEffectiveTier } from '@/hooks/useEffectiveTier';
 import { useToastStore } from '@/store/toast';
 
 function SectionTitle({ children }: { children: string }) {
@@ -28,6 +29,7 @@ export default function Info() {
   const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
 
   const profile = useAuthStore((s) => s.profile);
+  const effectiveTier = useEffectiveTier();
   const { show: showToast } = useToastStore();
   const queryClient = useQueryClient();
 
@@ -96,7 +98,7 @@ export default function Info() {
           activeHiveCount={activeHiveCount}
           hives={activeHives}
           harvests={harvests}
-          subscriptionTier={profile?.subscriptionTier ?? 'starter'}
+          subscriptionTier={effectiveTier}
           onLogHarvest={() => setHarvestModalVisible(true)}
           onDeleteHarvest={(id) => deleteMutation.mutate(id)}
           onUpgrade={() => setUpgradeModalVisible(true)}

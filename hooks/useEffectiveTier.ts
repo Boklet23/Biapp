@@ -13,15 +13,22 @@ export function tierAtLeast(tier: SubscriptionTier, min: SubscriptionTier): bool
   return TIER_RANK[tier] >= TIER_RANK[min];
 }
 
-/** Returns the user's active tier, accounting for active free trial. */
+/**
+ * Returns the user's active tier: the highest of DB tier (webhook-owned),
+ * local RevenueCat entitlement tier, and active free trial (= hobbyist).
+ * RC-tieren dekker vinduet mellom kjøp og webhook-sync, og transient
+ * profil-hentefeil ved kald start.
+ */
 export function useEffectiveTier(): SubscriptionTier {
   const profile = useAuthStore((s) => s.profile);
-  if (!profile) return 'starter';
-  if (profile.subscriptionTier !== 'starter') return profile.subscriptionTier;
-  if (profile.trialExpiresAt && new Date(profile.trialExpiresAt) > new Date()) {
-    return 'hobbyist';
+  const rcTier = useAuthStore((s) => s.rcTier);
+
+  const candidates: SubscriptionTier[] = [profile?.subscriptionTier ?? 'starter'];
+  if (rcTier) candidates.push(rcTier);
+  if (profile?.trialExpiresAt && new Date(profile.trialExpiresAt) > new Date()) {
+    candidates.push('hobbyist');
   }
-  return 'starter';
+  return candidates.reduce((best, t) => (TIER_RANK[t] > TIER_RANK[best] ? t : best));
 }
 
 /** Days left in free trial, or null if no active trial. */

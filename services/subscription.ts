@@ -5,8 +5,7 @@ import Purchases, {
 } from 'react-native-purchases';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import * as Sentry from '@sentry/react-native';
-import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/auth';
 import { SubscriptionTier } from '@/types';
 
 const ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? '';
@@ -67,26 +66,14 @@ export async function fetchOfferings(): Promise<PurchasesPackage[]> {
   return offerings.current?.availablePackages ?? [];
 }
 
-/** Oppdater subscription_tier i Supabase etter et kjøp. */
-export async function syncTierToSupabase(tier: SubscriptionTier): Promise<void> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user) return;
-
-  const { data: profileCheck } = await supabase
-    .from('profiles')
-    .select('tier_locked')
-    .eq('id', session.user.id)
-    .single();
-
-  if (profileCheck?.tier_locked) return;
-
-  const { error } = await supabase
-    .from('profiles')
-    .update({ subscription_tier: tier })
-    .eq('id', session.user.id);
-
-  if (error) {
-    Sentry.captureException(error, { extra: { tier, context: 'syncTierToSupabase' } });
-    throw error;
-  }
+/**
+ * Registrer RevenueCat-tier i lokal auth-state. Klienten skriver IKKE
+ * subscription_tier til Supabase — DB-tieren eies av RevenueCat-webhooken
+ * (service_role), og profiles-kolonnen er låst for authenticated (migrasjon 0047).
+ * useEffectiveTier() bruker høyeste av DB-tier, RC-tier og aktiv prøveperiode.
+ */
+export function applyCustomerInfo(info: CustomerInfo): SubscriptionTier {
+  const tier = mapEntitlementToTier(info);
+  useAuthStore.getState().setRcTier(tier);
+  return tier;
 }

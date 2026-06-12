@@ -37,12 +37,20 @@ Deno.serve(async (req: Request) => {
     // ── Subscription check ────────────────────────────────────────────────
     const { data: profile } = await userSupabase
       .from('profiles')
-      .select('subscription_tier')
+      .select('subscription_tier, trial_expires_at')
       .eq('id', user.id)
       .single();
 
-    const tier   = profile?.subscription_tier ?? 'starter';
-    const limit  = LIMITS[tier] ?? 0;
+    let tier = profile?.subscription_tier ?? 'starter';
+    // Aktiv prøveperiode gir Hobbyist-tilgang — samme logikk som klientens useEffectiveTier
+    if (
+      tier === 'starter' &&
+      typeof profile?.trial_expires_at === 'string' &&
+      new Date(profile.trial_expires_at) > new Date()
+    ) {
+      tier = 'hobbyist';
+    }
+    const limit = LIMITS[tier] ?? 0;
 
     if (limit === 0) {
       return Response.json(

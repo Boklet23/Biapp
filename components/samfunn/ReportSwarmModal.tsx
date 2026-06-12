@@ -25,7 +25,7 @@ export function ReportSwarmModal({ visible, onClose, onSubmit, loading, location
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={styles.sheet}>
         <View style={styles.handle} />
-        <Text style={styles.title}>Rapporter svirm 🐝</Text>
+        <Text style={styles.title}>Rapporter sverm 🐝</Text>
 
         {locationName ? (
           <Text style={styles.location}>📍 {locationName}</Text>
@@ -38,7 +38,7 @@ export function ReportSwarmModal({ visible, onClose, onSubmit, loading, location
           style={[styles.input, styles.multiline]}
           value={description}
           onChangeText={setDescription}
-          placeholder="f.eks. Stor svirm i epletreet, ca. 2 meter opp"
+          placeholder="f.eks. Stor sverm i epletreet, ca. 2 meter opp"
           placeholderTextColor={Colors.mid + '80'}
           multiline
           numberOfLines={3}

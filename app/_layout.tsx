@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { queryClient } from '@/lib/queryClient';
 import { useAuthStore } from '@/store/auth';
 import { fetchProfile } from '@/services/profile';
-import { initPurchases, mapEntitlementToTier, syncTierToSupabase } from '@/services/subscription';
+import { applyCustomerInfo, initPurchases } from '@/services/subscription';
 import Constants from 'expo-constants';
 import * as Sentry from '@sentry/react-native';
 import { useFonts, Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold } from '@expo-google-fonts/manrope';
@@ -34,23 +34,21 @@ function RootLayoutNav() {
       .then(({ data: { session } }) => {
         setSession(session);
         if (session) {
-          fetchProfile().then((profile) => {
-            setProfile(profile);
-            // Init RevenueCat and sync subscription tier (Android only — iOS not configured)
-            if (Platform.OS === 'android') {
-              initPurchases(session.user.id).then(async (info) => {
-                const tier = mapEntitlementToTier(info);
-                if (profile && tier !== profile.subscriptionTier) {
-                  await syncTierToSupabase(tier).catch((e: Error) => {
-                    Sentry.captureException(e, { extra: { context: 'initPurchases syncTier' } });
-                  });
-                  setProfile({ ...profile, subscriptionTier: tier });
-                }
-              }).catch((e: Error) => {
+          fetchProfile()
+            .then(setProfile)
+            .catch((e: Error) => {
+              // Transient feil: behold null/eksisterende profil — useEffectiveTier
+              // faller tilbake på RC-tier så betalende ikke nedgraderes stille
+              Sentry.captureException(e, { extra: { context: 'fetchProfile startup' } });
+            });
+          // Init RevenueCat og registrer entitlement-tier lokalt (Android only)
+          if (Platform.OS === 'android') {
+            initPurchases(session.user.id)
+              .then(applyCustomerInfo)
+              .catch((e: Error) => {
                 if (!isExpoGo) Sentry.captureException(e);
               });
-            }
-          }).catch(() => setProfile(null));
+          }
         } else {
           setProfile(null);
         }
@@ -64,9 +62,25 @@ function RootLayoutNav() {
       if (event === 'INITIAL_SESSION') return;
       setSession(session);
       if (session) {
-        fetchProfile().then(setProfile).catch(() => setProfile(null));
+        const previous = useAuthStore.getState().profile;
+        if (previous && previous.id !== session.user.id) {
+          // Kontobytte: forrige brukers cache må aldri serveres til ny bruker
+          queryClient.clear();
+          setProfile(null);
+          useAuthStore.getState().setRcTier(null);
+        }
+        fetchProfile()
+          .then(setProfile)
+          .catch((e: Error) => {
+            Sentry.captureException(e, { extra: { context: 'fetchProfile authChange' } });
+            const current = useAuthStore.getState().profile;
+            if (current && current.id !== session.user.id) setProfile(null);
+          });
       } else {
+        // SIGNED_OUT — også når sesjonen revokeres server-side / på annen enhet
+        queryClient.clear();
         setProfile(null);
+        useAuthStore.getState().setRcTier(null);
       }
     });
 

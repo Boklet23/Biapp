@@ -1,41 +1,57 @@
-# Agent 4 — Domene
+# Agent 4 — Birøkterfaglig domeneanalyse
 
 ## Metainfo
-- **Filer lest:** `kuber/[id]/index.tsx`, `kuber/[id]/inspeksjon/ny.tsx`, `Step1–4.tsx`, `kalender/index.tsx`, `laer/index.tsx`, `services/inspection.ts`, `services/treatment.ts`, `services/queen.ts`, `0006_treatments.sql`, `0009_queens.sql`, `0025_diseases.sql`, `0026_seed_diseases.sql`, `0004_hive_bee_breed.sql`, `0027_hive_boxes_and_frames.sql`, `HealthScoreSection.tsx`, `TreatmentRecommendationSection.tsx`, `QueenSection.tsx`, `HiveTypeChip.tsx`, `seasonChecklist.ts`, `SeasonGuide.tsx`, `types/index.ts`
-- **Filer ikke funnet:** ingen (alle relevante filer lokalisert; `0025`/`0026` delt i schema + seed)
-- **Konfidensgrad:** Høy
+- **Filer lest:** `constants/varroa.ts`, `seasonChecklist.ts`, `seasonReminders.ts`, `seasonGuide.ts`, `pollenCalendar.ts`, `diseases.ts`, `beginnerGuide.ts`, `components/inspection/Step1–4.tsx`, `services/inspection.ts`, `services/treatment.ts`, `services/queen.ts`, `components/hive/HealthScoreSection.tsx`, `TreatmentRecommendationSection.tsx`, `QueenSection.tsx`, `app/(app)/(tabs)/laer/[slug].tsx`, `supabase/migrations/0006_treatments.sql`
+- **Filer ikke funnet:** `constants/diseases.ts` ligger i `constants/` (ikke 0025-seed lest i detalj — DB-fallback er `diseases.ts`); `kuber/[id]/index.tsx` lest indirekte via seksjonskomponentene
+- **Diff mot forrige review:** Lest arkiv (`reports/archive/2026-06-10/agent-04-domene.md`). **FIKSET siden sist:** Varroaterskler er nå sentralisert i `constants/varroa.ts` og både `HealthScoreSection` og `TreatmentRecommendationSection` importerer derfra (`varroaThresholds()`) — fjorårets HØY-inkonsistens (limbunn 10 vs 3) er løst. Inspeksjonsskjema, behandlingslogg-struktur og dronning-avlslinje er **ikke** endret — gjentas her der fortsatt gyldig.
 
 ## Sammendrag
-Domenet er solid og tydelig norsk-forankret: sykdomsguiden (10 tilstander) er faglig fremragende med Mattilsynet/Veterinærinstituttet-kilder, meldepliktmarkering og sesongvise tiltak. Inspeksjon, varroatelling (3 metoder), behandling og dronning dekkes godt. Hovedsvakheter: inspeksjonsskjemaet mangler droneleg/lukt/sykdomstegn-felter, varroametode-listen er ufullstendig og terskler er inkonsistente mellom to moduler, og behandlingsloggen mangler Mattilsynet-påkrevd dokumentasjonsstruktur.
+Domenet er sterkt norsk-forankret og forbedret siden sist. Men jeg fant en ny **faglig feil med konsekvens for sykdomskontroll**: europeisk yngelråte er feilmerket som ikke-meldepliktig, og to–tre meldepliktige sykdommer (liten kubebille, steinyngel, trakémidd) mangler helt. Inspeksjonsskjemaet fanger fortsatt ikke droneyngel/lukt/sykdomstegn, og behandlingsloggen mangler journalstruktur Mattilsynet/legemiddelmyndighet forventer.
+
+## Fungerer godt (ikke rør)
+1. **Sentraliserte varroaterskler** (`constants/varroa.ts`) — metodespesifikke, dokumenterte, delt mellom moduler. Solid fiks.
+2. **Meldeplikt-banner** i sykdomsdetalj (`laer/[slug].tsx:69-75`) med Mattilsynet-nummer — god UX når flagget er riktig satt.
+3. **Sykdomsbeskrivelsene** (AFB pinnetest >2 cm, oksalsyre kun yngelfri) er faglig presise.
+4. **Nybegynnerguiden** (`beginnerGuide.ts`) er bred og norsk-praktisk (Husdyrregisteret, 15–20 kg vinterfôr, fargesyklus for merking).
+5. **Sesongstruktur** dekker norsk årssyklus inkl. oksalsyre-vindu og lyng.
 
 ## Funn
 
-**[HØY]** `components/hive/HealthScoreSection.tsx:37-39` & `TreatmentRecommendationSection.tsx:30-32` — Varroaterskler for samme metode er inkonsistente mellom de to modulene. HealthScore bruker limbunn crit=10/warn=5/mod=2 (mitefall/dag), mens Recommendation bruker limbunn crit=3/warn=1. Brukeren kan se "Bra helse" og samtidig "Behandling nødvendig" for samme tall. — Faglig forvirring og tap av tillit. — Sentraliser tersklene i én `constants/varroaThresholds.ts` med dokumenterte kilder (NBL: ~3 % vaskeprøve = behandling; limbunn >1 midd/dag vår, >4/dag høst).
+**[HØY]** `constants/diseases.ts:53` — Europeisk yngelråte merket `isNotifiable: false`. Mattilsynet krever **umiddelbar melding** ved mistanke om europeisk yngelråte (B-sykdom), på linje med amerikansk yngelråte. — Birøkteren får ikke meldeplikt-banneret og kan unnlate lovpålagt varsling → spredningsrisiko. — Sett `isNotifiable: true` og kvalitetssikre EFB-teksten (antibiotika kun på veterinærdirektiv stemmer). — Innsats: S — Konfidens: HØY. ([Mattilsynet: krav til undersøkelse for visse bisykdommer](https://www.mattilsynet.no/dyr/produksjonsdyr/bier/krav-til-dyrehelse-ved-flytting-av-bier-i-norge/krav-til-undersokelse-for-visse-bisykdommer))
 
-**[HØY]** `components/inspection/Step3.tsx:21` — `VARROA_METHODS = ['alkoholspyling', 'sukkerpuder', 'limbunn']`. Mangler "sukkerrull/pudderfall" som distinkt metode og CO2/EasyCheck. Seed-data (`0026:17,40`) nevner også "vaskemetode" og "sukkerpudder" — terminologien er ikke konsistent mot UI-chips. — Telleresultat kan ikke tolkes korrekt uten standardisert metode→terskel. — Standardiser metodeliste og koble eksplisitt %-basis (vaske/sukkerrull) vs midd/dag (limbunn).
+**[HØY]** `constants/diseases.ts` (hele lista) — Meldepliktige sykdommer **mangler**: **liten kubebille (Aethina tumida)** — den viktigste eksotiske trusselen som overvåkes i EU, **steinyngel (Aspergillus)** og **trakémidd (Acarapis woodi)**. Lista har Tropilaelaps men ikke kubebille. — En norsk birøkter som ser kubebille finner ingen oppføring og melder kanskje ikke. — Legg til minst liten kubebille (notifiable, med symptom: biller/larver i bunnbrett og lagerrom) og steinyngel. — Innsats: M — Konfidens: HØY. ([Mattilsynet: liten kubebille](https://www.mattilsynet.no/dyr/dyresykdommer/liten-kubebille/hva-gjores-for-a-bekjempe-liten-kubebille-i-europa), [Forskrift om birøkt](https://lovdata.no/dokument/SFO/forskrift/2009-04-06-416))
 
-**[HØY]** `components/inspection/Step2.tsx` + `services/inspection.ts:12-32` — Inspeksjonen mangler sentrale norske observasjonsfelter: **droneleg/droneyngel** (varroaindikator), **lukt** (råte-screening), **sykdomstegn** (`diseaseObservations` finnes i typen men eksponeres ikke i UI), **pollen/nektarinngang**, og **temperament** finnes kun som "humør" 1–5. — Inspeksjoner fanger ikke tidlige sykdoms- og svermsignaler som NBL anbefaler. — Legg til toggles for droneyngel, lukt-flagg og koble `diseaseObservations` til sykdomslista.
+**[HØY]** `components/inspection/Step2.tsx` + `Step4.tsx` + `services/inspection.ts:27,107` — Inspeksjonen mangler sentrale observasjonsfelt: **droneyngel/leggarbeider-tegn** (dronningløshets- og varroaindikator), **lukt** (yngelråte-screening), og **sykdomstegn** — feltet `diseaseObservations` er plumbet gjennom typen og `createInspection`, men **eksponeres ingen steder i wizarden** (Step1–4 samler kun ramme-tall, dronning-toggles, varroa, humør, foto). — Tidlige sykdoms-/svermsignaler registreres ikke; død datavei. — Legg til toggles for droneyngel + lukt-flagg i Step2 og koble `diseaseObservations` til `DISEASES`-lista. — Innsats: M — Konfidens: HØY.
 
-**[MEDIUM]** `services/treatment.ts` + `0006_treatments.sql` — Behandlingsloggen mangler Mattilsynet/legemiddel-dokumentasjon: virkestoff, batch/lot-nr, tilbakeholdelsestid og kobling til journalkrav. `product` er fritekst (placeholder `'Oxalsyre, ApiLife Var'`). — Birøktere er journalpliktige; appen gir ikke etterprøvbar dokumentasjon. — Legg til strukturerte felt (virkestoff-enum: oksalsyre-drypp/-damp, maursyre/MAQS, ApiLife Var, Apivar, Apistan) + dose/tilbakeholdelse.
+**[MEDIUM]** `services/treatment.ts` + `0006_treatments.sql:7-9` — Behandlingsloggen er fritekst (`product text`, `dose text`, placeholder `'Oxalsyre, ApiLife Var'` i Step3:218). Mangler **virkestoff**, **tilbakeholdelsestid** og journalstruktur. Birøktere er journalpliktige og oksalsyre/maursyre har tilbakeholdelseskrav. — Ingen etterprøvbar behandlingsjournal for Mattilsynet/mistanke. — Strukturér med virkestoff-enum (oksalsyre-drypp/-damp, maursyre/MAQS, ApiLife Var/timol, Apivar) + dose/tilbakeholdelse. — Innsats: M — Konfidens: HØY.
 
-**[MEDIUM]** `TreatmentRecommendationSection.tsx:38,81,107` — Anbefaler kun oksalsyre, Apivar, "oxalsyre-fordamping". MAQS/maursyre (eneste middel som virker gjennom forseglet yngel, relevant for norsk høst) og ApiLife Var nevnes ikke i anbefalingene (kun i sykdomsseed). Timing kobles til måned, ikke til kolonien sin yngelstatus/brunstperiode. — Ufullstendig behandlingsrådgivning for norsk klima. — Inkluder maursyre/MAQS for sen-sommer og koble vinter-oksalsyre til registrert yngelfri-status, ikke kun kalendermåned.
+**[MEDIUM]** `TreatmentRecommendationSection.tsx:68-107` — Behandlingstiming er koblet til **kalendermåned**, ikke koloniens yngelstatus. Vinter-oksalsyre anbefales på måned 12/1 uavhengig av om kolonien faktisk er yngelfri (forutsetningen for effekt). Maursyre/MAQS — det eneste midlet som virker gjennom forseglet yngel, relevant for norsk sen-sommer med yngel — nevnes ikke i anbefalingene (kun Apivar/oksalsyre). — Ufullstendig og potensielt feiltimet råd. — Koble vinter-oksalsyre til registrert yngelfri-status og legg maursyre inn for aug/sep. — Innsats: M — Konfidens: MEDIUM.
 
-**[MEDIUM]** `QueenSection.tsx:8-13` — Dronninghåndtering dekker opphav, rase, merkefarge og alder. Mangler **avlslinje/morlinje**, **5-års merkefargesyklus-validering** (farge bør avledes/sjekkes mot årstall — hvit=1/6, gul=2/7 osv.), og **nukleus/avleggerkobling**. Ingen kobling til dronningavl/celleoppdrett. — Avlsdokumentasjon og sporbarhet er begrenset for seriøse birøktere. — Legg til avlslinje-felt og auto-foreslå merkefarge fra `introducedAt`-år.
+**[MEDIUM]** `constants/beginnerGuide.ts:78,302` & `:182,322,329,186,198` — Språk-/terminologifeil: **"Amerikansk yngelrotte"** (2×) skal være «yngel*råte*» (rotte = gnager). **"Svirming/svirming/sverver"** brukes om sverming gjennom hele svermforebygging-artikkelen — korrekt norsk er «sverming/svermer» (slug heter riktig `svermforebygging`). Også «vokseldansen» (riktig: vrikke-/svingedans) og «hofstaten» (riktig: hoffstaten). — Svekker faglig troverdighet i en betalt app. — Korrekturles guiden. — Innsats: S — Konfidens: HØY.
 
-**[LAV]** `kalender/index.tsx` + `seasonChecklist.ts` — Sesongdekningen er god (vinterklargjøring aug–okt, oksalsyre des/jan, vårrevisjon mars, svermkontroll mai–jun, slynging jul, høstbehandling aug–sep). Mangler eksplisitt **vinterdødelighet-registrering i mars** (NBL fører nasjonal vintertapsstatistikk) og **sonejustering** (sone 1–8: Nord-Norge har annen timing enn Sør). — Checklist er statisk uavhengig av brukerens klimasone. — Gjør checklist-timing soneavhengig og legg inn vårtaps-logging.
+**[LAV]** `Step3.tsx:21` — `VARROA_METHODS = ['alkoholspyling','sukkerpuder','limbunn']`. «Sukkerrull» (rist 300 bier i melis, %-basis) og «sukkerpuder» (drysse på bunnbrett, nedfall) er to ulike metoder med ulik terskelbasis, men slås her sammen. Konsistent med `varroa.ts` (begge = per 100 bier), men birøktere skiller dem. — Mindre tolkningsrisiko. — Vurder å skille metodene. — Innsats: S — Konfidens: MEDIUM.
 
-**[LAV]** `Step4.tsx:20,56` — "Kubehumør"/temperament er 1–5 emoji uten faglig forankring (aggresjon, svermtendens, ro er separate akser). — Mindre presis enn NBL sin temperamentsvurdering. — Vurder separat aggresjon/ro-skala.
+**[LAV]** `QueenSection.tsx:10` & `constants/seasonChecklist.ts` — Dronning mangler **avlslinje/morlinje** og **auto-foreslått merkefarge fra årstall** (hvit=1/6, gul=2/7 … — fargesyklusen er beskrevet i guiden men ikke validert i QueenSection). Sesongchecklist er statisk uten **klimasone-justering** (sone 1–8) og mangler eksplisitt **vintertaps-/vårdødelighet-registrering i mars** (NBL fører nasjonal vintertapsstatistikk). — Begrenset for seriøse birøktere; checklist passer Sør-Norge bedre enn Nord. — Auto-foreslå merkefarge fra `introducedAt`; legg vårtaps-logging i mars. — Innsats: M — Konfidens: MEDIUM.
+
+## Konkurransegap og norsk fortrinn
+
+**5 funksjoner BeeKeepPal/Apiary Book har som BiVokter mangler:**
+1. **Fôring-logg** (sukker/fondant kg) — migrasjon `0011_feed` finnes men ingen UI.
+2. **Strukturert sykdoms-/diagnoseflyt i inspeksjon** — data finnes (`diseaseObservations`), flyt mangler.
+3. **Avlegger/splitt-sporing** med mor-kube-kobling (relevant for svermkontroll).
+4. **Eksport av behandlingsjournal** (PDF til Mattilsynet) — `services/report.ts` finnes for PDF, men ikke behandlingsspesifikt.
+5. **Sensor-/kontinuerlig vekt-integrasjon**.
+
+**3 ting som er/kan bli unikt norske:**
+1. **AI-varroaanalyse av klisterplate** (`analyze-varroa`) — sterkt differensierende.
+2. **Yr.no-værintegrasjon + norsk pollenkalender** med selje/lyng — lyngtrekk-varsel (august) er unikt norsk.
+3. **Mattilsynet-/NBL-forankret meldeplikt-flyt** — når sykdomsdata over (se HØY-funn) blir komplett, kan «meld til Mattilsynet»-knapp bli et reelt fortrinn.
 
 ## Topp-3 anbefalinger
-1. **Sentraliser varroaterskler** i delt konstantfil med metode→terskel→kilde, og fiks inkonsistensen mellom HealthScore og Recommendation (HØY). ~3 t.
-2. **Utvid inspeksjonsskjema** med droneyngel, lukt, og koble eksisterende `diseaseObservations`-felt til sykdomslista (HØY). ~6 t.
-3. **Strukturér behandlingslogg** med virkestoff-enum + dose/tilbakeholdelse for journalplikt, og legg MAQS/maursyre inn i anbefalinger (MEDIUM). ~5 t.
+1. **Fiks meldeplikt-data** (HØY+HØY): sett EFB `isNotifiable: true` og legg til liten kubebille + steinyngel. Direkte konsekvens for lovpålagt sykdomsvarsling. ~3 t.
+2. **Eksponer sykdoms-/droneyngel-/lukt-observasjon i wizarden** og koble eksisterende `diseaseObservations`-felt (HØY). Lav teknisk risiko — datalaget finnes. ~5 t.
+3. **Strukturér behandlingslogg** med virkestoff-enum + tilbakeholdelse, og legg maursyre/MAQS + yngelstatus-kobling i anbefalingene (MEDIUM). ~5 t.
 
-### Konkurransegap (BeeKeepPal / Beekeeper's Notebook)
-1. Strukturert sykdomsdiagnose-flyt i inspeksjon (BiVokter har data, men ikke flyt).
-2. Vekt/sensor-integrasjon for kontinuerlig overvåking.
-3. Foring-logg (sukker/fondant kg) — finnes som migrasjon `0011_feed` men ingen UI.
-4. Avlegger/splitt-sporing med mor-kube-kobling.
-5. Eksport av behandlingsjournal (PDF til Mattilsynet).
+---
 
-**Unikt norsk i BiVokter:** AI-varroaanalyse av klisterplate, Yr.no-værintegrasjon, norsk pollenkalender, NBL-/Mattilsynet-forankret sykdomsguide med meldeplikt, og norsk landbie som førstevalg-rase.
+**Kilder:** [Mattilsynet — krav til undersøkelse for visse bisykdommer](https://www.mattilsynet.no/dyr/produksjonsdyr/bier/krav-til-dyrehelse-ved-flytting-av-bier-i-norge/krav-til-undersokelse-for-visse-bisykdommer) · [Mattilsynet — liten kubebille](https://www.mattilsynet.no/dyr/dyresykdommer/liten-kubebille/hva-gjores-for-a-bekjempe-liten-kubebille-i-europa) · [Forskrift om birøkt (Lovdata)](https://lovdata.no/dokument/SFO/forskrift/2009-04-06-416) · [DMP — Terapianbefaling: behandling av bier mot Varroa destructor](https://www.dmp.no/veterinermedisin/terapianbefalinger-og-forskrivning-av-legemidler-til-dyr/terapianbefaling-behandling-av-bier-for-bekjempelse-av-varroa-destructor)

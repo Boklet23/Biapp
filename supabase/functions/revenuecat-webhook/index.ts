@@ -1,10 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// RevenueCat event types that affect subscription status
+// RevenueCat event types that affect subscription status.
+// SUBSCRIBER_ALIAS is NOT a downgrade — it only links a new app_user_id to an
+// existing subscriber and must never reset a paying user to starter.
 const DOWNGRADE_EVENTS = new Set([
   'EXPIRATION',
   'BILLING_ISSUE',
-  'SUBSCRIBER_ALIAS',
 ]);
 
 const UPGRADE_EVENTS = new Set([
@@ -16,6 +17,16 @@ const UPGRADE_EVENTS = new Set([
 ]);
 
 type SubscriptionTier = 'starter' | 'hobbyist' | 'profesjonell' | 'lag';
+
+/** Constant-time string comparison to avoid leaking the secret via timing. */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
 
 function entitlementsToTier(entitlements: string[]): SubscriptionTier {
   if (entitlements.includes('lag'))          return 'lag';
@@ -35,7 +46,7 @@ Deno.serve(async (req: Request) => {
   if (!webhookSecret) {
     return new Response('Server misconfiguration', { status: 500 });
   }
-  if (authHeader?.trim() !== webhookSecret.trim()) {
+  if (!authHeader || !timingSafeEqual(authHeader.trim(), webhookSecret.trim())) {
     return new Response('Unauthorized', { status: 401 });
   }
 
@@ -99,10 +110,13 @@ Deno.serve(async (req: Request) => {
     return new Response('Event ignored', { status: 200 });
   }
 
+  // tier_locked = manuelt tildelt tier (f.eks. testere med lag-tilgang).
+  // Webhooken skal aldri overstyre låste profiler — verken opp eller ned.
   const { error } = await supabase
     .from('profiles')
     .update({ subscription_tier: tier })
-    .eq('id', userId);
+    .eq('id', userId)
+    .eq('tier_locked', false);
 
   if (error) {
     // Not marked processed — RevenueCat will retry this event.

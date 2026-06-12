@@ -1,39 +1,49 @@
-# Agent 5 — Arkitektur
+# Agent 5 — Kodekvalitet og arkitektur
 
 ## Metainfo
-- **Filer lest:** `services/hive.ts`, `services/inspection.ts`, `services/subscription.ts`, `types/index.ts`, `lib/supabase.ts`, `lib/queryClient.ts`, `hooks/useEffectiveTier.ts`, utdrag av `components/hive/WeightSection.tsx`, `app/(app)/(tabs)/kuber/ny.tsx`, `services/collaboration.ts` (utdrag).
-- **Filer ikke funnet:** Kun én hook-fil eksisterer (`hooks/useEffectiveTier.ts`) — ingen `hooks/`-katalog med flere filer som antydet i oppgaven.
-- **Konfidensgrad:** Høy for service-/type-lag og React Query. Middels for komponentinterna (kun line-count + stikkprøver, ikke full lesing).
+- Filer lest: `services/hive.ts`, `services/inspection.ts`, `services/subscription.ts`, `services/feed.ts`, `services/collaboration.ts`, `services/profile.ts`, `services/queen.ts` (utdrag), `services/weight.ts` (utdrag), `services/swarmReport.ts` (utdrag), `types/index.ts`, `lib/supabase.ts`, `lib/queryClient.ts`, `hooks/useEffectiveTier.ts`, `app/_layout.tsx`, `constants/varroa.ts` (utdrag), grep-resultater på tvers av `app/`, `components/`, `services/`, `store/`
+- Filer ikke funnet: ingen
+- Diff mot forrige review: lest arkiv: ja. **FIKSET siden 10. juni:** (1) global `mutationCache.onError` viser nå toast når mutasjonen mangler egen handler (`lib/queryClient.ts:17-19`) — forrige HØY-funn løst; (2) varroa-terskler samlet i `constants/varroa.ts` med dokumentert historikk. **IKKE fikset:** `hjem/index.tsx` fortsatt 976 linjer, duplisert opplastingslogikk, usikre cast i `fetchMapHives`, iOS-mock-duplisering, manglende Zod på `analyzeVarroa`-respons.
 
 ## Sammendrag
-Kodebasen er ryddig: konsistent service-mønster med defensive `mapX()`-validatorer, ingen `: any`/`as any` i services/ eller types/, ingen TODO/FIXME/HACK i app-kode. Hovedfunn er arkitektoniske: muterende uten egen `onError` feiler stille (global mutationCache logger kun til Sentry, viser ingen toast), 9 komponenter over 300 linjer (hjem 976), og duplisert opplastings-/`mapX`-logikk mellom hive og inspection.
+Service-laget er gjennomgående solid: 13 av 14 `mapX()`-funksjoner validerer required-felt og bruker `typeof`-mønsteret for nullable, null `any` i services/types/hooks, null TODO/FIXME i hele kodebasen, og queryKeys er konsistente og kollisjonsfrie. Viktigste nye funn: `fetchProfile` svelger alle feil og returnerer `null` (`profile.ts:31`) — siden profilen bor i Zustand uten retry, nedgraderes en betalende bruker stille til starter-tier for hele sesjonen ved én transient nettverksfeil ved oppstart.
+
+## Fungerer godt (ikke rør)
+1. **mapX()-mønsteret** — `mapHive`, `mapInspection`, `mapQueen`, `mapWeight`, `mapSwarmReport`, `mapProfile` m.fl. kaster på manglende required-felt og narrower nullable korrekt (`services/hive.ts:193-218`).
+2. **Global feilhåndtering i React Query** — `lib/queryClient.ts` med Sentry + toast i både query- og mutationCache, med dobbel-toast-guard.
+3. **queryKey-disiplin** — konsekvent `['entitet', id]`-konvensjon, delte nøkler (`['all-inspections']` gjenbrukes av hjem/kalender/sammenlign) uten kollisjoner.
+4. **Ingen død kode i service-laget** — alle 19 services importeres av minst 1 fil; ingen TODO/FIXME/HACK/XXX i `*.ts`/`*.tsx`.
+5. **`constants/varroa.ts`** — eksemplarisk konsolidering med dokumentert hvorfor (HealthScore vs TreatmentRecommendation hadde drevet fra hverandre).
 
 ## Funn
 
-### HØY
-**[HØY]** `lib/queryClient.ts:12-16` — Global `mutationCache.onError` logger kun til Sentry og viser **ingen** toast (i motsetning til `queryCache.onError:9` som gjør begge). Muterende uten egen `onError` (f.eks. `components/hive/WeightSection.tsx:167-170`, `QueenSection`/`HarvestSection`/`TreatmentSection` delete-muterende, `feed`-muterende) feiler dermed stille for brukeren. — Konsekvens: Bruker tror sletting/lagring lyktes når den feilet. — Løsning: Legg `useToastStore.getState().show(error.message,'error')` i den globale `mutationCache.onError`, og fjern repeterte per-mutation `onError`-callbacks (DRY).
+**[HØY]** `services/profile.ts:31` — `if (error) return null;` i `fetchProfile` svelger alle DB-feil, og `app/_layout.tsx:53` gjør det samme: `.catch(() => setProfile(null))`. Profilen bor i Zustand (ikke React Query), så ingen retry/refetch skjer. `hooks/useEffectiveTier.ts:19`: `if (!profile) return 'starter';` — Konsekvens: én transient nettverksfeil ved kald start nedgraderer en betalende bruker stille til starter (paywalls overalt) for hele sesjonen, uten feilmelding. — Løsning: skill «feil» fra «mangler profil» (kast ved error), legg retry (eller flytt profil-fetch til React Query og speil til Zustand). — Innsats: M — Konfidens: HØY
 
-**[HØY]** `app/(app)/(tabs)/hjem/index.tsx` (976 linjer) — Langt over 800-grensen for én skjerm. — Konsekvens: Vanskelig å teste/vedlikeholde, høy koblingsgrad (6+ queries: hives, vær, høsting, inspeksjoner i samme fil). — Løsning: Trekk ut dashboard-seksjoner til `components/home/*` og en `useDashboardData()`-hook.
+**[HØY]** `app/(app)/(tabs)/hjem/index.tsx` (976 linjer) — uendret siden forrige review (da 976). 6 queries + presentasjon + `formatDate` + stilark i én fil. — Konsekvens: appens mest endrede skjerm er den minst testbare; over 800-grensen. — Løsning: trekk ut seksjoner til `components/home/*` + `useDashboardData()`-hook. — Innsats: M — Konfidens: HØY
 
-### MEDIUM
-**[MEDIUM]** `services/hive.ts:37-79` vs `services/inspection.ts:120-156` — `uploadHivePhoto` og `uploadInspectionPhoto` er nær identiske (content:// → file:// kopiering, ext/contentType-utledning, `FileSystem.uploadAsync`). — Konsekvens: Duplisert teknisk gjeld; én fiks må gjøres to steder. — Løsning: Ekstraher `lib/storageUpload.ts` med felles `uploadBinaryToStorage(bucket, fileName, uri, token)`.
+**[MEDIUM]** `services/feed.ts:62-70` — `toggleLike` ignorerer alle feil (ingen `error`-destrukturering): `await supabase.from('feed_likes').delete()...` etterfulgt av read-then-write av denormalisert teller: `const { count } = ...; await supabase.from('feed_posts').update({ likes: count ?? 0 })`. — Konsekvens: stille feil + race condition på likes-teller; RLS kan dessuten blokkere update av andres post-rad uten at noen merker det. Koden er sovende (skjult fane) men vedlikeholdt — feilen arves den dagen feed aktiveres. — Løsning: sjekk `error` på alle tre kall; flytt tellerøkning til DB-trigger eller RPC. — Innsats: S — Konfidens: HØY
 
-**[MEDIUM]** `app/(app)/(tabs)/kuber/ny.tsx` (609), `kuber/[id]/index.tsx` (548), `kuber/[id]/rediger.tsx` (517), `kalender/index.tsx` (424), `inspeksjon/ny.tsx` (394), `components/ui/UpgradeModal.tsx` (366), `components/hive/TreatmentSection.tsx` (314), `app/(app)/profil.tsx` (307) — 8 filer mellom 300–800 linjer. — Konsekvens: Lav kohesjon; skjema-state, mutasjoner og presentasjon blandet. — Løsning: Trekk skjemalogikk ut i custom hooks; del seksjoner i underkomponenter.
+**[MEDIUM]** `services/hive.ts:37-79` vs `services/inspection.ts:120-156` — `uploadHivePhoto`/`uploadInspectionPhoto` fortsatt nær identiske (content://-kopiering, ext/contentType-utledning, `FileSystem.uploadAsync`-kall med samme headers). Uendret siden forrige review. — Konsekvens: én bugfiks må gjøres to steder; de har alt divergert i feilmelding (`hive.ts:70` inkluderer `response.body`, `inspection.ts:152` ikke). — Løsning: `lib/storageUpload.ts` med felles `uploadBinaryToStorage(bucket, fileName, uri, token)`. — Innsats: S — Konfidens: HØY
 
-**[MEDIUM]** `services/hive.ts:171-181` (`fetchMapHives`) — RPC-rader mappes med usikre `row.x as string`/`as number`-cast uten validering, i motsetning til `mapHive`/`mapInspection` som validerer required-felt og kaster ved feil. — Konsekvens: Inkonsistent robusthet; korrupte RPC-rader gir runtime-feil lenger nede. — Løsning: Gjenbruk samme defensive mønster (typeof-sjekk + kast på manglende required).
+**[MEDIUM]** `services/hive.ts:171-181` — `fetchMapHives` mapper RPC-rader med usikre cast uten validering: `id: row.id as string, ... locationLat: row.location_lat as number`. Samme mønster i `services/associations.ts:64-77` og `services/diseases.ts:26-36` (`id: row.id as string` osv.). — Konsekvens: inkonsistent med de 9 validerende mapX-ene; korrupte rader gir kryptiske runtime-feil nedstrøms i kart/lister. — Løsning: samme defensive mønster (typeof-sjekk + kast). — Innsats: S — Konfidens: HØY
 
-**[MEDIUM]** `services/inspection.ts:233` & `types/index.ts:63` — `diseaseObservations` typet som `Record<string, unknown>` selv om input (`inspection.ts:27`) bruker `Record<string, boolean>`. — Konsekvens: Type-asymmetri inn vs ut; konsumenter må re-narrowe boolean. — Løsning: Bruk `Record<string, boolean> | null` begge veier.
+**[MEDIUM]** Filer over 400 linjer (7 stk): `hjem/index.tsx` 976 · `kuber/ny.tsx` 609 · `kuber/[id]/index.tsx` 548 · `kuber/[id]/rediger.tsx` 517 · `components/animations/HivePlaceholder.tsx` 432 · `kalender/index.tsx` 424 · `kuber/index.tsx` 417 · `components/info/HoneyForecastChart.tsx` 414. `ny.tsx` og `rediger.tsx` dupliserer dessuten skjema-state for samme entitet. — Løsning: felles `useHiveForm()`-hook for ny/rediger; del kalender i seksjoner. — Innsats: L — Konfidens: HØY
 
-### LAV
-**[LAV]** `services/subscription.ts:22,32,49,58` — Fire repeterte `{ entitlements: { active: {} } } as unknown as CustomerInfo` for iOS-mock. — Konsekvens: Duplisering; `as unknown as` omgår typesikkerhet. — Løsning: Én delt `const IOS_MOCK_CUSTOMER_INFO`-konstant.
+**[LAV]** `types/index.ts:63` — `diseaseObservations: Record<string, unknown> | null` ut, men input (`inspection.ts:27`) er `Record<string, boolean>`. Uendret siden forrige review. — Løsning: `Record<string, boolean> | null` begge veier. — Innsats: S — Konfidens: HØY
 
-**[LAV]** `services/hive.ts:101` — `Promise.race([query, timeout]) as Awaited<typeof query>` finnes kun i `fetchHives`; ingen andre fetch har timeout. — Konsekvens: Inkonsistent timeout-policy. — Løsning: Vurder felles `withTimeout()`-helper hvis timeout ønskes konsistent.
+**[LAV]** `services/subscription.ts:22,32,49,58` — fire repeterte `{ entitlements: { active: {} } } as unknown as CustomerInfo`. Uendret. — Løsning: én delt konstant. — Innsats: S — Konfidens: HØY
 
-**[LAV]** `services/inspection.ts:206` — `fetch().json() as VarroaAnalysis` uten Zod-validering av Edge Function-respons. — Konsekvens: Ekstern data ikke validert ved systemgrense (jf. coding-style). — Løsning: Zod-parse responsen.
+**[LAV]** `services/inspection.ts:206` — `await res.json() as VarroaAnalysis & { error?: string }` — Edge Function-respons valideres ikke (Zod finnes i stacken). — Innsats: S — Konfidens: HØY
 
-**[POSITIVT]** Ingen `: any`/`as any` i services/ eller types/; ingen TODO/FIXME/HACK/XXX i app-kode (kun i docs/reports); konsistente `queryKey`-konvensjoner (`['entitet', id]`); fornuftig global `staleTime` 5 min + `retry: 2`; `mapHive`/`mapInspection` validerer korrekt og bruker `typeof === 'string' ? x : null` for nullable felt iht. CLAUDE.md.
+**[LAV]** `services/hive.ts:88-101` — timeout-via-`Promise.race` finnes kun i `fetchHives`; ingen andre fetch har det. Inkonsistent policy. — Innsats: S — Konfidens: HØY
+
+**[LAV]** Duplisert datoformatering — lokal `formatDate`/`toLocaleDateString('nb-NO', ...)` definert i 10 filer (`kuber/[id]/index.tsx:123`, `HarvestSection.tsx:9`, `QueenSection.tsx:16`, `TreatmentSection.tsx:29`, `WeightSection.tsx:11`, `report.ts:6,10` m.fl.) med subtilt ulike options (med/uten år, short/long måned). — Løsning: `lib/date.ts` med 2–3 navngitte formatter. — Innsats: S — Konfidens: HØY
+
+**[LAV]** `app/(app)/(tabs)/feed/index.tsx:108` — `currentUserId={(profile as any)?.id}` — unødvendig `as any`; `profile` er typet `User | null` med `id`. Eneste reelle `any`-hull utenom legitime Expo Router-cast (18 stk, alle ruter/Mapbox). — Innsats: S — Konfidens: HØY
+
+**React Query-vurdering (pkt. 3):** Global `staleTime` 5 min + `retry: 2` er fornuftig default; vær har egen TTL i service. Statiske data (foreninger, utstyr, sykdommer) kunne hatt timer-lang staleTime, men dagens oppsett er ikke feil. Invalidering brukes konsekvent; `rediger.tsx:145-146` kombinerer korrekt `setQueryData(['hive', id])` + invalidate `['hives']`. Ingen kollisjoner funnet.
 
 ## Topp-3 anbefalinger
-1. **Vis toast i global `mutationCache.onError`** og fjern repeterte per-mutation `onError`. Hindrer stille feil ved sletting/lagring. (~1 t)
-2. **Ekstraher felles binær-opplasting** (`lib/storageUpload.ts`) brukt av hive- og inspection-foto. Fjerner duplisert teknisk gjeld. (~1,5 t)
-3. **Del opp `hjem/index.tsx` (976 linjer)** i seksjonskomponenter + `useDashboardData`-hook. Forbedrer testbarhet og kohesjon. (~3 t)
+1. **Fiks stille profil-feil** (`profile.ts:31` + `_layout.tsx:53`): kast ved DB-feil og legg retry/refetch på profil-lasting. Hindrer at betalende brukere mister tilgang ved transient feil. (M, direkte konverterings-/retentionseffekt)
+2. **Harden de tre usikre mapperne** (`fetchMapHives`, `associations`, `diseases`) + sjekk `error` i `feed.toggleLike`. Fire små fikser som lukker hele gapet i service-lagets ellers konsistente defensive mønster. (S–M samlet)
+3. **Splitt `hjem/index.tsx`** (976 linjer) i seksjonskomponenter + `useDashboardData()`. Står igjen fra forrige review og blokkerer testbarhet av appens viktigste skjerm. (M)
