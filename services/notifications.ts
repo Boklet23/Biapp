@@ -45,6 +45,18 @@ export async function requestNotificationPermission(): Promise<boolean> {
   return status === 'granted';
 }
 
+/**
+ * Sjekker varseltillatelse UTEN å vise OS-prompten. Brukes ved oppstart slik at
+ * vi ikke ber om tillatelse før brukeren har sett verdi — selve prompten eies av
+ * ActivationGuide steg 3 (etter første kube).
+ */
+export async function hasNotificationPermission(): Promise<boolean> {
+  if (Platform.OS === 'web' || isExpoGo) return false;
+  const { getPermissionsAsync } = await import('expo-notifications');
+  const { status } = await getPermissionsAsync();
+  return status === 'granted';
+}
+
 export async function scheduleEventNotification(
   eventId: string,
   title: string,
@@ -260,7 +272,9 @@ export async function registerPushToken(): Promise<void> {
   if (!projectId) return;
 
   try {
-    const granted = await requestNotificationPermission();
+    // Prompter ALDRI — registrerer kun token hvis tillatelse allerede er gitt.
+    // Selve prompten eies av ActivationGuide steg 3.
+    const granted = await hasNotificationPermission();
     if (!granted) return;
 
     const { getExpoPushTokenAsync } = await import('expo-notifications');

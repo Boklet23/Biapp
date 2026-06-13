@@ -50,4 +50,18 @@ export const SEASON_REMINDERS: SeasonReminder[] = [
     title: '❄️ Vinterklargjøring',
     body: 'Trekk inn inngangen, fjern honningkroppen og klargjør for vinteren.',
   },
+  {
+    id: 'season_oxalic_acid',
+    month: 11,
+    day: 20,
+    title: '🧪 Oksalsyrebehandling',
+    body: 'Kuben er nå yngelfri — beste tid for oksalsyre mot varroa (drypp eller fordamping, >90 % effekt). Gjøres én gang i rolig, kaldt vær.',
+  },
+  {
+    id: 'season_winter_check',
+    month: 1,
+    day: 15,
+    title: '🔍 Vintersjekk',
+    body: 'Lytt ved kuben på en mild dag, sjekk at den har mat (løft bakkant) og at flyåpningen er fri for døde bier og snø. Ikke åpne kuben i kulda.',
+  },
 ];

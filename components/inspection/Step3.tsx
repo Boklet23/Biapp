@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   StyleSheet,
@@ -11,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { Colors } from '@/constants/colors';
 import { FontFamily } from '@/constants/typography';
 import { analyzeVarroa } from '@/services/inspection';
@@ -51,42 +51,51 @@ export function Step3({
   const [analyzing, setAnalyzing] = useState(false);
   const [aiResult, setAiResult]   = useState<VarroaAnalysis | null>(null);
   const [imageUri, setImageUri]   = useState<string | null>(null);
+  const [aiError, setAiError]     = useState(false);
   const showToast = useToastStore((s) => s.show);
 
-  const handleAiAnalyze = async () => {
+  const runAnalysis = async (uri: string) => {
+    setAnalyzing(true);
+    setAiError(false);
     try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert('Tillatelse nektet', 'Gi BiVokter tilgang til bilder i innstillingene.');
-        return;
-      }
+      // Skaler ned til maks 1280px og komprimer før opplasting — et ubeskåret
+      // kamerafoto er 2–4 MB base64 og sløser både kvote og båndbredde.
+      const resized = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 1280 } }],
+        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true },
+      );
+      if (!resized.base64) throw new Error('Kunne ikke klargjøre bildet. Prøv igjen.');
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.5,
-        base64: true,
-        exif: false,
-        allowsEditing: false,
-      });
-
-      if (result.canceled || !result.assets[0]?.base64) return;
-
-      const asset = result.assets[0];
-      setImageUri(asset.uri);
-      setAnalyzing(true);
-
-      const mimeType = asset.mimeType === 'image/png' ? 'image/png'
-                     : asset.mimeType === 'image/webp' ? 'image/webp'
-                     : 'image/jpeg';
-
-      const analysis = await analyzeVarroa(asset.base64!, mimeType);
+      const analysis = await analyzeVarroa(resized.base64, 'image/jpeg');
       setAiResult(analysis);
       onAiResult(analysis);
     } catch (err: unknown) {
+      setAiError(true);
       showToast((err as Error).message ?? 'Analyse feilet', 'error');
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  const handleAiAnalyze = async () => {
+    // Photo Picker (Android 13+) trenger ingen tillatelse — vi spør derfor ikke,
+    // i tråd med at READ_MEDIA-tillatelsene er fjernet fra appen.
+    let pickedUri: string;
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        exif: false,
+        allowsEditing: false,
+      });
+      if (result.canceled || !result.assets[0]?.uri) return;
+      pickedUri = result.assets[0].uri;
+    } catch {
+      showToast('Kunne ikke åpne bildevelgeren. Prøv igjen.', 'error');
+      return;
+    }
+    setImageUri(pickedUri);
+    await runAnalysis(pickedUri);
   };
 
   const severity = aiResult ? (SEVERITY_META[aiResult.severity] ?? SEVERITY_META.low) : null;
@@ -136,18 +145,32 @@ export function Step3({
             </View>
           </View>
         ) : (
-          <Pressable
-            style={({ pressed }) => [styles.aiBtn, pressed && { opacity: 0.75 }]}
-            onPress={handleAiAnalyze}
-            disabled={analyzing}
-            accessibilityLabel="Analyser varroabilde med AI"
-          >
-            {analyzing ? (
-              <ActivityIndicator color={Colors.white} size="small" />
-            ) : (
-              <Text style={styles.aiBtnText}>🔬  Analyser klisterplate med AI</Text>
+          <>
+            <Pressable
+              style={({ pressed }) => [styles.aiBtn, pressed && { opacity: 0.75 }]}
+              onPress={handleAiAnalyze}
+              disabled={analyzing}
+              accessibilityLabel="Analyser varroabilde med AI"
+            >
+              {analyzing ? (
+                <ActivityIndicator color={Colors.white} size="small" />
+              ) : (
+                <Text style={styles.aiBtnText}>🔬  Analyser klisterplate med AI</Text>
+              )}
+            </Pressable>
+            {aiError && imageUri && !analyzing && (
+              <Pressable
+                style={({ pressed }) => [styles.retryBtn, pressed && { opacity: 0.75 }]}
+                onPress={() => runAnalysis(imageUri)}
+                accessibilityLabel="Prøv analysen på nytt med samme bilde"
+              >
+                <Text style={styles.retryBtnText}>↻  Prøv igjen med samme bilde</Text>
+              </Pressable>
             )}
-          </Pressable>
+            <Text style={styles.aiPrivacyNote}>
+              Bildet sendes kryptert til en AI-tjeneste for analyse og lagres ikke der.
+            </Text>
+          </>
         )}
 
         {aiResult && severity && (
@@ -257,6 +280,23 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   aiBtnLockedSub: { fontSize: 11, color: Colors.dark + 'AA' },
+  retryBtn: {
+    marginTop: 8,
+    borderRadius: 10,
+    paddingVertical: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: Colors.info,
+  },
+  retryBtnText: { fontSize: 13, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.info },
+  aiPrivacyNote: {
+    fontSize: 11,
+    fontFamily: FontFamily.regular,
+    color: Colors.mid,
+    marginTop: 8,
+    lineHeight: 15,
+  },
   aiBtnText: {
     fontSize: 14,
     fontWeight: '700',

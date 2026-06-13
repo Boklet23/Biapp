@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/auth';
 import { useToastStore } from '@/store/toast';
 import { GlobalToast } from '@/components/ui/Toast';
 import { Colors } from '@/constants/colors';
-import { requestNotificationPermission, registerPushToken, scheduleSeasonalReminders } from '@/services/notifications';
+import { hasNotificationPermission, registerPushToken, scheduleSeasonalReminders } from '@/services/notifications';
 import { applyCustomerInfo, initPurchases } from '@/services/subscription';
 
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -17,10 +17,17 @@ export default function AppLayout() {
 
   useEffect(() => {
     if (!session) return;
-    requestNotificationPermission()
-      .then((granted) => { if (granted) scheduleSeasonalReminders().catch(() => {}); })
+    // Be ALDRI om varseltillatelse ved oppstart (før verdi er vist) — kun
+    // registrer token + planlegg påminnelser hvis tillatelse alt er gitt.
+    // Selve prompten eies av ActivationGuide steg 3 etter første kube.
+    hasNotificationPermission()
+      .then((granted) => {
+        if (granted) {
+          registerPushToken();
+          scheduleSeasonalReminders().catch(() => {});
+        }
+      })
       .catch(() => {});
-    registerPushToken();
     if (!isExpoGo) {
       initPurchases(session.user.id)
         .then(applyCustomerInfo)

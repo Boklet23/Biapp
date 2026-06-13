@@ -54,6 +54,11 @@ export function ReportSwarmModal({ visible, onClose, onSubmit, loading, location
           keyboardType="email-address"
         />
 
+        <Text style={styles.privacyNote}>
+          ⓘ  Posisjonen og kontaktinfoen din blir synlig for andre birøktere i appen
+          så de kan hente svermen. Del kun kontaktinfo du er komfortabel med å vise offentlig.
+        </Text>
+
         <Pressable
           style={({ pressed }) => [styles.submitBtn, pressed && { opacity: 0.85 }, loading && { opacity: 0.6 }]}
           onPress={handleSubmit}
@@ -103,6 +108,14 @@ const styles = StyleSheet.create({
     borderColor: Colors.mid + '20',
   },
   multiline: { height: 80, paddingTop: 12, textAlignVertical: 'top' },
+  privacyNote: {
+    fontSize: 12,
+    color: Colors.mid,
+    lineHeight: 17,
+    backgroundColor: Colors.light,
+    borderRadius: 10,
+    padding: 12,
+  },
   submitBtn: {
     backgroundColor: Colors.honey,
     borderRadius: 14,

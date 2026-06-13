@@ -48,6 +48,7 @@ function Bee({ top, left, delayMs, scale = 1 }: BeeProps) {
 export default function Welcome() {
   const insets = useSafeAreaInsets();
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState('');
 
   return (
     <View style={styles.container}>
@@ -107,12 +108,22 @@ export default function Welcome() {
             <Text style={styles.primaryBtnArrow}>→</Text>
           </Pressable>
 
+          {googleError ? <Text style={styles.googleError}>{googleError}</Text> : null}
+
           <Pressable
             style={({ pressed }) => [styles.googleBtn, pressed && { opacity: 0.85 }]}
             onPress={async () => {
+              setGoogleError('');
               setGoogleLoading(true);
-              try { await signInWithGoogle(); } catch { /* handled by googleAuth */ }
-              finally { setGoogleLoading(false); }
+              // signInWithGoogle returnerer stille ved brukeravbrudd og kaster kun
+              // ved ekte OAuth-feil — vis derfor feilen i stedet for å svelge den
+              try {
+                await signInWithGoogle();
+              } catch {
+                setGoogleError('Google-innlogging feilet. Prøv igjen eller bruk e-post.');
+              } finally {
+                setGoogleLoading(false);
+              }
             }}
             disabled={googleLoading}
             accessibilityRole="button"
@@ -311,6 +322,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
+  },
+  googleError: {
+    fontSize: 13,
+    color: '#FFB3A8',
+    textAlign: 'center',
+    fontFamily: 'Manrope_500Medium',
+    marginBottom: 2,
   },
   googleBtnIcon: { fontSize: 16, fontWeight: '800', color: '#ffffff' },
   googleBtnText: {

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { Colors, Shadows } from '@/constants/colors';
 import { FontFamily } from '@/constants/typography';
+import { registerPushToken, scheduleSeasonalReminders } from '@/services/notifications';
 
 const DISMISSED_KEY = 'bivokter_activation_guide_dismissed';
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -62,12 +63,40 @@ export function ActivationGuide({ hiveCount, inspectionCount }: ActivationGuideP
 
   if (dismissed !== false) return null;
 
+  const enableNotifications = () => {
+    if (isExpoGo) return;
+    // Forklarende pre-prompt før OS-dialogen — på Android 13+ får man i praksis
+    // bare ett forsøk, så vi forklarer verdien først for å maksimere aksept.
+    Alert.alert(
+      'Slå på varsler?',
+      'Få påminnelser om inspeksjoner, svermetid og varroabehandling til rett tid i sesongen.',
+      [
+        { text: 'Ikke nå', style: 'cancel' },
+        {
+          text: 'Slå på',
+          onPress: () => {
+            import('expo-notifications').then(({ requestPermissionsAsync }) => {
+              requestPermissionsAsync().then(({ status }) => {
+                const granted = status === 'granted';
+                setNotificationsGranted(granted);
+                if (granted) {
+                  registerPushToken();
+                  scheduleSeasonalReminders().catch(() => {});
+                }
+              }).catch(() => {});
+            }).catch(() => {});
+          },
+        },
+      ],
+    );
+  };
+
   const steps: Step[] = [
     {
       label: 'Legg til din første kube',
       hint: 'Registrer kube med navn og plassering',
       done: step1Done,
-      onPress: () => router.push('/(app)/(tabs)/kuber' as any),
+      onPress: () => router.push('/(app)/(tabs)/kuber/ny' as any),
     },
     {
       label: 'Gjennomfør en inspeksjon',
@@ -79,14 +108,7 @@ export function ActivationGuide({ hiveCount, inspectionCount }: ActivationGuideP
       label: 'Aktiver varsler',
       hint: 'Få påminnelser om inspeksjoner og varroa',
       done: step3Done,
-      onPress: () => {
-        if (isExpoGo) return;
-        import('expo-notifications').then(({ requestPermissionsAsync }) => {
-          requestPermissionsAsync().then(({ status }) => {
-            setNotificationsGranted(status === 'granted');
-          }).catch(() => {});
-        }).catch(() => {});
-      },
+      onPress: enableNotifications,
     },
   ];
 

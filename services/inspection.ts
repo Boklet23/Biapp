@@ -186,6 +186,8 @@ export async function deleteInspectionMedia(id: string): Promise<void> {
   if (error) throw error;
 }
 
+const ANALYZE_TIMEOUT_MS = 30_000;
+
 export async function analyzeVarroa(
   imageBase64: string,
   mediaType: 'image/jpeg' | 'image/png' | 'image/webp' = 'image/jpeg',
@@ -194,16 +196,37 @@ export async function analyzeVarroa(
   if (!session) throw new Error('Ikke innlogget');
 
   const url = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/analyze-varroa`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ imageBase64, mediaType }),
-  });
 
-  const data = await res.json() as VarroaAnalysis & { error?: string };
+  // AbortController hindrer at spinneren henger evig hvis AI-tjenesten ikke svarer
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ANALYZE_TIMEOUT_MS);
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ imageBase64, mediaType }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error('Analysen tok for lang tid. Sjekk nettforbindelsen og prøv igjen.');
+    }
+    throw new Error('Kunne ikke nå AI-tjenesten. Sjekk nettforbindelsen og prøv igjen.');
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  let data: VarroaAnalysis & { error?: string };
+  try {
+    data = await res.json() as VarroaAnalysis & { error?: string };
+  } catch {
+    throw new Error('Uventet svar fra AI-tjenesten. Prøv igjen med et tydeligere bilde.');
+  }
   if (!res.ok) throw new Error(data.error ?? 'Analyse feilet');
   return data;
 }

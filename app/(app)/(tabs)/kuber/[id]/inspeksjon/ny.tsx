@@ -175,19 +175,20 @@ export default function NyInspeksjon() {
   }, [hive]);
 
   const handleAddPhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('Tillatelse nektet', 'Gi BiVokter tilgang til bilder i innstillingene.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-      allowsEditing: false,
-      exif: false,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setPhotoUris((prev) => [...prev, result.assets[0].uri]);
+    // Photo Picker trenger ingen tillatelse (Android 13+) — vi spør derfor ikke,
+    // i tråd med at READ_MEDIA-tillatelsene er fjernet fra appen.
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+        allowsEditing: false,
+        exif: false,
+      });
+      if (!result.canceled && result.assets[0]) {
+        setPhotoUris((prev) => [...prev, result.assets[0].uri]);
+      }
+    } catch {
+      showToast('Kunne ikke åpne bildevelgeren. Prøv igjen.', 'error');
     }
   };
 

@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '@/components/ui/Screen';
+import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { Colors, Shadows } from '@/constants/colors';
 import { FontFamily } from '@/constants/typography';
 
@@ -11,6 +13,8 @@ interface ProGateProps {
 
 /** Vises når en bruker uten Profesjonell-tilgang når en gated skjerm. */
 export function ProGate({ feature }: ProGateProps) {
+  const [upgradeVisible, setUpgradeVisible] = useState(false);
+
   return (
     <Screen>
       <View style={styles.wrap}>
@@ -21,12 +25,27 @@ export function ProGate({ feature }: ProGateProps) {
         </Text>
         <Pressable
           style={({ pressed }) => [styles.btn, pressed && { opacity: 0.85 }]}
+          onPress={() => setUpgradeVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`Oppgrader til Profesjonell for å bruke ${feature}`}
+        >
+          <Text style={styles.btnText}>Oppgrader til Profesjonell</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
           onPress={() => router.back()}
           accessibilityRole="button"
         >
-          <Text style={styles.btnText}>Tilbake</Text>
+          <Text style={styles.backText}>Tilbake</Text>
         </Pressable>
       </View>
+
+      <UpgradeModal
+        visible={upgradeVisible}
+        onClose={() => setUpgradeVisible(false)}
+        title="Oppgrader til Profesjonell"
+        subtitle={`${feature} og mer er inkludert i Profesjonell.`}
+      />
     </Screen>
   );
 }
@@ -52,4 +71,6 @@ const styles = StyleSheet.create({
     ...Shadows.card,
   },
   btnText: { fontSize: 15, fontWeight: '700', fontFamily: FontFamily.bold, color: Colors.dark },
+  backBtn: { paddingVertical: 10, paddingHorizontal: 20 },
+  backText: { fontSize: 14, fontFamily: FontFamily.regular, color: Colors.mid },
 });

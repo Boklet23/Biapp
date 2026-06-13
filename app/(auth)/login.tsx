@@ -20,6 +20,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [serverError, setServerError] = useState('');
+  const [infoMessage, setInfoMessage] = useState('');
+  const [resetting, setResetting] = useState(false);
 
   const handleLogin = async () => {
     setServerError('');
@@ -49,6 +51,26 @@ export default function Login() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    setServerError('');
+    setInfoMessage('');
+    const emailCheck = z.string().email().safeParse(email.trim());
+    if (!emailCheck.success) {
+      setErrors({ email: 'Skriv inn e-postadressen din først' });
+      return;
+    }
+    setErrors({});
+    setResetting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(emailCheck.data);
+    setResetting(false);
+    // Avslør ikke om e-posten finnes (kontoenumerering) — samme melding uansett
+    if (error) {
+      setServerError('Kunne ikke sende e-post akkurat nå. Prøv igjen om litt.');
+    } else {
+      setInfoMessage('Hvis adressen er registrert, har vi sendt en lenke for å tilbakestille passordet. Sjekk innboksen din.');
+    }
+  };
+
   const handleGoogleLogin = async () => {
     setServerError('');
     setGoogleLoading(true);
@@ -70,6 +92,7 @@ export default function Login() {
         <Text style={styles.title}>Logg inn</Text>
 
         {serverError ? <Text style={styles.serverError}>{serverError}</Text> : null}
+        {infoMessage ? <Text style={styles.infoMessage}>{infoMessage}</Text> : null}
 
         <Input
           label="E-post"
@@ -88,6 +111,18 @@ export default function Login() {
           autoComplete="password"
           error={errors.password}
         />
+
+        <Pressable
+          onPress={handleForgotPassword}
+          disabled={resetting}
+          style={styles.forgotWrap}
+          accessibilityRole="button"
+          accessibilityLabel="Tilbakestill passordet ditt"
+        >
+          <Text style={styles.forgotText}>
+            {resetting ? 'Sender …' : 'Glemt passord?'}
+          </Text>
+        </Pressable>
 
         <Button label="Logg inn" onPress={handleLogin} loading={loading} />
 
@@ -146,6 +181,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontSize: 14,
   },
+  infoMessage: {
+    backgroundColor: Colors.successSoft,
+    color: Colors.dark,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  forgotWrap: { alignSelf: 'flex-end', marginTop: -4, marginBottom: 12, padding: 4 },
+  forgotText: { color: Colors.honeyDark, fontSize: 13, fontWeight: '600' },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   footerText: { color: Colors.mid, fontSize: 14 },
   link: { color: Colors.honeyDark, fontSize: 14, fontWeight: '600' },
