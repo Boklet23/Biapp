@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     color: Colors.dark,  // honeyDark on amber fails WCAG AA — dark provides 14:1 contrast
   },
   ghostLabel: {
-    color: Colors.honeyDark,
+    color: Colors.honeyText,
   },
   dangerLabel: {
     color: Colors.white,

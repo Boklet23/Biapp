@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   moodBig: { fontSize: 36 },
-  moodBigLabel: { fontSize: 18, fontWeight: '700', color: Colors.honeyDark },
+  moodBigLabel: { fontSize: 18, fontWeight: '700', color: Colors.honeyText },
 
   section: { marginBottom: 20 },
   sectionTitle: {

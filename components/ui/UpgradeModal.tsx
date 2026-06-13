@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  saveBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.honeyDark },
+  saveBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.honeyText },
 
   content: { padding: 20, gap: 16, paddingBottom: 40 },
 
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 3,
   },
-  popularBadgeText: { fontSize: 12, fontWeight: '700', color: Colors.honeyDark },
+  popularBadgeText: { fontSize: 12, fontWeight: '700', color: Colors.honeyText },
 
   tierHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   tierLabel: { fontSize: 18, fontWeight: '800', color: Colors.dark },

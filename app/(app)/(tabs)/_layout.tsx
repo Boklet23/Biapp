@@ -16,7 +16,9 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.honey,
-        tabBarInactiveTintColor: 'rgba(255,255,255,0.40)',
+        // 0.40 hvit på mørk = 3.80:1 (under AA). 0.62 gir ~5.3:1 og holder
+        // fortsatt tydelig skille mot aktiv (honning) fane.
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.62)',
         tabBarStyle: {
           backgroundColor: Colors.dark,
           borderTopColor: 'rgba(255,255,255,0.06)',

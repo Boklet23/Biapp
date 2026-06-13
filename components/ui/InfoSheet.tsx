@@ -94,5 +94,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
-  closeBtnText: { fontSize: 16, fontWeight: '700', color: Colors.honeyDark },
+  closeBtnText: { fontSize: 16, fontWeight: '700', color: Colors.honeyText },
 });

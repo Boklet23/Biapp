@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 20,
     fontWeight: '600',
-    color: Colors.honeyDark,
+    color: Colors.honeyText,
     lineHeight: 24,
   },
   valueBox: {

@@ -16,6 +16,10 @@ SplashScreen.preventAutoHideAsync();
 
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  // Skill produksjonskrasj fra preview/dev i Sentry. Settes per EAS-profil
+  // (eas.json env). Produksjonsprofilen laster også opp sourcemaps
+  // (SENTRY_DISABLE_AUTO_UPLOAD=false) — krever SENTRY_AUTH_TOKEN som EAS-secret.
+  environment: process.env.EXPO_PUBLIC_APP_ENV ?? (__DEV__ ? 'development' : 'production'),
   sendDefaultPii: false,
   enableLogs: true,
 });

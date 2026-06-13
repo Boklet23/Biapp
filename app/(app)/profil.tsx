@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   },
   levelBtnActive: { borderColor: Colors.honeyDark, backgroundColor: Colors.honey + '15' },
   levelBtnText: { fontSize: 13, fontWeight: '600', color: Colors.mid },
-  levelBtnTextActive: { color: Colors.honeyDark },
+  levelBtnTextActive: { color: Colors.honeyText },
   readOnly: {
     backgroundColor: Colors.light,
     borderRadius: 10,
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   },
   upgradeRowTier: { fontSize: 15, fontWeight: '600', color: Colors.dark },
   upgradeRowSub: { fontSize: 12, color: Colors.mid, marginTop: 2 },
-  upgradeRowCta: { fontSize: 14, fontWeight: '700', color: Colors.honeyDark },
+  upgradeRowCta: { fontSize: 14, fontWeight: '700', color: Colors.honeyText },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: 12,
     fontFamily: FontFamily.medium,
-    color: Colors.honeyDark,
+    color: Colors.honeyText,
   },
   metaAlert: {
     color: Colors.error,

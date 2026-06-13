@@ -220,5 +220,5 @@ const styles = StyleSheet.create({
 
   skipBtn: { paddingVertical: 4 },
   skipText: { fontSize: 13, fontFamily: FontFamily.regular, color: Colors.mid },
-  skipLink: { color: Colors.honeyDark, fontFamily: FontFamily.bold, fontWeight: '700' },
+  skipLink: { color: Colors.honeyText, fontFamily: FontFamily.bold, fontWeight: '700' },
 });

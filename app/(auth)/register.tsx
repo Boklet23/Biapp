@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   footerText: { color: Colors.mid, fontSize: 14 },
-  link: { color: Colors.honeyDark, fontSize: 14, fontWeight: '600' },
+  link: { color: Colors.honeyText, fontSize: 14, fontWeight: '600' },
   consentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   checkbox: {
     width: 22,
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   checkboxChecked: { backgroundColor: Colors.honey, borderColor: Colors.honey },
   checkmark: { fontSize: 13, fontWeight: '700', color: Colors.white },
   consentText: { flex: 1, fontSize: 13, color: Colors.mid, lineHeight: 20 },
-  consentLink: { color: Colors.honeyDark, fontWeight: '600' },
+  consentLink: { color: Colors.honeyText, fontWeight: '600' },
   termsError: { fontSize: 13, color: Colors.error, marginTop: -8 },
   verificationBox: { backgroundColor: '#EBF5FB', borderRadius: 12, padding: 16, marginBottom: 16, gap: 12 },
   verificationTitle: { fontSize: 16, color: Colors.dark, fontWeight: '700' },
@@ -282,8 +282,8 @@ const styles = StyleSheet.create({
   mailBtn: { alignItems: 'center', paddingVertical: 12, borderRadius: 10, backgroundColor: Colors.honey },
   mailBtnText: { color: Colors.dark, fontSize: 15, fontWeight: '700' },
   loginBtn: { alignItems: 'center', paddingVertical: 11, borderRadius: 10, borderWidth: 1.5, borderColor: Colors.honeyDark },
-  loginBtnText: { color: Colors.honeyDark, fontSize: 14, fontWeight: '600' },
-  resendLink: { color: Colors.honeyDark, fontSize: 13, fontWeight: '600', textAlign: 'center', paddingTop: 2 },
+  loginBtnText: { color: Colors.honeyText, fontSize: 14, fontWeight: '600' },
+  resendLink: { color: Colors.honeyText, fontSize: 13, fontWeight: '600', textAlign: 'center', paddingTop: 2 },
 
   divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 20 },
   dividerLine: { flex: 1, height: 1, backgroundColor: Colors.mid + '25' },

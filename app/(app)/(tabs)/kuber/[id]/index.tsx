@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
   emptyHint: { fontSize: 13, fontFamily: FontFamily.regular, color: Colors.mid, textAlign: 'center' },
   emptyText: { fontSize: 14, fontFamily: FontFamily.regular, color: Colors.mid },
   showMoreBtn: { paddingVertical: 12, alignItems: 'center' },
-  showMoreText: { fontSize: 13, fontFamily: FontFamily.medium, color: Colors.honeyDark },
+  showMoreText: { fontSize: 13, fontFamily: FontFamily.medium, color: Colors.honeyText },
   notesText: { fontSize: 14, fontFamily: FontFamily.regular, color: Colors.dark, lineHeight: 21 },
 
   retryBtn: {

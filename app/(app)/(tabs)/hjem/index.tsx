@@ -782,7 +782,7 @@ const styles = StyleSheet.create({
   trialBannerCta: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.honeyDark,
+    color: Colors.honeyText,
     marginLeft: 8,
   },
 
@@ -807,7 +807,7 @@ const styles = StyleSheet.create({
   upgradeNudgeCta: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.honeyDark,
+    color: Colors.honeyText,
     marginLeft: 8,
   },
 

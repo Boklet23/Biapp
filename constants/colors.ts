@@ -6,6 +6,9 @@ export const Colors = {
   honeyLight: '#FFD77A',
   honeyWash: '#FFF3D6',
   amber: '#FFF3DC',
+  // Tekst-trygg honning for LYS bakgrunn — ~5.65:1 mot hvit (WCAG AA).
+  // honeyDark (#D4890A) er kun 2.84:1 og skal IKKE brukes på tekst.
+  honeyText: '#8F5B00',
 
   // Surfaces
   dark: '#1A1A2E',

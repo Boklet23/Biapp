@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.honeyDark,
+    color: Colors.honeyText,
   },
   row: {
     flexDirection: 'row',

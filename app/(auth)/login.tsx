@@ -191,10 +191,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   forgotWrap: { alignSelf: 'flex-end', marginTop: -4, marginBottom: 12, padding: 4 },
-  forgotText: { color: Colors.honeyDark, fontSize: 13, fontWeight: '600' },
+  forgotText: { color: Colors.honeyText, fontSize: 13, fontWeight: '600' },
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
   footerText: { color: Colors.mid, fontSize: 14 },
-  link: { color: Colors.honeyDark, fontSize: 14, fontWeight: '600' },
+  link: { color: Colors.honeyText, fontSize: 14, fontWeight: '600' },
 
   divider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 20 },
   dividerLine: { flex: 1, height: 1, backgroundColor: Colors.mid + '25' },
