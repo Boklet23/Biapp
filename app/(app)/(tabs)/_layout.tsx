@@ -49,6 +49,14 @@ export default function TabsLayout() {
             <TabIcon emoji="🐝" label="Mine Kuber" focused={focused} />
           ),
         }}
+        listeners={({ navigation }) => ({
+          // Kuber-fanen er en Stack. Uten dette gjenopprettes sist åpnede
+          // kube ved fanebytte – vi tvinger alltid tilbake til oversikten.
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('kuber', { screen: 'index' });
+          },
+        })}
       />
       <Tabs.Screen
         name="kalender/index"

@@ -4,9 +4,10 @@ import { Colors } from '@/constants/colors';
 import { useToastStore } from '@/store/toast';
 
 const TYPE_CONFIG = {
+  // Mørkere bakgrunner enn Colors.success/info — hvit tekst passerer WCAG AA.
   error:   { bg: '#C0392B', icon: '⚠️' },
-  success: { bg: Colors.success, icon: '✓' },
-  info:    { bg: Colors.info, icon: 'ℹ️' },
+  success: { bg: '#2E7D32', icon: '✓' },
+  info:    { bg: '#1F6FA8', icon: 'ℹ️' },
 } as const;
 
 export function GlobalToast() {

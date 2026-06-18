@@ -23,7 +23,8 @@ export const Colors = {
   ink: '#1A1A2E',
   inkSoft: '#3A3A52',
   mid: '#4A4A6A',
-  muted: '#8A8A9A',
+  // Mørknet fra #8A8A9A (2.97:1) til ~5.0:1 mot hvit — WCAG AA for sekundærtekst.
+  muted: '#6E6E80',
   mutedLight: '#B8B8C4',
 
   // Semantic

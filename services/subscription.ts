@@ -20,6 +20,10 @@ export async function initPurchases(userId: string): Promise<CustomerInfo> {
     // iOS: ikke konfigurert ennå — returner mock CustomerInfo med starter-tier
     return { entitlements: { active: {} } } as unknown as CustomerInfo;
   }
+  // Fail-fast: uten nøkkel ville configure() stille gi feil tier til betalende.
+  if (!ANDROID_KEY) {
+    throw new Error('RevenueCat Android-nøkkel mangler (EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ikke satt)');
+  }
   Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.ERROR);
   await Purchases.configure({ apiKey: ANDROID_KEY, appUserID: userId });
   return Purchases.getCustomerInfo();

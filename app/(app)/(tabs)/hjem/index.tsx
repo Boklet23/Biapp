@@ -169,6 +169,9 @@ export default function Hjem() {
 
   const activeHives = useMemo(() => hives.filter((h) => h.isActive), [hives]);
   const alerts = useMemo(() => buildAlerts(hives, lastInspectionByHive), [hives, lastInspectionByHive]);
+  // Én kube kan utløse flere varseltyper (varroa + forsinket + sverming).
+  // Tell unike kuber, ikke rå varsler, så banneret matcher navnelisten.
+  const alertHiveCount = useMemo(() => new Set(alerts.map((a) => a.hiveId)).size, [alerts]);
 
   const urgentInspHives = useMemo(() =>
     [...activeHives].sort((a, b) => {
@@ -213,10 +216,14 @@ export default function Hjem() {
   const handleGenerateReport = useCallback(async () => {
     setReportLoading(true);
     try {
-      const [reportInspections, treatments] = await Promise.all([
+      // allSettled: lag rapport på det som lyktes — én feilende kilde (f.eks.
+      // behandlinger) skal ikke blokkere hele rapporten.
+      const [inspResult, treatmentsResult] = await Promise.allSettled([
         fetchAllInspections(),
         fetchAllTreatments(),
       ]);
+      const reportInspections = inspResult.status === 'fulfilled' ? inspResult.value : [];
+      const treatments = treatmentsResult.status === 'fulfilled' ? treatmentsResult.value : [];
       await generateAndShareReport({
         year: currentYear,
         hives,
@@ -226,6 +233,9 @@ export default function Hjem() {
         weights: [],
         displayName: profile?.displayName ?? null,
       });
+      if (inspResult.status === 'rejected' || treatmentsResult.status === 'rejected') {
+        showToast('Rapport laget, men noen data kunne ikke hentes', 'info');
+      }
     } catch {
       showToast('Kunne ikke generere rapport', 'error');
     } finally {
@@ -395,10 +405,15 @@ export default function Hjem() {
         )}
 
         {/* ─── Aktiveringsguide (ny bruker) ─── */}
-        <ActivationGuide
-          hiveCount={hives.length}
-          inspectionCount={allInspections.length}
-        />
+        {/* Skjules ved 0 kuber — da dekker hero-tomtilstanden allerede «legg til
+            første kube», så vi unngår to konkurrerende CTA-er. */}
+        {hives.length > 0 && (
+          <ActivationGuide
+            hiveCount={hives.length}
+            inspectionCount={allInspections.length}
+            firstHiveId={hives[0]?.id ?? null}
+          />
+        )}
 
         {/* ─── Trial banner ─── */}
         {trialDaysLeft !== null && (
@@ -428,7 +443,7 @@ export default function Hjem() {
             </View>
             <View style={styles.alertBody}>
               <Text style={styles.alertTitle}>
-                {alerts.length} kube{alerts.length > 1 ? 'r' : ''} krever oppmerksomhet
+                {alertHiveCount} kube{alertHiveCount > 1 ? 'r' : ''} krever oppmerksomhet
               </Text>
               <Text style={styles.alertNames} numberOfLines={1}>
                 {[...new Set(alerts.map((a) => a.hiveName))].join(', ')}
@@ -868,7 +883,7 @@ const styles = StyleSheet.create({
   taskText: { flex: 1 },
   taskName: { fontSize: 14, fontWeight: '600', fontFamily: FontFamily.semibold, color: Colors.ink, letterSpacing: -0.1 },
   taskSub: { fontSize: 12, fontFamily: FontFamily.regular, color: Colors.muted, marginTop: 2 },
-  taskSubUrgent: { color: Colors.warning },
+  taskSubUrgent: { color: Colors.honeyText },
   urgentChip: {
     backgroundColor: Colors.error,
     borderRadius: 20,

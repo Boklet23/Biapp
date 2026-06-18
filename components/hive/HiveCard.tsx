@@ -68,9 +68,9 @@ export const HiveCard = memo(function HiveCard({ hive, lastInspection, lastWeigh
     : varroa <= 5 ? 'Moderat'
     : varroa <= 10 ? 'Høy'
     : 'Kritisk';
-  const varroaLabelColor = varroa == null || varroa <= 3 ? Colors.success
-    : varroa <= 5 ? '#D4891A'
-    : Colors.error;
+  const varroaLabelColor = varroa == null || varroa <= 3 ? '#2E7D32'
+    : varroa <= 5 ? Colors.honeyText
+    : Colors.notifiable;
 
   return (
     <Pressable
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     color: Colors.error,
   },
   varroaLabel: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '700',
     fontFamily: FontFamily.bold,
     letterSpacing: 0.5,

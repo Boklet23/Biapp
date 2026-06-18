@@ -32,11 +32,12 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
   // ── Auth check ──────────────────────────────────────────────────────────
+  // Fail-closed: mangler secret-env, eller feil/manglende header → avvis.
+  // Hindrer at hvem som helst kan trigge push-utsending dersom
+  // WEEKLY_ALERTS_SECRET ved et uhell ikke er satt i miljøet.
   const alertsSecret = Deno.env.get('WEEKLY_ALERTS_SECRET');
-  if (alertsSecret) {
-    if (req.headers.get('x-alerts-secret') !== alertsSecret) {
-      return new Response('Unauthorized', { status: 401, headers: CORS });
-    }
+  if (!alertsSecret || req.headers.get('x-alerts-secret') !== alertsSecret) {
+    return new Response('Unauthorized', { status: 401, headers: CORS });
   }
 
   try {

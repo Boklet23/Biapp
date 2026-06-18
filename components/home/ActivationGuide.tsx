@@ -20,9 +20,10 @@ interface Step {
 interface ActivationGuideProps {
   hiveCount: number;
   inspectionCount: number;
+  firstHiveId?: string | null;
 }
 
-export function ActivationGuide({ hiveCount, inspectionCount }: ActivationGuideProps) {
+export function ActivationGuide({ hiveCount, inspectionCount, firstHiveId }: ActivationGuideProps) {
   const [notificationsGranted, setNotificationsGranted] = useState(false);
   const [dismissed, setDismissed] = useState<boolean | null>(null);
   const dismissedRef = useRef(false);
@@ -102,7 +103,12 @@ export function ActivationGuide({ hiveCount, inspectionCount }: ActivationGuideP
       label: 'Gjennomfør en inspeksjon',
       hint: 'Logg helse, varroa og dronning',
       done: step2Done,
-      onPress: () => router.push('/(app)/(tabs)/kuber' as any),
+      // Med nøyaktig én kube: hopp rett inn i inspeksjonsveiviseren (aha-moment).
+      // Flere kuber → kubelista så brukeren velger hvilken.
+      onPress: () =>
+        hiveCount === 1 && firstHiveId
+          ? router.push({ pathname: '/kuber/[id]/inspeksjon/ny', params: { id: firstHiveId } } as any)
+          : router.push('/(app)/(tabs)/kuber' as any),
     },
     {
       label: 'Aktiver varsler',

@@ -14,7 +14,7 @@ export const DISEASES: Disease[] = [
     symptoms:
       'Misdannede vinger (deformed wing virus), krympede bier, larver som dør i celler, synlige rødbrune midd på bienes bakkropp.',
     treatment:
-      'Oksalsyre (vinterstid når det er yngelfritt), Apistan, ApiLife Var eller Apivar. Kombinér alltid med tellemetode for å vurdere tetthet.',
+      'Oksalsyre (vinterstid når det er yngelfritt), maursyre (gjennom forseglet yngel), ApiLife Var (timol) eller Apivar (amitraz, krever godkjenningsfritak). Kombinér alltid med tellemetode for å vurdere tetthet.',
     prevention:
       'Regelmessig varroatelling (limbunn, vaskemetode eller sukkerpuder). Sværmforebygging reduserer yngelmengde og gir naturlig behandlingsvindu.',
     thumbnailPath: null,
