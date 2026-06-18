@@ -1,0 +1,38 @@
+name: Supabase keep-alive
+
+# Supabase free-tier pauser prosjektet etter ~7 dager uten aktivitet.
+# Denne jobben pinger REST-APIet hver 5. dag (trygg margin under 7-dagers
+# grensen) for å holde prosjektet aktivt. Kjøres i GitHub-skyen — uavhengig
+# av om utviklermaskinen er på.
+on:
+  schedule:
+    # 06:00 UTC på dag 1, 6, 11, 16, 21, 26, 31 → maks 5 dagers mellomrom.
+    - cron: '0 6 */5 * *'
+  workflow_dispatch: {} # tillat manuell kjøring fra Actions-fanen
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST
+        env:
+          SUPABASE_URL: https://zujvhbnuqocquthbujmp.supabase.co
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::SUPABASE_ANON_KEY-secret mangler. Sett den med: gh secret set SUPABASE_ANON_KEY"
+            exit 1
+          fi
+          # diseases-tabellen har offentlig SELECT-policy (USING is_active = true),
+          # så et anon-kall utfører en ekte DB-spørring og teller som aktivitet.
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            "$SUPABASE_URL/rest/v1/diseases?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+          echo "HTTP $code"
+          if [ "$code" -ge 200 ] && [ "$code" -lt 300 ]; then
+            echo "Supabase svarte OK — prosjektet er aktivt."
+          else
+            echo "::error::Uventet svar fra Supabase: HTTP $code"
+            exit 1
+          fi
