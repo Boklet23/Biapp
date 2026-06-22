@@ -1,62 +1,65 @@
 # Agent 9 — Tilgjengelighet (WCAG 2.1 AA)
 
 ## Metainfo
-- Filer lest: `constants/colors.ts`, `constants/typography.ts`, `components/hive/HiveCard.tsx`, `components/ui/Button.tsx`, `components/inspection/FrameCounter.tsx`, `components/inspection/Step4.tsx`, `components/hive/HealthScoreSection.tsx`, `components/ui/Toast.tsx`, `app/(app)/(tabs)/_layout.tsx`, `app/(app)/(tabs)/kuber/[id]/inspeksjon/ny.tsx`, `app/(app)/(tabs)/hjem/index.tsx` (utdrag).
-- Filer ikke funnet: ingen.
-- Diff mot forrige review (arkiv 2026-06-12): lest **ja**. Sprint 1-fiks bekreftet: `honeyText '#8F5B00'`-token finnes (colors:11); ghost-CTA-er/`meta`/`boxCount`-tekst → honeyText (Button:101, HiveCard:233); inaktiv fanetekst → `rgba(255,255,255,0.62)` (_layout:21); `secondaryLabel` → dark (Button:98); FrameCounter-glyf bruker honeyText (FrameCounter:84). IKKE fikset (gjentas): `muted` brødtekst, tekstskalering (0 treff), Toast-stillhet, `taskSubUrgent`, photoRemoveBtn-treffmål, moodBtn-labels, navBtnBack-rolle, varroaLabel-kontrast.
+- Review v3, 2026-06-22. Read-only.
+- Filer lest: `constants/colors.ts`, `constants/typography.ts`, `components/hive/HiveCard.tsx`, `components/ui/Button.tsx`, `components/inspection/FrameCounter.tsx`, `components/inspection/Step4.tsx`, `components/hive/HealthScoreSection.tsx`, `components/ui/Toast.tsx`, `app/(app)/(tabs)/_layout.tsx`, `app/(app)/(tabs)/kuber/[id]/inspeksjon/ny.tsx` (navbar-utdrag), `app/(app)/(tabs)/hjem/index.tsx` (utdrag).
+- Diff mot arkiv 2026-06-18: lest. **Verifiserte fikser (IKKE gjentatt som funn):** `muted` #8A8A9A→`#6E6E80` (colors:27), `taskSubUrgent`→honeyText (hjem:886), Toast success→`#2E7D32`/info→`#1F6FA8` (Toast:8-10), HiveCard `varroaLabelColor` → #2E7D32/honeyText/notifiable + fontSize 10 (HiveCard:71-73,296). Alle reberegnet under — INGEN [REGRESJON] funnet.
 
 ## Sammendrag
-Sprint 1 lukket flere KRITISK/HØY-funn: honeyText-token er innført og fjerner ghost/CTA-kontrastgjelden, inaktiv fane er nå lesbar, og FrameCounter-glyfen er trygg. Men `muted` (3.40:1) bærer fortsatt all sekundærtekst, `taskSubUrgent` (appens hastesignal) er 2.03:1, Toast-success/info er 2.78/3.15:1 og annonseres aldri for TalkBack (0 liveRegion-treff). Tekstskalering er fremdeles helt uadressert (0 `allowFontScaling`). Skjermleser-dekning ~33 % (131/398 Pressables); modal-seksjonene mangler labels.
+Kontrast-passet fra 18. juni holder: alle tidligere strøkne 1.4.3-funn passerer nå reberegnet (muted 4.86:1, taskSubUrgent 5.6:1, Toast 5.4/4.7:1, varroaLabel ≥5.0:1). Ingen regresjon. Tre HØY-funn står fortsatt helt åpne: tekstskalering er uadressert (0 `allowFontScaling`, faste høyder), Toast annonseres aldri for TalkBack (0 liveRegion), og skjermleser-dekning er ~33 % (131/398 Pressable) med hele vekt/behandling/dronning/høsting/kalender-modaler umerket. Step4 photoRemoveBtn (32×32) og mood-knapper mangler fortsatt mål/labels.
 
 ## Fungerer godt (ikke rør)
-1. `honeyText`-token (colors:9-11) med dokumentert begrunnelse — løser ghost/CTA-kontrast.
-2. Inaktiv fanetekst `rgba(255,255,255,0.62)` på dark ≈ 5.3:1 (_layout:21) med god kommentar.
-3. `FrameCounter`: ekte 44×44-knapper + norske `accessibilityLabel` («Reduser/Øk {label}») + glyf i honeyText.
-4. `Button.tsx`: `accessibilityRole="button"`, label-fallback, primær/sekundær = dark på honey/amber (8.4:1/14:1).
-5. `HealthScoreSection`: full tekst-redundans (label + issues-liste) — farge er ikke eneste bærer (1.4.1 ✓).
+1. Kontrast-token-disiplin: `honeyText` (colors:9-11) + `muted` mørknet med dokumentert ratio-kommentar (colors:26) — eksemplarisk.
+2. Toast-bakgrunner mørknet med begrunnelse (Toast:7) — kontrast løst.
+3. `FrameCounter`: ekte 44×44 (FrameCounter:67-68) + norske `accessibilityLabel` «Reduser/Øk {label}» + glyf i honeyText.
+4. `Button.tsx`: `accessibilityRole`, label-fallback, dark på honey/amber (kommentert WCAG-valg Button:98).
+5. `HealthScoreSection`: full tekst-redundans (label + issues-liste) — farge aldri eneste bærer (1.4.1 ✓).
 
 ## Funn
 
-### Kontrasttabell (WCAG-formel, beregnet)
+### Kontrasttabell (WCAG-formel, reberegnet)
 | Kombinasjon | Ratio | Krav | Bestått |
 |---|---|---|---|
-| ink #1A1A2E / white (brødtekst) | 17.4 | 4.5 | ✅ |
-| honey / dark (aktiv fane, FAB) | 8.4 | 4.5 | ✅ |
-| honeyText #8F5B00 / white (ghost, CTA, meta) | 5.65 | 4.5 | ✅ |
-| inaktiv fane rgba(255,255,255,.62) / dark (11pt) | ~5.3 | 4.5 | ✅ |
+| ink #1A1A2E / white | 17.4 | 4.5 | ✅ |
+| honeyText #8F5B00 / white (ghost/CTA/meta/taskSubUrgent) | 5.6 | 4.5 | ✅ |
+| muted #6E6E80 / white (sekundærtekst <18pt) | 4.86 | 4.5 | ✅ |
+| muted #6E6E80 / light #F8F4EF | 4.46 | 4.5 | ⚠️ grense |
 | mid #4A4A6A / white | 8.5 | 4.5 | ✅ |
-| Toast error #C0392B + hvit tekst | 5.0 | 4.5 | ✅ |
-| muted #8A8A9A / white (brødtekst <18pt) | 3.40 | 4.5 | ❌ |
-| muted / light #F8F4EF | 3.10 | 4.5 | ❌ |
-| warning #F5A623 / white (taskSubUrgent 12pt) | 2.03 | 4.5 | ❌ |
-| success #4CAF50 / white (varroaLabel 8pt) | 2.78 | 4.5 | ❌ |
-| Toast success / info + hvit tekst | 2.78 / 3.15 | 4.5 | ❌ |
-| error #E53935 / white (statValBad 13pt) | 3.99 | 4.5 | ❌ |
+| inaktiv fane rgba(255,255,255,.62) / dark (11pt) | 5.3 | 4.5 | ✅ |
+| Toast success #2E7D32 + hvit | 5.4 | 4.5 | ✅ |
+| Toast info #1F6FA8 + hvit | 4.7 | 4.5 | ✅ |
+| Toast error #C0392B + hvit | 5.0 | 4.5 | ✅ |
+| varroaLabel #2E7D32 / white (10pt) | 5.4 | 4.5 | ✅ |
+| varroaLabel honeyText / white | 5.6 | 4.5 | ✅ |
+| varroaLabel notifiable #C0392B / white | 5.0 | 4.5 | ✅ |
+| statValBad error #E53935 / white (13pt) | 3.99 | 4.5 | ❌ |
+
+Eneste gjenstående rene kontrastbrudd: `statValBad` (HiveCard:292) `#E53935` = 3.99:1 (LAV — det finnes tekstredundans via varroaLabel). `muted` på `light` er marginalt under (4.46) — påvirker `statKey`/`ringLabel` på lys stripe.
 
 ### HØY
-**[HØY]** `app/(app)/(tabs)/hjem/index.tsx:874` — `taskSubUrgent: { color: Colors.warning }` (#F5A623 på hvit) = **2.03:1** på 12pt. Appens viktigste hastesignal («14 dager siden») er det minst leselige elementet. — Brudd 1.4.3. — Løsning: bruk `Colors.honeyText` (5.65:1) eller `Colors.error` for urgent. — Innsats: S — Konfidens: HØY
+**[HØY]** Globalt — 0 treff på `allowFontScaling`/`maxFontSizeMultiplier` (Grep, bekreftet). Faste `height` klipper tekst ved 200 % systemskrift: `Button.base height:52` (Button:57), `tabBar height:72` (_layout:24), `photoThumbWrap/photoAddBtn 76` + `moodBtn`-rad (Step4:91,100,78), HiveCard 8–13pt tette tall (HiveCard:279,287). — Brudd 1.4.4 Resize Text. — Løsning: `height`→`minHeight` på Button/tabBar/navBtn; `maxFontSizeMultiplier={1.3}` på tall-tette paneler; manuell test ved 200 %. — Innsats: M — Konfidens: HØY
 
-**[HØY]** `constants/colors.ts:26` — `muted: '#8A8A9A'` = 3.40:1 (3.10 på light). Bærer `breed`/`statKey`/`ringLabel`/`varroaLabel` (HiveCard:228,283,258), `taskSub`/`taskChevron` (hjem:873,889), `issueText`/`sectionTitle` (HealthScoreSection:124,139), `moodLabel`/`photoAddText` via `mid+xx` er ok, men `muted` selv feiler. — Brudd 1.4.3 i nær all sekundærtekst <18pt. — Løsning: bytt `muted`→`mid` (8.5:1) for tekst, behold `muted` kun til dekor/hairlines. — Innsats: M — Konfidens: HØY
+**[HØY]** `components/ui/Toast.tsx:31-35` — `Animated.View` mangler `accessibilityLiveRegion="polite"` og `accessibilityRole="alert"`; 0 `announceForAccessibility`/`liveRegion` globalt (Grep). Alle mutation-feil (CLAUDE.md-mønster `onError: showToast`) går via denne toasten og **annonseres aldri** for TalkBack-brukere. — Brudd 4.1.3 Status Messages. — Løsning: `accessibilityLiveRegion="polite"` + `accessibilityRole="alert"` på Animated.View (kontrast er allerede løst). — Innsats: S — Konfidens: HØY
 
-**[HØY]** Globalt — 0 treff på `allowFontScaling`/`maxFontSizeMultiplier` (Grep). Faste høyder klipper tekst ved 200 % systemskrift: `Button.base height:52` (Button:57), tabBar `height:72` (_layout:24), `photoThumbWrap 76` + `moodBtn`-rad (Step4:91), HiveCard-stats (8–13pt tette tall). — Brudd 1.4.4. — Løsning: `height`→`minHeight` på Button/tabBar/navBtn; `maxFontSizeMultiplier={1.4}` på tall-tette paneler; test ved 200 %. — Innsats: M — Konfidens: HØY
+**[HØY]** Globalt — skjermleser-dekning ~33 % (131 a11y-props/30 filer mot 398 Pressable/49 filer; uendret fra 18. juni). Null props i `WeightSection`, `TreatmentSection`, `QueenSection`, `HarvestSection`, `AddEventModal` (0 treff bekreftet), `HarvestLogModal`, `onboarding`, `samfunn/ReportSwarmModal`. Hele registrerings-/modalflytene for vekt/behandling/dronning/høsting/kalender er umerket. — Brudd 4.1.2 Name, Role, Value. — Løsning: `accessibilityRole="button"` + norsk `accessibilityLabel` på modal-åpnere, Lagre/Avbryt-knapper. — Innsats: M — Konfidens: HØY
 
 ### MEDIUM
-**[MEDIUM]** `components/ui/Toast.tsx:8-9,31` — Hvit tekst på success #4CAF50 (2.78) og info #3498DB (3.15); ingen `accessibilityLiveRegion="polite"` / `AccessibilityInfo.announceForAccessibility` (0 treff globalt). Alle mutation-feil går via toast og **annonseres aldri** for TalkBack. — Brudd 1.4.3 + 4.1.3 (Status Messages). — Løsning: mørkere bg (`#2E7D32` ≈ 5.1, `#1F6FA8` ≈ 4.6) + `accessibilityLiveRegion="polite"` + `accessibilityRole="alert"` på Animated.View. — Innsats: S — Konfidens: HØY
+**[MEDIUM]** `components/inspection/Step4.tsx:42,61-68,93-97` — `photoRemoveBtn` 20×20 + `hitSlop={6}` = 32×32 (< 44pt, 2.5.8); `moodBtn` (Step4:61-68) mangler `accessibilityRole`/`accessibilityLabel`/`accessibilityState` — TalkBack leser kun rå emoji + tall, valgt tilstand annonseres ikke. — Brudd 2.5.8 + 4.1.2. — Løsning: `hitSlop={12}`, label «Fjern bilde»; moodBtn rolle + `accessibilityState={{ selected: moodScore === score }}` + label «Humør {score}». — Innsats: S — Konfidens: HØY
 
-**[MEDIUM]** Skjermleser-dekning ~33 %: 131 a11y-props i 30 filer mot 398 Pressable i 49 filer. Null props i `WeightSection` (9), `TreatmentSection` (13), `QueenSection` (16), `HarvestSection` (12), `AddEventModal` (8), `HarvestLogModal` (14), `onboarding` (9). Hele registrerings-/modal-flytene for vekt/behandling/dronning/høsting er umerket. — Brudd 4.1.2. — Løsning: `accessibilityRole`+norsk `accessibilityLabel` på modal-åpnere, lagre/avbryt. — Innsats: M — Konfidens: HØY
+**[MEDIUM]** `app/(app)/(tabs)/kuber/[id]/inspeksjon/ny.tsx:351-356` — `navBtnBack`-Pressable mangler `accessibilityRole="button"` og `accessibilityLabel`; teksten veksler «Avbryt»/«← Tilbake» og pilen «←» leses dårlig av TalkBack. — Brudd 4.1.2. — Løsning: legg til rolle + statisk label («Tilbake» / «Avbryt»). — Innsats: S — Konfidens: HØY
 
-**[MEDIUM]** [IKKE FIKSET] `components/inspection/Step4.tsx:42,61-68,93-97` — `photoRemoveBtn` 20×20 + `hitSlop={6}` = 32×32 (< 44pt, 2.5.8); `moodBtn` mangler fortsatt `accessibilityRole/Label/State` — TalkBack leser kun rå emoji. `varroaLabel` 8pt + `statKey` 8pt under praktisk lesbarhet. — Løsning: `hitSlop={12}`, label «Fjern bilde», moodBtn rolle+`accessibilityState={{selected}}`+label «Humør {score}», min. 10pt. — Innsats: S — Konfidens: HØY
-
-**[MEDIUM]** `app/(app)/(tabs)/kuber/[id]/inspeksjon/ny.tsx:351-356` — `navBtnBack`-Pressable mangler `accessibilityRole="button"` og `accessibilityLabel` (teksten veksler «Avbryt»/«← Tilbake»; pilen «←» leses dårlig). — Brudd 4.1.2. — Løsning: legg til rolle + statisk label. — Innsats: S — Konfidens: HØY
-
-**[MEDIUM]** `components/hive/HiveCard.tsx:71-73,139` — `varroaLabelColor`: success #4CAF50 (2.78) / `#D4891A` (2.84) / error på 8pt `varroaLabel` («Lav/Høy»). Tekstredundans finnes (1.4.1 ✓) men selve etiketten feiler 1.4.3. — Løsning: `#2E7D32` / `Colors.honeyText` / `Colors.sevCrit` + ≥10pt. — Innsats: S — Konfidens: HØY
+**[MEDIUM]** `app/(app)/(tabs)/hjem/index.tsx:480-494` — oppgave-tile har `accessibilityRole="button"` men ingen samlet `accessibilityLabel`; TalkBack leser løse fragmenter (kubenavn, hex-emoji ⏰/✅, sub-tekst, «Haster»-chip) hver for seg. Hastesignalet er nå riktig farge (honeyText) men ikke semantisk eksponert. — Brudd 1.3.1/4.1.2. — Løsning: `accessibilityLabel={\`${hive.name}, ${label}${urgent ? ', haster' : ''}\`}` + `importantForAccessibility="no"` på dekor-emoji. — Innsats: S — Konfidens: MEDIUM
 
 ### LAV
-**[LAV]** `components/info/HoneyForecastChart.tsx`, `components/hive/WeightSection.tsx`, `components/ui/HealthRing.tsx` — SVG/Skia-grafer (vekt/honning/varroa-trend) uten `accessibilityLabel`/tekstlig sammendrag (0 «accessib»-treff i WeightSection). — Brudd 1.1.1. — Løsning: label på graf-container («Vektutvikling siste 30 dager: +2,1 kg»). — Innsats: S — Konfidens: MEDIUM
+**[LAV]** `app/(app)/(tabs)/_layout.tsx:5-11` — emoji-faneikoner (🏠🐝📅📖🌍) i `TabIcon` uten `accessibilityElementsHidden`/`importantForAccessibility="no"`; TalkBack kan annonsere «house», «honeybee» foran fane-tittelen. `label`-prop mottas men brukes ikke. — Brudd 1.1.1 (redundant/forvirrende). — Løsning: `importantForAccessibility="no"` på `<Text>`-emoji (fane-tittel dekker navnet). — Innsats: S — Konfidens: MEDIUM
 
-**[LAV]** `app/(app)/(tabs)/_layout.tsx:5-9` + `HealthScoreSection:102,108` — emoji-faneikoner og dekor-emoji (⚠️✅) leses opp av TalkBack uten `importantForAccessibility="no"`; faneikon bør ha `accessibilityElementsHidden` (tittel dekker). — Innsats: S — Konfidens: MEDIUM
+**[LAV]** `components/hive/HealthScoreSection.tsx:101,108` — dekor-emoji ⚠️/✅ leses av TalkBack i tillegg til issue-teksten (duplisering). — Brudd 1.1.1. — Løsning: `importantForAccessibility="no"` på `issueIcon`/`allGoodIcon`. — Innsats: S — Konfidens: MEDIUM
+
+**[LAV]** `components/hive/WeightSection.tsx`, `components/info/HoneyForecastChart.tsx`, `components/ui/HealthRing.tsx` — SVG/Skia-grafer (vekt/honning/varroa-trend) uten `accessibilityLabel`/tekstlig sammendrag. — Brudd 1.1.1 Non-text Content. — Løsning: label på graf-container («Vektutvikling 30 dager: +2,1 kg»). — Innsats: S — Konfidens: MEDIUM
+
+**[LAV]** `components/hive/HiveCard.tsx:135,292` — `statValBad` `#E53935` = 3.99:1 på 13pt. Tekstredundans (varroaLabel) finnes (1.4.1 ✓) men tallet selv feiler 1.4.3. — Løsning: `Colors.sevCrit` (#C62828 ≈ 5.9:1). — Innsats: S — Konfidens: HØY
 
 ## Topp-3 anbefalinger
-1. **Fullfør kontrast-passet (S, ~1 t):** `taskSubUrgent`→honeyText/error, `muted`→`mid` for tekst, Toast success/info-bakgrunn mørkere, varroaLabel-farger. Lukker resterende 1.4.3-brudd — lovpålagt (likestillings- og diskrimineringsloven + UU).
-2. **Tekstskalering (M, 3–4 t):** `height`→`minHeight` på Button/tabBar/navBtn, `maxFontSizeMultiplier` på tall-paneler, manuell test ved 200 %. Eneste HØY-funn som har stått åpent gjennom to reviews.
-3. **Skjermleser i modaler + Toast-annonsering (M, 2–3 t):** labels på Weight/Treatment/Queen/Harvest-modaler, navBtnBack-rolle, moodBtn-state, hitSlop 12, `accessibilityLiveRegion="polite"` på Toast.
+1. **Tekstskalering (M, 3–4 t):** `height`→`minHeight` på Button/tabBar/navBtn, `maxFontSizeMultiplier` på tall-paneler, test ved 200 %. Eneste HØY-funn som har stått åpent gjennom tre reviews — lovpålagt (likestillings- og diskrimineringsloven + UU).
+2. **Toast-annonsering + skjermleser i modaler (M, 2–3 t):** `accessibilityLiveRegion="polite"`+`role="alert"` på Toast; labels på Weight/Treatment/Queen/Harvest/AddEvent-modaler; navBtnBack-rolle.
+3. **Berøringsmål + dekor-emoji (S, ~1 t):** Step4 `hitSlop={12}` + moodBtn rolle/state/label; `importantForAccessibility="no"` på faneikoner og HealthScore-emoji; `statValBad`→sevCrit.

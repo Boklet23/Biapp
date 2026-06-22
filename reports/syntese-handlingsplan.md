@@ -1,125 +1,122 @@
 # Syntese — Prioritert handlingsplan for BiVokter
 
-Multi-agent review v3 (13 agenter) konsolidert. Generert: 2026-06-18.
-Kontekst: pre-lansering (intern testing Play Console, versionCode ~21), én utvikler + Claude, mål 100 betalende første sesong. Juni = svermetid/høysesong — time-to-market har egenverdi.
+Multi-agent review v3 (13 agenter) konsolidert. Generert: 2026-06-22.
+Kontekst: pre-lansering (intern testing Play Console, versionCode ~22), én utvikler + Claude, mål 100 betalende første sesong. Juni = svermetid/høysesong — time-to-market har egenverdi.
 
-**Rapporter lest:** agent-01 … agent-13 (13/13) + arkivert syntese 2026-06-12.
-**Migrasjonsstatus:** Bekreftet på disk: høyeste migrasjon = **0051** (Agent 8 og 12 leste 0046–0051; den opprinnelige promptkonteksten stoppet på 0045). Flere «fikset siden sist»-påstander hviler på 0046–0051 og er verifisert mot faktiske filer (se §2 og §3).
-**Status siden 12. juni:** Forrige syntese satte 5 ship-blokkere; alle 5 er nå **verifisert lukket**: (1) paywall-bypass på `profiles` (0047 REVOKE+WITH CHECK), (2) server-side kubegrense gjenopprettet (0046-trigger + 0049-herding), (3) push `hiveId`-deeplink + kald start, (4) READ_MEDIA-permissions blokkert + `expo-media-library` fjernet, (5) jest+CI etablert. Reviewen er i en **modnet** tilstand: ingen åpne KRITISK-funn i kode.
+**Rapporter lest:** agent-01 … agent-13 (13/13) + arkivert syntese 2026-06-18.
+**Migrasjonsstatus:** 0001–0052 på disk (0052 kjørt i prod). **Korreksjon til Agent 4:** migrasjon **0048_disease_notifiable_fixes.sql** finnes og er kjørt — den retter EFB→meldepliktig og legger til liten kubebille i DB. Agent 4 overså denne (se §3).
+**Status siden 18. juni:** Forrige sprint-batch er verifisert: RevenueCat tom-nøkkel kaster, weekly-hive-alerts fail-closed (v10), 0052 dropper utdatert 0013-policy, .env.example komplett, kontrast-pass, ActivationGuide steg 2, rapport `Promise.allSettled`, Apistan fjernet fra **constants/diseases.ts** (men IKKE fra DB-seed — se KRITISK). Reviewen er moden: ett gjenstående reelt KRITISK-likeverdig funn (Apistan i DB + behandlingslogg).
 
 ---
 
 ## 1. Konsensus-funn (matrise)
 
-13 agenter med stramt adskilte scope gir få 3+-overlapp. Funn rapportert uavhengig av 2+ agenter regnes som konsensus og vektes opp. Funn med 3+ agenter er øverst (høyest reliabilitet).
+Funn rapportert uavhengig av 2+ agenter. 3+ agenter øverst (høyest reliabilitet).
 
 | # | Funn | Agenter | Grad |
 |---|------|---------|------|
-| K1 | **Kubefoto lagres som 1-årig signed URL** — dør stille etter 365 dager / nøkkelrotasjon; bør lagre path + signere ved lesing | **7, 8, 12** (3 agenter) | MEDIUM |
-| K2 | **`select('*')` i ~15 queries** — henter `notes` + lang `photo_url` for hele kubelista | **5, 6, 12** (3 agenter) | MEDIUM |
-| K3 | **`weekly-hive-alerts` global sweep** (henter alle profiler/kuber/inspeksjoner i ett kall) — skaleringsblokkering + fail-open-secret | **8 (fail-open), 10 (win-back), 12 (sweep)** | MEDIUM/HØY |
-| K4 | **`hjem/index.tsx` >800 linjer + henter 500 fulle inspeksjonsrader** for to teller-/kortbruk | **5 (982 linjer), 6 (payload)** | MEDIUM |
-| K5 | **Emoji-faneikoner + dekor-emoji** — leketøyspreg på betal-app + TalkBack leser rå emoji | **2 (design), 9 (a11y)** | MEDIUM |
-| K6 | **Manglende `fontFamily` på konverterings-/førsteinntrykksflater** (UpgradeModal, auth, Toast) → systemfont på salgsflaten | **2 (HØY), 9 (indirekte)** | MEDIUM |
-| K7 | **ActivationGuide steg 2 lander på kubeliste, ikke inspeksjonsflyt** + CTA-overlapp ved 0 kuber | **1, 11** | MEDIUM |
-| K8 | **`Promise.all` i rapportgenerering** feiler alt hvis én query feiler | **5 (relatert), 7** | MEDIUM |
-| K9 | **AI-varroa-oppdagbarhet/eksponering svak** + `diseaseObservations`-felt plumbet men ikke i wizard | **1 (synlighet), 4 (domene-felt)** | MEDIUM |
-| K10 | **Ingen offline-evne / NetInfo** (in-memory cache, retry:2 med rå feilmelding) | **7 (HØY)** + relatert 12 | HØY |
+| K1 | **Kubefoto lagres som 1-årig signed URL** — dør stille etter 365 dager/nøkkelrotasjon; bør lagre path + signere ved lesing | **7, 8, 12** (3) | MEDIUM |
+| K2 | **`select('*')` i ~15 queries** — henter `notes` + lang `photo_url` for hele kubelista | **5, 6, 12** (3) | MEDIUM |
+| K3 | **`weekly-hive-alerts` global sweep** (alle profiler/kuber/inspeksjoner i 3 globale kall) — skaleringsblokkering ved 5–10k brukere | **10 (win-back), 12 (sweep)** | MEDIUM/HØY |
+| K4 | **`hjem/index.tsx` >800 linjer (994) + henter 500 fulle inspeksjonsrader** for to teller-/kortbruk | **5 (linjer), 6 (payload)** | MEDIUM |
+| K5 | **Emoji-faneikoner + dekor-emoji** — leketøyspreg på betal-app + TalkBack leser rå emoji; aktiv fane vises kun via størrelse/opasitet | **2 (design), 9 (a11y)** | MEDIUM |
+| K6 | **Manglende `fontFamily` på konverterings-/førsteinntrykksflater** (UpgradeModal, auth, Toast, Input) → systemfont på salgsflaten | **2 (HØY), 9 (indirekte)** | MEDIUM |
+| K7 | **Varroa-komma + 1-års signed URL** | **7, 5/8/12 (URL)** | LAV/MEDIUM |
+| K8 | **AI-varroa-oppdagbarhet svak** + `diseaseObservations`-felt plumbet men aldri eksponert i wizard | **1 (synlighet), 4 (domene-felt)** | MEDIUM |
+| K9 | **Apistan vises fortsatt til brukere** (DB-seed-tekst + behandlingslogg-produktliste) trass i TS-fiks | **4 (KRITISK)** + bekreftet av syntese | KRITISK-likeverdig |
+| K10 | **Ingen offline-evne / NetInfo** (in-memory cache, retry:2 med rå feilmelding) | **7 (HØY)** + relatert 12 | HØY (utsatt) |
+| K11 | **Ingen analytics/event-instrumentering** — 100-betalende-målet er umålbart | **10 (HØY)** + relatert 13 | HØY |
+| K12 | **AI-kvote TOCTOU + manglende body-grense/Anthropic-timeout** i `analyze-varroa` | **8, 12** (2) | MEDIUM |
 
-Merk: Sammenlignet med forrige runde (10 konsensusfunn, ett KRITISK) er det nå **0 KRITISK-konsensus**. Reliabiliteten er høy fordi de fleste 3-agent-funnene (K1, K2) er rene hygiene-/skaleringsfunn, ikke lanseringsblokkere.
+Merk: **0 KRITISK-konsensus blant 3+-funn.** Det eneste KRITISK-likeverdige (K9 Apistan) er ett-agent men verifisert av syntese. De fleste 3-agent-funnene (K1, K2) er hygiene/skalering, ikke lanseringsblokkere.
 
 ---
 
 ## 2. Konflikter — løst eksplisitt
 
-**Konflikt 1 — 0013-regresjonspåstanden (Agent 3 vs. Agent 12/8). LØST: Agent 12/8 har rett; Agent 3 tar feil.**
-Agent 3 melder `[REGRESJON]`: at INSERT-policyen i `0013_hive_starter_limit.sql:11` fortsatt sjekker rå `subscription_tier != 'starter'`, så trial-brukere avvises på kube #4. Jeg leste de tre migrasjonene selv:
-- `0013:11` har faktisk den rå tier-sjekken — *isolert sett* er observasjonen korrekt.
-- MEN `0046_restore_hive_limit.sql` erstatter håndhevelsen med en **BEFORE INSERT/UPDATE-trigger** (`enforce_starter_hive_limit`) som eksplisitt anerkjenner trial: `IF v_trial IS NOT NULL AND v_trial > now() THEN RETURN NEW;` (linje 36–38). `0049` herder funksjonen (REVOKE EXECUTE, sletter foreldreløs `count_active_hives_for_user`).
-- Trigger fyrer på alle INSERT/UPDATE uavhengig av policyen. Trial-brukeren slipper derfor gjennom på server-siden — **det er ingen klient↔DB-sprik**. 0013-policyen er nå overflødig dødkode (begge må passere; triggeren er den brede gaten og 0013-policyen blokkerer aldri en trial-bruker som triggeren slipper gjennom, fordi `WITH CHECK` på 0013 kun gjelder rå tier — en trial-starter med 3 kuber *ville* blitt blokkert av 0013-policyen).
+**Konflikt 1 — Apistan «fikset» vs. «kosmetisk» (orkestrator-rapport vs. Agent 4). LØST: Agent 4 har rett om Apistan, men feil om EFB/kubebille.**
+Orkestratoren rapporterte til brukeren at «Apistan er fjernet». Agent 4 hevder fiksen var kosmetisk fordi appen leser DB. Jeg verifiserte selv (se §3): appen leser DB (`fetchDiseases`), TS er kun `placeholderData`. **Apistan står fortsatt i DB-seed (`0026:16,30`) OG i behandlingslogg-produktlista (`TreatmentSection.tsx:24`).** Orkestratorens påstand var derfor ufullstendig/feil for sluttbruker — Apistan vises fortsatt i prod. **MEN** Agent 4 tok feil om at EFB-/kubebille-fiksene «aldri traff DB»: migrasjon **0048** retter begge i DB. **Avgjørelse/tiltak:** Eskalér Apistan som KRITISK-likeverdig. Ny migrasjon `UPDATE diseases SET treatment/seasonal_treatment ...` for varroamidd som fjerner Apistan, + fjern 'Apistan' fra `PRODUCTS` i TreatmentSection.tsx. EFB/kubebille trenger INGEN handling (allerede i prod via 0048).
 
-**Viktig nyanse:** 0013-policyen sjekker rå tier OG count<3. En trial-bruker har `subscription_tier='starter'` i DB. På kube #4 gir 0013-policyen `'starter' != 'starter'` = false OG `count<3` = false → **INSERT blokkeres av 0013-policyen selv om triggeren ville sluppet den gjennom**. Agent 3s *symptom* (trial-bruker avvises på kube #4) kan derfor fortsatt inntreffe — ikke pga. manglende fiks, men fordi **den utdaterte 0013-policyen aldri ble droppet da 0046-triggeren overtok**. Agent 12 antok 0046 erstattet 0013 fullstendig; det gjorde den ikke.
-**Avgjørelse / tiltak:** Drop den utdaterte 0013 INSERT-policyen (den dupliserer og er strengere enn triggeren). Triggeren skal være eneste håndhever. Dette er en **S-fiks (ny migrasjon: `DROP POLICY "hives: opprett egne" ON hives;` + gjenskap en ren `WITH CHECK (auth.uid() = user_id)`)**. Begge agenter hadde delvis rett: fiksen *ble* gjort (0046/0049), men en gammel, strengere policy ble stående og kan fortsatt avvise trial-brukere. Verifiser med et trial-testtilfelle før lansering.
+**Konflikt 2 — Polere vs. shippe (Agent 2/9 vs. 13).** Agent 2 vil ha Typography-migrering (L) + lucide; Agent 9 vil ha fullt a11y-løft. Agent 13 viser restrisiko er manuelle dashboard-steg. **Avgjørelse:** Ship-orientert. Gjør kun billig design/a11y som treffer konvertering eller lovrisiko: `fontFamily` på UpgradeModal/auth/Toast (M), Toast `liveRegion`/`role=alert` (S), tekstskalering `minHeight` (M, UU-lovpålagt). Typography-/Radii-migrering + lucide utsettes.
 
-**Konflikt 2 — Polere vs. shippe (Agent 2/9 vs. 13).** Agent 2 vil ha Typography-migrering (L) + lucide-ikonsett; Agent 9 vil ha fullt a11y-løft. Agent 13 viser at restrisikoen er manuelle dashboard-steg, ikke kode. **Avgjørelse:** Ship-orientert. Gjør KUN billig design/a11y som treffer konvertering eller lovrisiko: kontrast-tokens (S) og `fontFamily` på UpgradeModal/auth/Toast (M). Typography-/Radii-full-migrering + lucide utsettes — flytter ikke 100-betalende-målet i juni. (Uendret fra forrige syntese; fortsatt riktig.)
+**Konflikt 3 — Flere varsler vs. varslingstretthet (Agent 10 internt: win-back vs. dobbel forfalt-varsling).** **Avgjørelse:** Ikke øk varselvolum før kilde-konsolidering. La server eie «forfalt inspeksjon»; behold lokal kun som fallback uten push_token. Win-back/`last_seen_at` utsettes til etter lansering (krever uansett sweep-endring sammen med K3).
 
-**Konflikt 3 — Flere varsler vs. varslingstretthet (Agent 10 vs. 7/10 internt).** Agent 10 vil ha win-back + år-for-år; Agent 7 og 10 advarer mot dobbel forfalt-varsling (klient + server). **Avgjørelse:** Ikke øk varselvolum før kilde-konsolidering. La server eie «forfalt inspeksjon»; behold lokal kun som fallback uten push_token. Win-back/`last_seen_at` er verdifullt men utsettes til rett etter lansering (krever DB-kolonne + sweep-endring som uansett trengs for K3).
+**Konflikt 4 — Aktiver feed vs. ikke (Agent 1/5 «sovende kode» vs. Agent 10 «ikke aktiver»).** **Avgjørelse:** Følg Agent 10 — ikke aktiver feed før >100 brukere. Tomt sosialt rom signaliserer død app. La `href:null`.
 
-**Konflikt 4 — Aktiver feed vs. ikke (Agent 1/5 «sovende kode» vs. Agent 10 «ikke aktiver»).** **Avgjørelse:** Følg Agent 10 — ikke aktiver feed før >100 brukere. Tomt sosialt rom signaliserer død app. La den ligge `href:null`. Ingen handling.
-
-**Konflikt 5 — `select('*')`-slanking vs. defensiv mapX (Agent 6/12 vs. 5).** **Avgjørelse:** Kolonnelister utledes fra mapX()-feltene (ingen reell konflikt). Lav gevinst ved <100 brukere → utsettes til etter lansering, unntatt `fetchHives` (dropp `notes`) som er billig og treffer dashboardet.
-
-**Ikke-konflikt verdt å merke:** Agent 5 flagger at `collaboration.ts:14` refererer migrasjon `0050` som «ikke finnes på disk (siste=0049)», mens Agent 8/12 leser 0050 OG 0051. Jeg bekreftet via Glob at **0046, 0049, 0050, 0051 alle finnes**. Agent 5 hadde et utdatert/ufullstendig filsyn — noter lavere tillit til Agent 5s migrasjons-relaterte påstander (men service-laget-funnene står).
+**Konflikt 5 — `select('*')`-slanking vs. defensiv mapX (Agent 6/12 vs. 5).** **Avgjørelse:** Ingen reell konflikt — kolonnelister utledes fra mapX-feltene. Lav gevinst ved <100 brukere → utsettes, unntatt `fetchHives` (dropp `notes`).
 
 ---
 
 ## 3. Falsifisering — stikkprøve 5 KRITISK/HØY-funn
 
-Alle 5 lest i koden av syntese-agenten selv:
+Alle 5 lest i koden av syntese-agenten selv.
 
 | # | Funn | Kilde | Verifikat | Holdt? |
 |---|------|-------|-----------|--------|
-| 1 | `Typography` importeres aldri (0 filer) | A2 HØY | Grep `Typography` i `*.tsx` → **0 treff** | ✅ |
-| 2 | Apistan anbefales (ikke MT-godkjent i Norge) | A4 HØY | `constants/diseases.ts:17` → `'...Apistan, ApiLife Var eller Apivar...'` | ✅ |
-| 3 | `weekly-hive-alerts` secret feiler åpent | A8 MEDIUM | `weekly-hive-alerts/index.ts:35-40` → `if (alertsSecret) { ... }` — hopper sjekk hvis env tom (fail-open) | ✅ |
-| 4 | `expo-image` ikke installert | A6 MEDIUM | Grep `expo-image"` i `package.json` → **0 treff** (kun picker/manipulator) | ✅ |
-| 5 | Ingen analytics i kildekode | A10 HØY | Grep `analytics\|posthog\|amplitude\|mixpanel\|trackEvent\|logEvent` i `services/app/components/lib/hooks` → **0 treff** | ✅ |
+| 1 | **Apistan vises fortsatt i prod via DB-seed (TS-fiks kosmetisk)** | A4 KRITISK | `services/diseases.ts:4-11` leser DB; `laer/index.tsx:69,72` bruker DB med `DISEASES` kun `placeholderData`. `0026:16,30` har Apistan; INGEN senere migrasjon retter treatment-teksten (grep). `TreatmentSection.tsx:24` har 'Apistan' i produktliste. | ✅ (Apistan-delen) |
+| 1b | **EFB ikke-meldepliktig + kubebille mangler i DB** | A4 KRITISK | **FALSK** — `0048_disease_notifiable_fixes.sql` (på disk, kjørt) setter EFB `is_notifiable=true` (linje 4-6) og INSERT-er liten kubebille (linje 9-27). Agent 4 leste ikke 0048. | ❌ (delvis feil funn) |
+| 2 | **weekly-hive-alerts fail-closed** | A8 (nå fikset) | `weekly-hive-alerts/index.ts:38-41` → `if (!alertsSecret || header !== secret) return 401`. Bekreftet. | ✅ |
+| 3 | **Ingen analytics i kildekode** | A10 HØY | Grep `analytics\|posthog\|amplitude\|mixpanel\|trackEvent\|logEvent` i `services/` → **0 treff**. | ✅ |
+| 4 | **Apistan i behandlingslogg-produktliste** | A4 HØY | `TreatmentSection.tsx:17-26` `PRODUCTS` inneholder `'Apistan'`. | ✅ |
+| 5 | **App leser sykdommer fra DB, ikke TS-konstant** | A4 (premiss) | `services/diseases.ts:7` `.from('diseases').select('*')`; `laer/index.tsx:69` `useQuery(... placeholderData: DISEASES)`. DB er kilde, TS kun fallback. | ✅ |
 
-**Resultat: 5/5 holdt vann.** Full tillit til agentenes funn; ingen nedjustering. (Eneste tillitsjustering: Agent 5s migrasjons-*filsyn* — se Konflikt 5 — men det er en kontekstmangel, ikke et falskt funn.)
+**Resultat: 4,5/5 holdt.** Apistan-funnet (#1, #4, #5) er **bekreftet og eskaleres**: Apistan vises fortsatt til brukere i prod via DB-seed-tekst og behandlingslogg-produktliste, trass i at `constants/diseases.ts` ble endret. Orkestratorens «Apistan er fjernet»-rapport var ufullstendig.
+
+**Tillitsjustering Agent 4:** Funnet om EFB/kubebille (#1b) er **feil** — 0048 retter begge i DB, men Agent 4 leste ikke migrasjonen. Senk tillit til Agent 4s øvrige DB-relaterte påstander: spesielt bør «steinyngel + trakemidd mangler» og «sværm-stavefeil i DB» dobbeltsjekkes mot faktisk DB-tilstand før handling, siden Agent 4 demonstrert ikke leste alle migrasjoner. Agent 4s rene TS-/komponent-funn (TreatmentSection, wizard `diseaseObservations`, varroaterskler) står.
 
 ---
 
 ## 4. Topp-20 ROI-tabell
 
-Score = (2E + 2R) × I / 10. E = effekt på lansering/konvertering/retention (1–5). R = risikoreduksjon (1–5, 5=KRITISK). I = innsats (1=XL … 5=S). Sortert synkende.
+Score = (2E + 2R) × I / 10. E = effekt (1–5). R = risikoreduksjon (1–5, 5=KRITISK). I = innsats (1=XL … 5=S). Sortert synkende.
 
 | # | Tiltak | E | R | I | Score | Kilde | Filer | Innsats |
 |---|--------|---|---|---|-------|-------|-------|---------|
-| 1 | Kast eksplisitt feil ved tom RevenueCat-nøkkel (Android) | 4 | 4 | 5 | **8.0** | A13 | `services/subscription.ts:11,24` | S |
-| 2 | Fjern Apistan fra varroa-`treatment` (legemiddel-lovrisiko) | 3 | 5 | 5 | **8.0** | A4 | `constants/diseases.ts:17` | S |
-| 3 | Fail-closed på `weekly-hive-alerts`-secret | 2 | 5 | 5 | **7.0** | A8 | `weekly-hive-alerts/index.ts:35-40` | S |
-| 4 | Drop utdatert 0013 INSERT-policy (trial blokkeres på kube #4) | 4 | 3 | 5 | **7.0** | A3/A12 (konflikt) | ny migrasjon, `0013` | S |
-| 5 | `.env.example` komplett (RC-nøkkel + APP_ENV) | 3 | 4 | 5 | **7.0** | A13 | `.env.example` | S |
-| 6 | Kontrast-pass: `taskSubUrgent`→honeyText, `muted`→`mid`, Toast-bg, varroaLabel (UU-lovpålagt) | 3 | 4 | 4 | **5.6** | A9 | `colors.ts`, `hjem`, `Toast.tsx`, `HiveCard.tsx` | S |
-| 7 | Steg 2 ActivationGuide → `inspeksjon/ny` + skjul guide/empty-overlapp | 4 | 1 | 5 | **5.0** | A1/A11 | `ActivationGuide.tsx:101`, `hjem:355` | S |
-| 8 | `Promise.allSettled` i rapportgenerering | 3 | 3 | 4 | **4.8** | A7 | `hjem/index.tsx:219-233` | S |
-| 9 | Minimal analytics (6–8 events) — måle 100-betalende-målet | 5 | 2 | 3 | **4.2** | A10 | nytt `lib/analytics.ts`, `_layout.tsx:45` | M |
-| 10 | DELETE-policy på `hive_disease_flags` (GDPR-residual) | 2 | 4 | 4 | **4.8** | A8 | ny migrasjon | S |
-| 11 | `fontFamily` på UpgradeModal + auth + Toast (salgsflater) | 4 | 1 | 4 | **4.0** | A2 | `UpgradeModal.tsx`, `login/register.tsx`, `Toast.tsx` | M |
-| 12 | Trial-utløps-funnel (push dag 12 + utløpsmodal m/årstilbud) | 5 | 1 | 3 | **3.6** | A3 | `hooks/useEffectiveTier.ts`, ny modal | M |
-| 13 | Body-grense + Anthropic-timeout i `analyze-varroa` | 2 | 4 | 4 | **4.8** | A8/A12 | `analyze-varroa/index.ts:88,99` | S |
-| 14 | Offline-persistering + NetInfo-banner (felt-bruk) | 4 | 2 | 2 | **2.4** | A7 | `lib/queryClient.ts` | M |
-| 15 | Stabiliser kubeliste (useMemo + useCallback-renderItem) | 3 | 1 | 4 | **3.2** | A6 | `kuber/index.tsx:87-101,218` | S–M |
+| 1 | **Fjern Apistan fra DB-seed + behandlingslogg** (legemiddel-/lovrisiko, ikke MT-godkjent) | 3 | 5 | 5 | **8.0** | A4 | ny migrasjon (`UPDATE diseases`), `TreatmentSection.tsx:24` | S |
+| 2 | Drop/verifiser 0013-policy effekt (allerede gjort i 0052 — verifiser trial kube #4) | 4 | 3 | 5 | **7.0** | A3/A12 | 0052, trial-testbruker | S |
+| 3 | Steg 2 ActivationGuide → inspeksjon (verifisert gjort — regresjonstest) | 4 | 1 | 5 | **5.0** | A1/A11 | `ActivationGuide.tsx:108-111` | S |
+| 4 | Minimal analytics (6–8 events) — måle 100-betalende | 5 | 2 | 3 | **4.2** | A10 | nytt `lib/analytics.ts`, `_layout.tsx:45` | M |
+| 5 | DELETE-policy på `hive_disease_flags` (GDPR-residual helsedata) | 2 | 4 | 4 | **4.8** | A8 | ny migrasjon | S |
+| 6 | Body-grense (413) + Anthropic-timeout i `analyze-varroa` | 2 | 4 | 4 | **4.8** | A8/A12 | `analyze-varroa/index.ts:88,99` | S |
+| 7 | Reserver AI-kvote-slot før kall (TOCTOU) | 2 | 4 | 4 | **4.8** | A8/A12 | `analyze-varroa/index.ts:72-85,172` | M |
+| 8 | Toast `liveRegion`+`role=alert` (mutation-feil annonseres aldri for TalkBack) | 2 | 4 | 5 | **6.0** | A9 | `Toast.tsx:31-35` | S |
+| 9 | `fontFamily` på UpgradeModal + auth + Toast (salgsflater i systemfont) | 4 | 1 | 4 | **4.0** | A2 | `UpgradeModal.tsx`, `login/register.tsx`, `Toast.tsx` | M |
+| 10 | Resize kube-/feed-foto før opplasting (gjenbruk Step3-mønster) | 3 | 2 | 5 | **5.0** | A6 | `kuber/ny.tsx`, `feed/ny.tsx`, `hive.ts` | S |
+| 11 | Trial-utløps-funnel (push dag 12 + utløpsmodal m/årstilbud) | 5 | 1 | 3 | **3.6** | A3 | `hooks/useEffectiveTier.ts`, ny modal | M |
+| 12 | Lag-kontekst i samarbeid-UpgradeModal (`title`/`subtitle`) | 3 | 1 | 5 | **4.0** | A3 | `kuber/[id]/index.tsx:378-381` | S |
+| 13 | Tekstskalering `minHeight` + `maxFontSizeMultiplier` (UU-lovpålagt) | 2 | 4 | 4 | **4.8** | A9 | `Button.tsx`, `_layout.tsx`, Step4, HiveCard | M |
+| 14 | Stabiliser kubeliste (useMemo + useCallback-renderItem) | 3 | 1 | 4 | **3.2** | A6 | `kuber/index.tsx:87-101,218` | S–M |
+| 15 | GDPR-dataeksport (art. 20) — Edge Function dump til JSON | 2 | 4 | 3 | **3.6** | A8 | ny edge function + profil-UI | M |
 | 16 | Lagre hive-photo path, signer ved lesing (3-agent K1) | 2 | 3 | 3 | **3.0** | A7/A8/A12 | `services/hive.ts:73-78` | M |
-| 17 | Eksponer sykdom/droneyngel/lukt i wizard (`diseaseObservations`) | 3 | 2 | 3 | **3.0** | A4 | `Step2/3.tsx`, `inspection.ts` | M |
-| 18 | Slank `fetchAllInspections` på dashboard (count + slank kolonne) | 2 | 2 | 4 | **3.2** | A6 | `hjem/index.tsx:139-143` | S–M |
-| 19 | Resize kube-/feed-foto før opplasting (gjenbruk Step3-mønster) | 2 | 2 | 5 | **4.0** | A6 | `kuber/ny.tsx`, `feed/ny.tsx` | S |
-| 20 | Steinyngel + trakemidd som meldepliktige sykdommer | 2 | 3 | 4 | **4.0** | A4 | `constants/diseases.ts` | M |
+| 17 | Slank `fetchAllInspections` på dashboard (count + slank kolonne) | 3 | 2 | 4 | **4.0** | A6 | `hjem/index.tsx:139-143` | S–M |
+| 18 | Skjermleser-labels på vekt/behandling/dronning/høsting/kalender-modaler | 2 | 3 | 3 | **3.0** | A9 | `WeightSection/TreatmentSection/QueenSection/...` | M |
+| 19 | Sesong-urgency + prisanker i UpgradeModal/hjem-nudge | 3 | 1 | 5 | **4.0** | A3 | `UpgradeModal.tsx`, `hjem/index.tsx:402` | S |
+| 20 | Eksponer sykdom/droneyngel/lukt i wizard (`diseaseObservations`) | 3 | 2 | 3 | **3.0** | A4 | `Step2/3.tsx`, `inspection.ts` | M |
 
-(Score-spredningen er lav fordi det ikke gjenstår KRITISK med høy R+E samtidig — typisk for en moden kodebase.)
+(Lav score-spredning fordi det ikke gjenstår KRITISK med høy R+E samtidig — typisk moden kodebase.)
 
 ---
 
 ## 5. Denne uken (<8 t totalt) — rask-fixer
 
-Rekkefølge etter ROI. Alle er S. Samlet estimat ~6–7 t.
+Rekkefølge etter ROI. Samlet ~6–7 t.
 
-1. **RevenueCat tom-nøkkel kaster** (~15 min) — `subscription.ts:11`: `if (Platform.OS === 'android' && !ANDROID_KEY) throw new Error('RevenueCat Android-nøkkel mangler')` før `configure`.
-   *Verifikasjon:* Bygg lokalt uten `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` → appen skal kaste tydelig feil, ikke stille konfigurere.
-2. **Fjern Apistan** (~10 min) — `diseases.ts:17`: erstatt med «Oksalsyre (vinter/yngelfritt), maursyre (gjennom forseglet yngel), ApiLife Var (timol) eller Apivar (amitraz, krever godkjenningsfritak)».
-   *Verifikasjon:* Grep `Apistan` → 0 treff; åpne varroa-sykdomssiden i appen og bekreft ny tekst.
-3. **Fail-closed weekly-alerts** (~10 min) — `weekly-hive-alerts/index.ts:35`: `if (!alertsSecret || req.headers.get('x-alerts-secret') !== alertsSecret) return 401`.
-   *Verifikasjon:* Kall edge-funksjonen uten header → 401; med riktig header → 200.
-4. **Drop utdatert 0013-policy** (~30 min, NY migrasjon) — `DROP POLICY IF EXISTS "hives: opprett egne" ON hives;` + `CREATE POLICY ... WITH CHECK (auth.uid() = user_id)` (la triggeren håndheve grensen).
-   *Verifikasjon:* Test-trial-bruker (sett `trial_expires_at` fram i tid, `subscription_tier='starter'`) skal kunne opprette kube #4; vanlig starter med 3 aktive skal få norsk trigger-feilmelding på kube #4.
-5. **`.env.example`** (~10 min) — legg til `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` + `EXPO_PUBLIC_APP_ENV` med kommentar.
-   *Verifikasjon:* Diff viser begge variabler; ny utvikler kan kopiere fila uten å mangle runtime-vars.
-6. **Kontrast-pass** (~1 t) — `hjem:874` `taskSubUrgent`→`Colors.honeyText`; `colors.ts:26` bytt `muted`→`mid` der det bærer tekst; `Toast.tsx:8-9` success `#2E7D32`/info `#1F6FA8`; `HiveCard` varroaLabel-farger + ≥10pt.
-   *Verifikasjon:* Kjør kontrast mot WCAG-formel (alle ≥4.5:1 på <18pt); visuell sjekk av «X dager siden»-tekst på hjem.
-7. **ActivationGuide steg 2 + 0-kube-overlapp** (~45 min) — `ActivationGuide.tsx:101`: ved `hiveCount===1` rut til `/kuber/[id]/inspeksjon/ny`; skjul guide når `hives.length===0 && empty-state vises`.
-   *Verifikasjon:* Ny bruker med 1 kube trykker steg 2 → lander i wizard; 0-kube-dashboard viser kun ett CTA.
-8. **`Promise.allSettled` i rapport** (~30 min) — `hjem:219-233`: generer rapport på det som lyktes, spesifiser hva som manglet.
-   *Verifikasjon:* Mock `fetchAllTreatments` til å feile → rapport genereres fortsatt med inspeksjonsdata.
+1. **Fjern Apistan fra DB + behandlingslogg** (~45 min) — ny migrasjon `UPDATE public.diseases SET treatment = '...(uten Apistan)...', seasonal_treatment = '...' WHERE slug='varroamidd'`; bytt høst-tipset «sett inn Apistan-strimler» → «ApiLife Var eller Apivar-gelé». Fjern `'Apistan'` fra `PRODUCTS` i `TreatmentSection.tsx:24`.
+   *Verifikasjon:* SQL `SELECT treatment FROM diseases WHERE slug='varroamidd'` → ingen «Apistan»; åpne varroa-sykdomssiden + behandlingslogg-produktvelger i appen og bekreft borte. Grep `Apistan` i repo → 0 treff (etter DB-fix gjenstår kun seed-historikk; ev. rett 0026 også for nye miljøer).
+2. **DELETE-policy `hive_disease_flags`** (~15 min, migrasjon) — `CREATE POLICY ... FOR DELETE USING (exists (select 1 from hives h where h.id = hive_id and h.user_id = (select auth.uid())))`.
+   *Verifikasjon:* Bruker kan slette eget sykdomsflagg; ikke annens.
+3. **Toast `liveRegion`+`role=alert`** (~15 min) — `Toast.tsx:31-35`: `accessibilityLiveRegion="polite"` + `accessibilityRole="alert"` på `Animated.View`.
+   *Verifikasjon:* TalkBack annonserer feil-toast.
+4. **analyze-varroa body-grense + Anthropic-timeout** (~30 min) — avvis `imageBase64.length > 9_400_000` med 413; `signal: AbortSignal.timeout(25_000)` på Anthropic-fetch.
+   *Verifikasjon:* For stort bilde → 413; treg AI → abort ikke hengende invokasjon.
+5. **Verifiser trial kube #4** (~30 min) — sett `trial_expires_at` fram i tid + `subscription_tier='starter'`, opprett kube #4. (Kode allerede fikset i 0052; dette er regresjonsverifikasjon.)
+   *Verifikasjon:* Trial-bruker oppretter kube #4; vanlig starter med 3 aktive får norsk trigger-feil.
+6. **Resize kube-/feed-foto** (~30 min) — `ImageManipulator.manipulateAsync(uri,[{resize:{width:1600}}],{compress:0.7})` i `normalizePhotoUri` + `feed/ny.pickImage`.
+   *Verifikasjon:* Opplastet kubefoto ~<300 kB i storage.
+7. **Lag-kontekst i samarbeid-modal + prisanker** (~30 min) — `title="Samarbeid med Lag"`/subtitle på modal i `kuber/[id]/index.tsx:378`; «fra 33 kr/mnd» i hjem-nudge.
+   *Verifikasjon:* Trykk «Samarbeid» → modal viser Lag-kontekst.
+8. **Stabiliser kubeliste** (~1 t) — `useMemo` på `filtered`/`hivesWithScore`, `useCallback`-renderItem i `kuber/index.tsx`.
+   *Verifikasjon:* HiveCard-memo treffer (ingen re-render ved filter ved 20+ kuber).
 
 ---
 
@@ -127,38 +124,40 @@ Rekkefølge etter ROI. Alle er S. Samlet estimat ~6–7 t.
 
 I rekkefølge, med avhengigheter.
 
-1. **Alle «denne uken»-fiksene over** (avhengighet: ingen). Ship-blokkere + billig konvertering/UU. Må være ferdig før resten.
-2. **Minimal analytics (6–8 events)** — `app_open`, `hive_created`, `inspection_completed`, `ai_analysis_run`, `upgrade_modal_shown`, `purchase_completed`, `push_opened`, `report_generated`. Hekt `push_opened` på eksisterende listener (`_layout.tsx:45`). *Avhengighet: ingen, men MÅ inn før lansering* — ellers er 100-betalende-målet blindflyging og effekten av alt annet i denne sprinten kan ikke måles.
-3. **`fontFamily` på salgsflater** (UpgradeModal, auth, Toast) — konsistent Manrope der det selger og ved førsteinntrykk. *Avhengighet: kontrast-passet (#6 over) bør gjøres samtidig på Toast for å unngå dobbeltarbeid.*
-4. **Trial-utløps-funnel** — scheduled push dag 12 + utløpsmodal med årsrabatt ved første åpning etter utløp. *Avhengighet: krever at trial faktisk virker server-side (sprint-punkt 1, 0013-fiks) + analytics (punkt 2) for å måle konvertering.*
-5. **GDPR + helsedata-hygiene** — DELETE-policy på `hive_disease_flags` + gratis dataeksport (art. 20, Edge Function som dumper brukerrader til JSON). *Avhengighet: ingen. Dataeksport er lovpålagt og bør være på plass ved offentlig lansering, men er ikke en intern-testing-blokker.*
+1. **Alle «denne uken»-fiksene over** (avhengighet: ingen). Apistan-fjerning er KRITISK-likeverdig ship-blokker; resten billig konvertering/UU/sikkerhet. Må være ferdig før resten.
+2. **Minimal analytics (6–8 events)** — `app_open`, `hive_created`, `inspection_completed`, `ai_analysis_run`, `upgrade_modal_shown`, `purchase_completed`, `push_opened`, `report_generated`. Hekt `push_opened` på `_layout.tsx:45`. *MÅ inn før lansering* — ellers er 100-betalende-målet og effekten av punkt 4 blindflyging.
+3. **`fontFamily` på salgsflater** (UpgradeModal, auth, Toast, Input) + tekstskalering `minHeight`. *Avhengighet: Toast-fonten gjøres samtidig med Toast-liveRegion (uke 1) for å unngå dobbeltarbeid.* UU-delen er lovpålagt.
+4. **Trial-utløps-funnel** — scheduled push dag 12 + utløpsmodal med årsrabatt ved første åpning etter utløp. *Avhengighet: trial server-side (verifisert i uke 1) + analytics (punkt 2) for å måle konvertering.*
+5. **GDPR-dataeksport (art. 20)** — Edge Function som dumper brukerrader til JSON, gratis i profil. *Avhengighet: ingen. Lovpålagt før offentlig lansering; ikke intern-testing-blokker.* (`hive_disease_flags` DELETE-policy gjort i uke 1.)
 
 ---
 
 ## 7. Etter lansering (3 mnd) — strategisk
 
-- **`weekly-hive-alerts` skalering** (A12 HØY) — paginer per brukerbatch eller flytt utvelgelse til SQL-RPC. Degraderer først ved 5–10k brukere; ufarlig ved <1k. Gjøres sammen med `last_seen_at`-kolonne for win-back.
-- **Win-back + år-for-år-progresjon** (A10) — `last_seen_at` + reaktiverings-gren ved 30/60 dager; fjorårslinje i SeasonSummaryCard + milepæl-kort. Kjernedriver for langtidsretention, men krever data fra én sesong for å være meningsfull.
-- **Offline-persistering + NetInfo** (A7 HØY) — `persistQueryClient` + onlineManager + offline-banner. Reell verdi i felt, men betal-app fungerer uten det ved lansering.
-- **Domeneutvidelser** (A4) — strukturert behandlingslogg (virkestoff-enum + tilbakeholdelse), eksponer `diseaseObservations` i wizard, steinyngel/trakemidd, maursyre i høst-anbefaling, sværm→sverm-stavefiks. Hever faglig troverdighet; ikke lanseringskritisk.
-- **Ytelse/hygiene** (A5/A6/A12) — splitt `hjem/index.tsx`, `lib/storageUpload.ts` + `lib/date.ts`-konsolidering, harden de 3 uvaliderte mapperne, hive-photo signer-ved-lesing (3-agent K1), `select('*')`→kolonnelister, CHECK-constraints, SELECT-policy `(SELECT auth.uid())`-wrap, processed_events-TTL. Alt lav reell risiko ved <100 brukere.
-- **expo-image** (A6) — disk-cache + downsampling for kubelister. Marginalt ved få kuber.
-- **lucide-react-native + Typography/Radii-migrering** (A2) — størst opplevd profesjonalitetsløft, men L-innsats. Bevisst utsatt.
-- **HoneyWidget montering + dato-seedet tipskort + auto-neste-inspeksjon** (A10) — billige retention-løft fra eksisterende data/kode.
-- **AppState token-refresh + lokal ErrorBoundary + betinget retry/norsk feiloversettelse** (A7) — robusthet; gjøres opportunistisk.
+- **`weekly-hive-alerts` skalering** (A12 HØY) — paginer per brukerbatch eller SQL-RPC for kandidatutvelgelse. Degraderer først ved 5–10k brukere; ufarlig <1k. Gjøres sammen med `last_seen_at` for win-back.
+- **Win-back + år-for-år-progresjon** (A10) — `last_seen_at` + reaktivering ved 30/60 dager; fjorårslinje i SeasonSummaryCard + milepæl-kort. Kjernedriver for langtidsretention; krever én sesong data for å være meningsfull.
+- **Offline-persistering + NetInfo** (A7 HØY) — `persistQueryClient` + `onlineManager` + offline-banner. Reell verdi i felt; appen krasjer ikke uten det ved lansering.
+- **AI-kvote-TOCTOU atomisk RPC** (A8/A12) — hvis kvotemisbruk observeres i analytics. Body-grense/timeout gjøres i uke 1.
+- **Domeneutvidelser** (A4) — eksponer `diseaseObservations` i wizard (datalaget finnes), strukturert behandlingslogg (virkestoff-enum + tilbakeholdelse), maursyre i høst-anbefaling, dobbeltsjekk steinyngel/trakemidd mot DB (lavere tillit til Agent 4 her). Hever faglig troverdighet; ikke lanseringskritisk.
+- **Ytelse/hygiene** (A5/A6/A12) — splitt `hjem/index.tsx`, `lib/storageUpload.ts` + `lib/date.ts`-konsolidering, harden `fetchMapHives`/`feed.toggleLike`, hive-photo signer-ved-lesing (3-agent K1), `select('*')`→kolonnelister, CHECK-constraints, SELECT-policy `(SELECT auth.uid())`-wrap, processed_events-TTL, `await` token-nulling. Lav reell risiko ved <100 brukere.
+- **lucide-react-native + Typography/Radii-migrering + expo-image** (A2/A6) — størst opplevd profesjonalitetsløft, men L-innsats. Bevisst utsatt.
+- **HoneyWidget montering + dato-seedet tipskort + auto-neste-inspeksjon** (A10) — billige retention-løft fra eksisterende kode/data.
+- **E-postverifisering med deep-link** (A11) — `emailRedirectTo` + `auth/callback`-rute (mønster i `googleAuth.ts`). Fjerner momentum-tap i e-posttrakten; Google-veien fungerer i mellomtiden.
+- **AppState token-refresh + lokal ErrorBoundary + betinget retry/norsk feiloversettelse** (A7) — robusthet; opportunistisk.
 
 ---
 
 ## 8. Ikke gjør (nå) — med begrunnelse
 
-- **Typography-/Radii-full-migrering (A2, L)** — prematur polering; flytter ikke konvertering. Gjør kun salgsflate-fontFamily.
+- **Typography-/Radii-full-migrering (A2, L)** — prematur polering; flytter ikke konvertering. Gjør kun salgsflate-`fontFamily`.
 - **Aktivere feed-fanen (A1 sovende, mot A10)** — tomt sosialt rom ved <100 brukere skader mer enn det gagner. Hold `href:null`.
-- **lucide-react-native ikonsett nå (A2)** — M-innsats, ren kosmetikk; etter lansering.
+- **lucide-react-native + expo-image nå (A2/A6)** — M-innsats, marginal gevinst ved få kuber; etter lansering.
 - **Offline-persistering før lansering (A7)** — verdifullt men ikke intern-testing-blokker; appen krasjer ikke uten det.
-- **`select('*')`-slanking utover `fetchHives` (A5/A6/A12)** — neglisjerbar gevinst ved <100 brukere; risiko for å bryte mapX ved hastverk.
-- **`weekly-hive-alerts`-paginering nå (A12)** — degraderer først ved 5–10k brukere. Ikke en lanseringsblokker for første sesong.
-- **Strukturert behandlingslogg / wizard-domeneutvidelser nå (A4 MEDIUM)** — verdifullt men M+M; ikke blokker. Apistan-fjerning og meldeplikt er det eneste lov-/faglig-kritiske, og bare Apistan er S.
-- **Splitte `hjem/index.tsx` nå (A5 HØY)** — testbarhetsgjeld, ikke brukerrisiko. Refaktorering rett før lansering introduserer regresjonsrisiko. Etterpå.
+- **`select('*')`-slanking utover `fetchHives` (A5/A6/A12)** — neglisjerbar gevinst <100 brukere; risiko for å bryte mapX ved hastverk.
+- **`weekly-hive-alerts`-paginering nå (A12)** — degraderer først ved 5–10k brukere. Ikke lanseringsblokker.
+- **Splitte `hjem/index.tsx` nå (A5 HØY)** — testbarhetsgjeld, ikke brukerrisiko. Refaktorering rett før lansering = regresjonsrisiko. Etterpå.
+- **Steinyngel/trakemidd-tillegg + sværm-stavefiks nå (A4)** — Agent 4 viste lav DB-tillit (overså 0048). Dobbeltsjekk faktisk DB-tilstand før handling; uansett ikke lanseringskritisk.
+- **30 dagers trial / gratis lead-magnet AI-analyse (A3)** — eksperiment, ikke blokker. Test etter analytics er på plass.
 - **iOS RevenueCat-arbeid** — utenfor scope (Android-only lansering per CLAUDE.md).
 
 ---
@@ -167,23 +166,24 @@ I rekkefølge, med avhengigheter.
 
 **GO for intern/lukket testing i nåværende tilstand. Betinget GO for åpen testing/produksjon.**
 
-Det finnes **ingen åpne KRITISK-funn i kode** (verifisert: forrige rundes 5 ship-blokkere er alle lukket i 0046–0051 + Sprint 1). Appen kan publiseres til lukket testing i dag.
+Det finnes **ett gjenstående KRITISK-likeverdig kodefunn** (Apistan i DB-seed + behandlingslogg) som ikke er en krasj-blokker, men en legemiddel-/lovrisiko: appen anbefaler aktivt et middel uten norsk markedsføringstillatelse. Appen kan publiseres til lukket testing i dag, men Apistan bør fjernes før åpen/produksjons-lansering.
 
-For **åpen testing / produksjon** gjenstår følgende — alle små:
+Forrige rundes ship-blokkere er alle lukket og verifisert (RevenueCat fail-fast, fail-closed weekly-alerts, 0052 trial-policy, EFB/kubebille via 0048).
 
-**Kode-blokkere (KRITISK-likeverdige for betaling/lov), samlet ~1 dag:**
-1. RevenueCat tom-nøkkel-kast (S) — uten dette får betalende brukere stille feil tier. *(½ t)*
-2. Drop utdatert 0013-policy (S) — uten dette avvises trial-brukere på kube #4 tross «ubegrenset»-løfte. *(½ t + test)*
-3. Fjern Apistan (S) — legemiddel-/lovrisiko (anbefaler ikke-godkjent middel). *(¼ t)*
+**Kode-/SQL-blokkere for åpen testing/produksjon (samlet ~1 dag):**
+1. **Fjern Apistan fra DB-seed + `TreatmentSection.tsx`** (S) — eneste KRITISK-likeverdige. Lovrisiko. *(¾ t)*
+2. DELETE-policy `hive_disease_flags` (S) — GDPR residual helsedata. *(¼ t)*
+3. analyze-varroa body-grense + Anthropic-timeout (S) — DoS/kostnadsvektor. *(½ t)*
+4. Verifiser trial kube #4 fungerer (allerede kodefikset i 0052). *(½ t test)*
 
-**Manuelle dashboard-blokkere (per `docs/lansering-sjekkliste.md`, ikke kode), ~1 dag:**
-4. Last opp v21-AAB til Play (v20 har brutt bildevalg).
-5. Data safety-URL + datainnsamlingserklæring.
-6. Supabase Pro + PITR (single-point-of-truth uten backup i dag).
-7. RevenueCat-produkter aktive i Play Console + testkjøp verifisert.
+**Manuelle dashboard-blokkere (per `docs/lansering-sjekkliste.md`, ~1 dag):**
+5. Last opp v21+-AAB til Play (v20 har brutt bildevalg).
+6. Data safety-URL + datainnsamlingserklæring (inkl. Anthropic som databehandler/USA-overføring — A8 LAV).
+7. Supabase Pro + PITR (single-point-of-truth uten backup i dag).
+8. RevenueCat-produkter aktive i Play Console + testkjøp verifisert.
 
-**Sterkt anbefalt før åpen lansering (ikke hard blokker), ~1 dag:**
-8. Minimal analytics (uten dette er 100-betalende-målet umålbart).
-9. GDPR-dataeksport (art. 20) + `hive_disease_flags` DELETE-policy.
+**Sterkt anbefalt før åpen lansering (ikke hard blokker, ~1 dag):**
+9. Minimal analytics (uten dette er 100-betalende-målet umålbart).
+10. GDPR-dataeksport (art. 20).
 
-**Samlet innsatsestimat blokkere: ~2 dager kode/SQL + ~1 dag manuelle dashboard-steg = 3 dager til produksjonsklar.** Ingen av blokkerne er arkitektoniske; alt er punktfikser eller dashboard-handlinger.
+**Samlet innsatsestimat blokkere: ~1 dag kode/SQL + ~1 dag manuelle dashboard-steg = ~2 dager til produksjonsklar.** Ingen blokkere er arkitektoniske; alt er punktfikser eller dashboard-handlinger.
