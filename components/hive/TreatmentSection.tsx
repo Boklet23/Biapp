@@ -21,7 +21,6 @@ const PRODUCTS = [
   'Thymovar',
   'MAQS (maursyre)',
   'Api-Bioxal',
-  'Apistan',
   'Annet',
 ];
 
