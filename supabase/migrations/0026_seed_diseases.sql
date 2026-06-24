@@ -14,11 +14,11 @@ VALUES
   'Varroamidd (Varroa destructor) er den alvorligste parasitten i norsk birøkt. Den suger blod fra bier og yngel, svekker immunforsvaret og sprer virus som deformed wing virus (DWV). Uten behandling kollapser kolonien vanligvis innen 2–3 år.',
   'Misdannede vinger (deformed wing virus), krympede bier, larver som dør i celler, synlige rødbrune midd (1,5 mm) på bienes bakkropp. Ved høyt press: kraftig koloninedgang om høsten.',
   'Oksalsyre (vinterstid når det er yngelfritt), Apistan, ApiLife Var eller Apivar. Kombinér alltid med tellemetode for å vurdere tetthet. Roter mellom virkemidler for å hindre resistens.',
-  'Regelmessig varroatelling (limbunn, vaskemetode eller sukkerpudder). Sværmforebygging reduserer yngelmengde og gir naturlig behandlingsvindu.',
+  'Regelmessig varroatelling (limbunn, vaskemetode eller sukkerpudder). Svermeforebygging reduserer yngelmengde og gir naturlig behandlingsvindu.',
   '[
     {"season": "Vår", "tips": [
       "Tell varroa i april–mai med limbunn (3 dager): >1 midd/dag = behandling nødvendig.",
-      "Sværmforebygging gir naturlig yngelstans — utnytt dette som behandlingsvindu.",
+      "Svermeforebygging gir naturlig yngelstans — utnytt dette som behandlingsvindu.",
       "Drone-yngel-fjerning: forseglet droneyngel har 10× mer midd enn arbeideryngel."
     ]},
     {"season": "Sommer", "tips": [

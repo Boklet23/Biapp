@@ -47,10 +47,10 @@ export const SEASON_GUIDE: SeasonMonth[] = [
     month: 4,
     icon: '🌸',
     title: 'April',
-    description: 'Aktiv vekstperiode. Sværmforebygging begynner.',
+    description: 'Aktiv vekstperiode. Svermeforebygging begynner.',
     tasks: [
       'Inspiser ukentlig – noter antall besatte rammer',
-      'Start sværmforebygging (klipp dronningceller)',
+      'Start svermeforebygging (klipp dronningceller)',
       'Tilsett rom etter behov',
       'Varroa-telling: limbunn-metode',
     ],
@@ -59,9 +59,9 @@ export const SEASON_GUIDE: SeasonMonth[] = [
     month: 5,
     icon: '🐝',
     title: 'Mai',
-    description: 'Høysesong for sværming. Aktiv honningproduksjon starter.',
+    description: 'Høysesong for sverming. Aktiv honningproduksjon starter.',
     tasks: [
-      'Sværmtid – inspiser hvert 7. til 9. dag',
+      'Svermetid – inspiser hvert 7. til 9. dag',
       'Legg på honningkropp ved 6–7 besatte rammer',
       'Fang sverm eller del kolonier',
       'Kontroller varroanivå',
@@ -75,7 +75,7 @@ export const SEASON_GUIDE: SeasonMonth[] = [
     tasks: [
       'Vurder første honninginnhøsting (lindeblomst)',
       'Sjekk dronningkvalitet',
-      'Evaluer sværmstatus',
+      'Evaluer svermestatus',
       'Varroa-behandling dersom nivå >3 pr. 100 bier',
     ],
   },

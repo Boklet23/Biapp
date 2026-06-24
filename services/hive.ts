@@ -1,5 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { FileSystemUploadType } from 'expo-file-system/legacy';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from '@/lib/supabase';
 import { BeeBreed, Hive, HiveType, MapHiveEntry } from '@/types';
 
@@ -39,20 +40,23 @@ export async function uploadHivePhoto(
   userId: string,
   accessToken: string,
 ): Promise<string> {
-  // Android gallery can return content:// URIs — FileSystem.uploadAsync requires file://
-  let uploadUri = localUri;
-  if (localUri.startsWith('content://')) {
-    const srcExt = localUri.split('.').pop()?.toLowerCase();
-    const tmpExt = srcExt && ['jpg', 'jpeg', 'png'].includes(srcExt) ? srcExt : 'jpg';
-    const tmp = `${FileSystem.cacheDirectory ?? FileSystem.documentDirectory ?? ''}hive_upload_${Date.now()}.${tmpExt}`;
-    await FileSystem.copyAsync({ from: localUri, to: tmp });
-    uploadUri = tmp;
+  // Resize + komprimer før opplasting (maks 1280px bred, JPEG). Sparer lagring
+  // og båndbredde, og gir samtidig en file://-URI — ImageManipulator håndterer
+  // content://- og ph://-URIer som FileSystem.uploadAsync ellers ikke godtar.
+  let uploadUri: string;
+  try {
+    const resized = await ImageManipulator.manipulateAsync(
+      localUri,
+      [{ resize: { width: 1280 } }],
+      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG },
+    );
+    uploadUri = resized.uri;
+  } catch {
+    throw new Error('Kunne ikke klargjøre bildet for opplasting. Prøv igjen.');
   }
 
-  const ext = uploadUri.split('.').pop()?.toLowerCase() ?? 'jpg';
-  const safeExt = ['jpg', 'jpeg', 'png'].includes(ext) ? ext : 'jpg';
-  const contentType = safeExt === 'png' ? 'image/png' : 'image/jpeg';
-  const fileName = `${userId}/${Date.now()}.${safeExt}`;
+  const contentType = 'image/jpeg';
+  const fileName = `${userId}/${Date.now()}.jpg`;
 
   const uploadUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/hive-photos/${fileName}`;
 

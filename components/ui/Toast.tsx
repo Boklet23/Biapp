@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Animated, StyleSheet, Text, useAnimatedValue } from 'react-native';
+import { AccessibilityInfo, Animated, Platform, StyleSheet, Text, useAnimatedValue } from 'react-native';
 import { Colors } from '@/constants/colors';
 import { useToastStore } from '@/store/toast';
 
@@ -17,6 +17,12 @@ export function GlobalToast() {
   useEffect(() => {
     if (!message) return;
 
+    // Skjermleser: Android leser accessibilityLiveRegion automatisk, men iOS
+    // VoiceOver må få en eksplisitt annonsering siden toasten dukker opp/forsvinner.
+    if (Platform.OS === 'ios') {
+      AccessibilityInfo.announceForAccessibility(message);
+    }
+
     Animated.sequence([
       Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
       Animated.delay(2600),
@@ -29,7 +35,12 @@ export function GlobalToast() {
   const config = TYPE_CONFIG[type];
 
   return (
-    <Animated.View style={[styles.toast, { backgroundColor: config.bg, opacity }]}>
+    <Animated.View
+      style={[styles.toast, { backgroundColor: config.bg, opacity }]}
+      accessible
+      accessibilityRole="alert"
+      accessibilityLiveRegion="assertive"
+    >
       <Text style={styles.icon}>{config.icon}</Text>
       <Text style={styles.text} numberOfLines={2}>{message}</Text>
     </Animated.View>

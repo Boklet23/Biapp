@@ -16,7 +16,7 @@ export const DISEASES: Disease[] = [
     treatment:
       'Oksalsyre (vinterstid når det er yngelfritt), maursyre (gjennom forseglet yngel), ApiLife Var (timol) eller Apivar (amitraz, krever godkjenningsfritak). Kombinér alltid med tellemetode for å vurdere tetthet.',
     prevention:
-      'Regelmessig varroatelling (limbunn, vaskemetode eller sukkerpuder). Sværmforebygging reduserer yngelmengde og gir naturlig behandlingsvindu.',
+      'Regelmessig varroatelling (limbunn, vaskemetode eller sukkerpuder). Svermeforebygging reduserer yngelmengde og gir naturlig behandlingsvindu.',
     thumbnailPath: null,
     photos: [
       { uri: `${BASE}varroamidd-01.png?v=1`, caption: 'Varroamidd på bie — nærbilde', bg: '#F5F0FF' },
