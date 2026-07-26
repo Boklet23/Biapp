@@ -10,6 +10,7 @@ import { Colors, Shadows } from '@/constants/colors';
 import { HiveTypeChip } from '@/components/hive/HiveTypeChip';
 import { fetchHive, normalizePhotoUri, updateHive, uploadHivePhoto } from '@/services/hive';
 import { supabase } from '@/lib/supabase';
+import { invalidateHiveCaches } from '@/lib/queryClient';
 import { useToastStore } from '@/store/toast';
 import { BeeBreed, HiveType } from '@/types';
 
@@ -143,7 +144,7 @@ export default function RedigerKube() {
     onError: (error: Error) => showToast(error.message ?? 'Kunne ikke lagre endringer', 'error'),
     onSuccess: (updatedHive) => {
       queryClient.setQueryData(['hive', id], updatedHive);
-      queryClient.invalidateQueries({ queryKey: ['hives'] });
+      invalidateHiveCaches(queryClient);
       router.back();
     },
   });

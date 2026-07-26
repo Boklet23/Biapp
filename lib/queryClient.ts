@@ -26,3 +26,10 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+/** Invaliderer alle kube-lister (kubeliste, dashboard, kart) etter opprett/rediger/slett, så visningene holdes i synk. */
+export function invalidateHiveCaches(client: QueryClient): void {
+  client.invalidateQueries({ queryKey: ['hives'] });
+  client.invalidateQueries({ queryKey: ['last-inspection-per-hive'] });
+  client.invalidateQueries({ queryKey: ['map-hives'] });
+}

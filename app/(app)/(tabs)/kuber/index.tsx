@@ -10,6 +10,7 @@ import { BeeParticles } from '@/components/animations/BeeParticles';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
 import { Colors, Shadows } from '@/constants/colors';
 import { FontFamily } from '@/constants/typography';
+import { invalidateHiveCaches } from '@/lib/queryClient';
 import { fetchHives, deleteHive } from '@/services/hive';
 import { fetchLastInspectionPerHive } from '@/services/inspection';
 import { useAuthStore } from '@/store/auth';
@@ -59,8 +60,7 @@ export default function KuberOversikt() {
   const deleteMutation = useMutation({
     mutationFn: deleteHive,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hives'] });
-      queryClient.invalidateQueries({ queryKey: ['last-inspection-per-hive'] });
+      invalidateHiveCaches(queryClient);
     },
     onError: (error: Error) => {
       showToast(error.message ?? 'Kunne ikke slette kuben. Prøv igjen.', 'error');

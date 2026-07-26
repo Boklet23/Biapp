@@ -11,6 +11,7 @@ import { Colors } from '@/constants/colors';
 import { HiveTypeChip } from '@/components/hive/HiveTypeChip';
 import { createHive, normalizePhotoUri, uploadHivePhoto } from '@/services/hive';
 import { supabase } from '@/lib/supabase';
+import { invalidateHiveCaches } from '@/lib/queryClient';
 import { useToastStore } from '@/store/toast';
 import { useAuthStore } from '@/store/auth';
 import { useEffectiveTier } from '@/hooks/useEffectiveTier';
@@ -95,7 +96,7 @@ export default function NyKube() {
     onError: (error: Error) => showToast(error.message ?? 'Kunne ikke lagre kube', 'error'),
     onSuccess: (hive) => {
       queryClient.setQueryData(['hive', hive.id], hive);
-      queryClient.invalidateQueries({ queryKey: ['hives'] });
+      invalidateHiveCaches(queryClient);
       router.replace({ pathname: '/kuber/[id]' as any, params: { id: hive.id } });
     },
   });
