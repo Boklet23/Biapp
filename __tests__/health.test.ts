@@ -39,12 +39,23 @@ describe('computeHealthScore', () => {
     expect(computeHealthScore(makeInspection({ varroaCount: 0 }))).toBe(95);
   });
 
-  it('trapper ned scoren etter varroa-nivå', () => {
-    expect(computeHealthScore(makeInspection({ varroaCount: 1 }))).toBe(95); // -5
+  it('trapper ned scoren etter varroa-nivå (standardterskler: 3/5/8)', () => {
+    expect(computeHealthScore(makeInspection({ varroaCount: 1 }))).toBe(80); // >0, under moderat: -20
     expect(computeHealthScore(makeInspection({ varroaCount: 2 }))).toBe(80); // -20
-    expect(computeHealthScore(makeInspection({ varroaCount: 3 }))).toBe(65); // -35
-    expect(computeHealthScore(makeInspection({ varroaCount: 5 }))).toBe(48); // -52
-    expect(computeHealthScore(makeInspection({ varroaCount: 12 }))).toBe(32); // -68
+    expect(computeHealthScore(makeInspection({ varroaCount: 3 }))).toBe(65); // moderat: -35
+    expect(computeHealthScore(makeInspection({ varroaCount: 5 }))).toBe(48); // forhøyet: -52
+    expect(computeHealthScore(makeInspection({ varroaCount: 12 }))).toBe(32); // kritisk: -68
+  });
+
+  it('bruker metodespesifikke terskler fra varroaThresholds()', () => {
+    // Alkoholspyling: kritisk ved 3 per 100 bier → -68
+    expect(
+      computeHealthScore(makeInspection({ varroaCount: 3, varroaMethod: 'alkoholspyling' })),
+    ).toBe(32);
+    // Limbunn: 3 per dag er over moderat (2) men under forhøyet (4) → -35
+    expect(
+      computeHealthScore(makeInspection({ varroaCount: 3, varroaMethod: 'limbunn' })),
+    ).toBe(65);
   });
 
   it('behandler manglende varroatelling som 0', () => {
@@ -73,6 +84,17 @@ describe('computeHealthScore', () => {
     const d50 = new Date(Date.now() - 50 * 86400000).toISOString();
     expect(computeHealthScore(makeInspection({ inspectedAt: d30 }))).toBe(85); // -5 -10
     expect(computeHealthScore(makeInspection({ inspectedAt: d50 }))).toBe(75); // -5 -10 -10
+  });
+
+  it('bruker strengt større-enn på staleness-grensene (21/22 og 42/43 dager)', () => {
+    const d21 = new Date(Date.now() - 21 * 86400000).toISOString();
+    const d22 = new Date(Date.now() - 22 * 86400000).toISOString();
+    const d42 = new Date(Date.now() - 42 * 86400000).toISOString();
+    const d43 = new Date(Date.now() - 43 * 86400000).toISOString();
+    expect(computeHealthScore(makeInspection({ inspectedAt: d21 }))).toBe(95); // nøyaktig 21: intet trekk
+    expect(computeHealthScore(makeInspection({ inspectedAt: d22 }))).toBe(85); // -10
+    expect(computeHealthScore(makeInspection({ inspectedAt: d42 }))).toBe(85); // fortsatt kun første trekk
+    expect(computeHealthScore(makeInspection({ inspectedAt: d43 }))).toBe(75); // -10 -10
   });
 
   it('klamper aldri scoren under 0', () => {

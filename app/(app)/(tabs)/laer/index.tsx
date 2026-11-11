@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 import { router } from 'expo-router';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Screen } from '@/components/ui/Screen';
 import { ArticleCard } from '@/components/info/ArticleCard';
 import { DiseaseCard } from '@/components/disease/DiseaseCard';
@@ -14,7 +14,8 @@ import { GUIDE_ARTICLES } from '@/constants/beginnerGuide';
 import { DISEASES } from '@/constants/diseases';
 import { fetchDiseases } from '@/services/diseases';
 import { fetchHives } from '@/services/hive';
-import { fetchHarvests, createHarvest, deleteHarvest } from '@/services/harvest';
+import { fetchHarvests } from '@/services/harvest';
+import { useCreateHarvest, useDeleteHarvest } from '@/hooks/useHarvestMutations';
 import { useAuthStore } from '@/store/auth';
 import { useEffectiveTier } from '@/hooks/useEffectiveTier';
 import { useToastStore } from '@/store/toast';
@@ -31,7 +32,6 @@ export default function Info() {
   const profile = useAuthStore((s) => s.profile);
   const effectiveTier = useEffectiveTier();
   const { show: showToast } = useToastStore();
-  const queryClient = useQueryClient();
 
   const { data: hives = [] } = useQuery({
     queryKey: ['hives'],
@@ -40,30 +40,23 @@ export default function Info() {
 
   const { data: harvests = [] } = useQuery({
     queryKey: ['harvests'],
-    queryFn: fetchHarvests,
+    queryFn: () => fetchHarvests(),
   });
 
   const activeHives = hives.filter((h) => h.isActive);
   const activeHiveCount = activeHives.length;
 
-  const createMutation = useMutation({
-    mutationFn: (args: { hiveId: string; harvestedAt: string; quantityKg: number; notes: string }) =>
-      createHarvest({ hiveId: args.hiveId, harvestedAt: args.harvestedAt, quantityKg: args.quantityKg, notes: args.notes }),
+  const createMutation = useCreateHarvest({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['harvests'] });
       setHarvestModalVisible(false);
       showToast('Høst registrert!', 'success');
     },
-    onError: (error: Error) => showToast(error.message, 'error'),
+    onError: (error) => showToast(error.message, 'error'),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteHarvest,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['harvests'] });
-      showToast('Høst slettet', 'info');
-    },
-    onError: (error: Error) => showToast(error.message, 'error'),
+  const deleteMutation = useDeleteHarvest({
+    onSuccess: () => showToast('Høst slettet', 'info'),
+    onError: (error) => showToast(error.message, 'error'),
   });
 
   const { data: diseases = DISEASES } = useQuery({

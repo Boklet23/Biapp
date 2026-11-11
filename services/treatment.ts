@@ -11,14 +11,15 @@ export interface CreateTreatmentData {
 }
 
 export async function fetchAllTreatments(): Promise<Treatment[]> {
-  const oneYearAgo = new Date();
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 2);
+  const twoYearsAgo = new Date();
+  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
   const { data, error } = await supabase
     .from('treatments')
     .select('*')
-    .gte('treated_at', oneYearAgo.toISOString().split('T')[0])
-    .order('treated_at', { ascending: false });
+    .gte('treated_at', twoYearsAgo.toISOString().split('T')[0])
+    .order('treated_at', { ascending: false })
+    .limit(1000);
 
   if (error) throw error;
   return data.map(mapTreatment);
@@ -29,7 +30,8 @@ export async function fetchTreatments(hiveId: string): Promise<Treatment[]> {
     .from('treatments')
     .select('*')
     .eq('hive_id', hiveId)
-    .order('treated_at', { ascending: false });
+    .order('treated_at', { ascending: false })
+    .limit(200);
 
   if (error) throw error;
   return data.map(mapTreatment);

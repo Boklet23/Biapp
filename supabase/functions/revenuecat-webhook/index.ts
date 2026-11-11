@@ -100,10 +100,21 @@ Deno.serve(async (req: Request) => {
     // On expiration/billing issue: downgrade to starter
     tier = 'starter';
   } else if (UPGRADE_EVENTS.has(eventType)) {
-    // On purchase/renewal: read active entitlements from event
-    const entitlements = Object.keys(
-      (event.entitlement_ids as Record<string, unknown>) ?? {}
-    );
+    // entitlement_ids er et ARRAY av strenger i RevenueCats webhook-skjema
+    // (ulikt SDK-ens CustomerInfo der entitlements er et objekt). Object.keys
+    // på et array gir indeksene ('0','1',…) → tier ble alltid 'starter'.
+    const rawEntitlements = event.entitlement_ids;
+    const entitlements = Array.isArray(rawEntitlements)
+      ? rawEntitlements.filter((e): e is string => typeof e === 'string')
+      : rawEntitlements && typeof rawEntitlements === 'object'
+        ? Object.keys(rawEntitlements)
+        : [];
+    if (entitlements.length === 0) {
+      // Kjøps-event uten entitlements skal ikke forekomme — aldri skriv
+      // 'starter' over en betalende bruker på grunnlag av tomme data.
+      console.error(`${eventType} for ${userId}: entitlement_ids tom/ukjent form — hopper over tier-skriving`);
+      return new Response('No entitlements in upgrade event', { status: 200 });
+    }
     tier = entitlementsToTier(entitlements);
   } else {
     // CANCELLATION etc. — user still has access until period ends, keep current tier

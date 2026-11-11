@@ -3,7 +3,8 @@ import { ActivityIndicator, View } from 'react-native';
 import { useAuthStore } from '@/store/auth';
 
 export default function AuthLayout() {
-  const { session, isLoading } = useAuthStore();
+  const session = useAuthStore((s) => s.session);
+  const isLoading = useAuthStore((s) => s.isLoading);
 
   if (isLoading) return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>

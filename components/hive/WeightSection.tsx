@@ -3,6 +3,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Colors, Shadows } from '@/constants/colors';
+import { QueryErrorNotice } from '@/components/ui/QueryErrorNotice';
 import { FontFamily } from '@/constants/typography';
 import { createWeight, deleteWeight, fetchWeights } from '@/services/weight';
 import { HiveWeight } from '@/types';
@@ -160,7 +161,7 @@ export function WeightSection({ hiveId }: WeightSectionProps) {
   const queryClient = useQueryClient();
   const [modalVisible, setModalVisible] = useState(false);
 
-  const { data: weights = [] } = useQuery({
+  const { data: weights = [], isError, refetch } = useQuery({
     queryKey: ['weights', hiveId],
     queryFn: () => fetchWeights(hiveId),
   });
@@ -190,7 +191,9 @@ export function WeightSection({ hiveId }: WeightSectionProps) {
         </Pressable>
       </View>
 
-      {weights.length === 0 ? (
+      {isError ? (
+        <QueryErrorNotice message="Kunne ikke laste vektregistreringer" onRetry={() => refetch()} />
+      ) : weights.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyEmoji}>⚖️</Text>
           <Text style={styles.emptyText}>Ingen vektregistreringer ennå</Text>

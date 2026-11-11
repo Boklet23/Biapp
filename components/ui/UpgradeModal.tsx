@@ -78,7 +78,8 @@ interface UpgradeModalProps {
 }
 
 export function UpgradeModal({ visible, onClose, title, subtitle }: UpgradeModalProps) {
-  const { profile, setProfile } = useAuthStore();
+  const profile = useAuthStore((s) => s.profile);
+  const setProfile = useAuthStore((s) => s.setProfile);
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [cycle, setCycle] = useState<BillingCycle>('annual');
 
@@ -134,6 +135,8 @@ export function UpgradeModal({ visible, onClose, title, subtitle }: UpgradeModal
       onClose();
     } catch (e: unknown) {
       if ((e as { userCancelled?: boolean }).userCancelled) return;
+      // Reelle betalingsfeil må være diagnostiserbare — ikke bare en generisk Alert.
+      Sentry.captureException(e, { tags: { context: 'purchase' }, extra: { entitlement, cycle } });
       Alert.alert('Kjøp feilet', 'Prøv igjen eller kontakt support.');
     } finally {
       setPurchasing(null);
@@ -148,7 +151,8 @@ export function UpgradeModal({ visible, onClose, title, subtitle }: UpgradeModal
       if (profile) setProfile({ ...profile, subscriptionTier: tier });
       Alert.alert('Kjøp gjenopprettet', `Abonnement: ${tier}`);
       onClose();
-    } catch {
+    } catch (e: unknown) {
+      Sentry.captureException(e, { tags: { context: 'restore_purchases' } });
       Alert.alert('Feil', 'Kunne ikke gjenopprette kjøp.');
     } finally {
       setPurchasing(null);

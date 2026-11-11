@@ -28,15 +28,25 @@ interface ExpoPushTicket {
   details?: { error?: string };
 }
 
+/** Konstant-tid strengsammenligning — unngår timing-lekkasje av secreten. */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
   // ── Auth check ──────────────────────────────────────────────────────────
   // Fail-closed: mangler secret-env, eller feil/manglende header → avvis.
-  // Hindrer at hvem som helst kan trigge push-utsending dersom
-  // WEEKLY_ALERTS_SECRET ved et uhell ikke er satt i miljøet.
+  // Konstant-tid sammenligning (samme mønster som revenuecat-webhook).
   const alertsSecret = Deno.env.get('WEEKLY_ALERTS_SECRET');
-  if (!alertsSecret || req.headers.get('x-alerts-secret') !== alertsSecret) {
+  const providedSecret = req.headers.get('x-alerts-secret') ?? '';
+  if (!alertsSecret || !timingSafeEqual(providedSecret, alertsSecret)) {
     return new Response('Unauthorized', { status: 401, headers: CORS });
   }
 
@@ -153,6 +163,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 5. Send in batches of 100, handle DeviceNotRegistered ────────────
     let sentCount = 0;
+    let failedBatches = 0;
     const invalidTokens: string[] = [];
 
     for (let i = 0; i < messages.length; i += 100) {
@@ -163,7 +174,12 @@ Deno.serve(async (req: Request) => {
         body: JSON.stringify(batch),
       });
 
-      if (!res.ok) continue;
+      if (!res.ok) {
+        // Uten denne var 'sent: 0' umulig å skille fra 'ingen trengte varsel'.
+        console.error('Expo push-batch feilet:', res.status, await res.text().catch(() => ''));
+        failedBatches++;
+        continue;
+      }
 
       const json = await res.json() as { data?: ExpoPushTicket[] };
       const tickets = json.data ?? [];
@@ -187,8 +203,8 @@ Deno.serve(async (req: Request) => {
         .catch(() => {});
     }
 
-    console.log(`weekly-hive-alerts: sent ${sentCount}/${messages.length} notifications, invalidated ${invalidTokens.length} tokens`);
-    return Response.json({ sent: sentCount, total: messages.length }, { headers: CORS });
+    console.log(`weekly-hive-alerts: sent ${sentCount}/${messages.length} notifications, ${failedBatches} failed batches, invalidated ${invalidTokens.length} tokens`);
+    return Response.json({ sent: sentCount, total: messages.length, failedBatches }, { headers: CORS });
 
   } catch (err) {
     console.error('weekly-hive-alerts error:', err);

@@ -108,8 +108,11 @@ export default function SesongSammenligning() {
   const hasPro = tierAtLeast(effectiveTier, 'profesjonell');
 
   const { data: hives = [] } = useQuery({ queryKey: ['hives'], queryFn: fetchHives, enabled: hasPro });
-  const { data: inspections = [] } = useQuery({ queryKey: ['all-inspections'], queryFn: fetchAllInspections, enabled: hasPro });
-  const { data: harvests = [] } = useQuery({ queryKey: ['harvests'], queryFn: fetchHarvests, enabled: hasPro });
+  // 3-årsvindu med egne cache-nøkler: standardvinduene (1 år inspeksjoner,
+  // 2 år høst) gjorde at eldste sammenligningsår alltid var tomt/avkuttet.
+  // Prefiks-invalidering på ['all-inspections']/['harvests'] treffer fortsatt.
+  const { data: inspections = [] } = useQuery({ queryKey: ['all-inspections', '3y'], queryFn: () => fetchAllInspections(3), enabled: hasPro });
+  const { data: harvests = [] } = useQuery({ queryKey: ['harvests', '3y'], queryFn: () => fetchHarvests(3), enabled: hasPro });
 
   const activeHives = hives.filter((h) => h.isActive);
 

@@ -59,15 +59,24 @@ export async function toggleLike(postId: string, likedByMe: boolean): Promise<vo
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) throw new Error('Ikke innlogget');
 
-  if (likedByMe) {
-    await supabase.from('feed_likes').delete().eq('post_id', postId).eq('user_id', session.user.id);
-    const { count } = await supabase.from('feed_likes').select('*', { count: 'exact', head: true }).eq('post_id', postId);
-    await supabase.from('feed_posts').update({ likes: count ?? 0 }).eq('id', postId);
-  } else {
-    await supabase.from('feed_likes').insert({ post_id: postId, user_id: session.user.id });
-    const { count } = await supabase.from('feed_likes').select('*', { count: 'exact', head: true }).eq('post_id', postId);
-    await supabase.from('feed_posts').update({ likes: count ?? 0 }).eq('id', postId);
-  }
+  const likeOp = likedByMe
+    ? await supabase.from('feed_likes').delete().eq('post_id', postId).eq('user_id', session.user.id)
+    : await supabase.from('feed_likes').insert({ post_id: postId, user_id: session.user.id });
+  if (likeOp.error) throw new Error(likeOp.error.message);
+
+  // ponytail: les-tell-skriv er ikke atomisk — flytt til én RPC hvis feed-fanen
+  // aktiveres og får reell trafikk (to samtidige likes kan gi feil teller).
+  const { count, error: countError } = await supabase
+    .from('feed_likes')
+    .select('*', { count: 'exact', head: true })
+    .eq('post_id', postId);
+  if (countError) throw new Error(countError.message);
+
+  const { error: updateError } = await supabase
+    .from('feed_posts')
+    .update({ likes: count ?? 0 })
+    .eq('id', postId);
+  if (updateError) throw new Error(updateError.message);
 }
 
 export async function deletePost(id: string): Promise<void> {

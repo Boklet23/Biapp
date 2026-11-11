@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Colors, Shadows } from '@/constants/colors';
+import { QueryErrorNotice } from '@/components/ui/QueryErrorNotice';
 import { createTreatment, deleteTreatment, fetchTreatments } from '@/services/treatment';
 import { Treatment } from '@/types';
 
@@ -180,7 +181,7 @@ export function TreatmentSection({ hiveId }: TreatmentSectionProps) {
   const [modalVisible, setModalVisible] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
-  const { data: treatments = [] } = useQuery({
+  const { data: treatments = [], isError, refetch } = useQuery({
     queryKey: ['treatments', hiveId],
     queryFn: () => fetchTreatments(hiveId),
   });
@@ -201,7 +202,9 @@ export function TreatmentSection({ hiveId }: TreatmentSectionProps) {
         </Pressable>
       </View>
 
-      {treatments.length === 0 ? (
+      {isError ? (
+        <QueryErrorNotice message="Kunne ikke laste behandlinger" onRetry={() => refetch()} />
+      ) : treatments.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyEmoji}>💊</Text>
           <Text style={styles.emptyText}>Ingen behandlinger logget</Text>

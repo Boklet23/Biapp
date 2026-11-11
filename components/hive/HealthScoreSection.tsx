@@ -70,6 +70,10 @@ function computeScore(inspections: Inspection[]): { score: number; label: string
   else if (score >= 40) label = 'Bekymringsfullt';
   else label = 'Kritisk';
 
+  // «Utmerket» rett over en ⚠️-liste er selvmotsigende — små trekk skal aldri
+  // gi topplabel når det faktisk finnes påpekte problemer.
+  if (issues.length > 0 && label === 'Utmerket') label = 'Bra';
+
   return { score, label, issues };
 }
 

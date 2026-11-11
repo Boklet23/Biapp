@@ -17,7 +17,7 @@ interface AuthState {
   signOut: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   session: null,
   supabaseUser: null,
   profile: null,
@@ -37,6 +37,12 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   signOut: async () => {
     try {
+      // Delt/videresolgt enhet: fjern push-målet FØR sesjonen ryker, ellers
+      // fortsetter ukesvarsler (med forrige brukers kubenavn) til enheten.
+      const userId = get().supabaseUser?.id;
+      if (userId) {
+        await supabase.from('profiles').update({ push_token: null }).eq('id', userId);
+      }
       await supabase.auth.signOut();
     } catch {
       // continue — clear local state regardless of network error

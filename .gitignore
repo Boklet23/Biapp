@@ -51,3 +51,9 @@ graphify-out/
 
 # Automation prompt (contains credentials — local only)
 scripts/automate-remaining.md
+
+# Supabase CLI midlertidige filer
+supabase/.temp/
+
+# Claude Code lokale laasefiler
+.claude/scheduled_tasks.lock

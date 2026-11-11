@@ -40,7 +40,9 @@ export function SwarmMap({ searchQuery = '' }: SwarmMapProps) {
   const { data: reports = [] } = useQuery({
     queryKey: ['swarm-reports'],
     queryFn: fetchSwarmReports,
-    refetchInterval: 60_000,
+    // Realtime-kanalen under er primærkilden — intervallet er kun et
+    // sikkerhetsnett for tapte socket-hendelser.
+    refetchInterval: 300_000,
   });
 
   useEffect(() => {
@@ -128,7 +130,12 @@ export function SwarmMap({ searchQuery = '' }: SwarmMapProps) {
       {/* Valgt rapport callout */}
       {selectedReport && (
         <View style={styles.callout}>
-          <Pressable style={styles.calloutClose} onPress={() => setSelectedReport(null)}>
+          <Pressable
+            style={styles.calloutClose}
+            onPress={() => setSelectedReport(null)}
+            accessibilityRole="button"
+            accessibilityLabel="Lukk"
+          >
             <Text style={styles.calloutCloseText}>✕</Text>
           </Pressable>
           <Text style={styles.calloutTitle}>Sverm rapportert {daysSince(selectedReport.reportedAt)}</Text>

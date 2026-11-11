@@ -36,8 +36,27 @@ function geoJsonCircle(lat: number, lng: number, radiusMeters: number): number[]
   return coords;
 }
 
-export default function HiveMap({ hive }: HiveMapProps) {
-  if (hive.locationLat == null || hive.locationLng == null) {
+export default React.memo(function HiveMap({ hive }: HiveMapProps) {
+  const lat = hive.locationLat;
+  const lng = hive.locationLng;
+
+  // Sirkelgeometrien er ren trig av posisjonen — uten memo ble 4×65 punkter
+  // regnet om (og nye ShapeSource-objekter diffet natively) hver gang
+  // kubeprofilen re-rendret, dvs. ved hver inspeksjons-/behandlingslagring.
+  const rings = React.useMemo(() => {
+    if (lat == null || lng == null) return [];
+    return FLIGHT_RINGS.map(({ radius, color }) => ({
+      radius,
+      color,
+      shape: {
+        type: 'Feature' as const,
+        geometry: { type: 'Polygon' as const, coordinates: [geoJsonCircle(lat, lng, radius)] },
+        properties: {},
+      },
+    }));
+  }, [lat, lng]);
+
+  if (lat == null || lng == null) {
     return (
       <View style={styles.placeholder}>
         <Text style={styles.placeholderText}>📍 Ingen posisjon registrert</Text>
@@ -49,9 +68,6 @@ export default function HiveMap({ hive }: HiveMapProps) {
 
   const { MapView, Camera, PointAnnotation, ShapeSource, FillLayer, LineLayer } = mapboxLib as any;
   const Mapbox = mapboxLib.default;
-
-  const lat = hive.locationLat;
-  const lng = hive.locationLng;
 
   return (
     <View style={styles.container}>
@@ -72,28 +88,20 @@ export default function HiveMap({ hive }: HiveMapProps) {
             animationDuration={0}
           />
 
-          {FLIGHT_RINGS.map(({ radius, color }) => {
-            const coords = geoJsonCircle(lat, lng, radius);
-            const shape = {
-              type: 'Feature',
-              geometry: { type: 'Polygon', coordinates: [coords] },
-              properties: {},
-            };
-            return (
-              <React.Fragment key={radius}>
-                <ShapeSource id={`circle-src-${radius}`} shape={shape}>
-                  <FillLayer
-                    id={`circle-fill-${radius}`}
-                    style={{ fillColor: color, fillOpacity: 0.12 }}
-                  />
-                  <LineLayer
-                    id={`circle-line-${radius}`}
-                    style={{ lineColor: color, lineWidth: 2, lineOpacity: 0.8 }}
-                  />
-                </ShapeSource>
-              </React.Fragment>
-            );
-          })}
+          {rings.map(({ radius, color, shape }) => (
+            <React.Fragment key={radius}>
+              <ShapeSource id={`circle-src-${radius}`} shape={shape}>
+                <FillLayer
+                  id={`circle-fill-${radius}`}
+                  style={{ fillColor: color, fillOpacity: 0.12 }}
+                />
+                <LineLayer
+                  id={`circle-line-${radius}`}
+                  style={{ lineColor: color, lineWidth: 2, lineOpacity: 0.8 }}
+                />
+              </ShapeSource>
+            </React.Fragment>
+          ))}
 
           <PointAnnotation id="hive-location" coordinate={[lng, lat]}>
             <View style={styles.markerPin}>
@@ -114,7 +122,7 @@ export default function HiveMap({ hive }: HiveMapProps) {
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   placeholder: {

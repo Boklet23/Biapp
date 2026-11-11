@@ -1,5 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { FileSystemUploadType } from 'expo-file-system/legacy';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from '@/lib/supabase';
 import { Inspection, VarroaAnalysis } from '@/types';
 
@@ -56,9 +57,10 @@ export async function fetchLastInspectionPerHive(): Promise<Record<string, Inspe
   return map;
 }
 
-export async function fetchAllInspections(): Promise<Inspection[]> {
+/** @param sinceYears Hvor mange år bakover vinduet strekker seg (default 1 — dashboardets behov). */
+export async function fetchAllInspections(sinceYears = 1): Promise<Inspection[]> {
   const oneYearAgo = new Date();
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - sinceYears);
 
   const { data, error } = await supabase
     .from('inspections')
@@ -76,9 +78,10 @@ export async function fetchInspection(id: string): Promise<Inspection> {
     .from('inspections')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
+  if (!data) throw new Error('Inspeksjon ikke funnet');
   return mapInspection(data);
 }
 
@@ -123,19 +126,24 @@ export async function uploadInspectionPhoto(
   userId: string,
   accessToken: string,
 ): Promise<string> {
-  let uploadUri = localUri;
-  if (localUri.startsWith('content://')) {
-    const srcExt = localUri.split('.').pop()?.toLowerCase();
-    const tmpExt = srcExt && ['jpg', 'jpeg', 'png'].includes(srcExt) ? srcExt : 'jpg';
-    const tmp = `${FileSystem.cacheDirectory ?? FileSystem.documentDirectory ?? ''}insp_${Date.now()}.${tmpExt}`;
-    await FileSystem.copyAsync({ from: localUri, to: tmp });
-    uploadUri = tmp;
+  // Re-enkoder via ImageManipulator (resize + JPEG) — stripper EXIF, inkludert
+  // kameraets GPS-posisjon, fra selve filen (ImagePicker sin `exif: false`
+  // fjerner kun metadata fra JS-svaret, ikke fra filen). Samme mønster som
+  // uploadHivePhoto; håndterer også content://-URIer.
+  let uploadUri: string;
+  try {
+    const resized = await ImageManipulator.manipulateAsync(
+      localUri,
+      [{ resize: { width: 1600 } }],
+      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG },
+    );
+    uploadUri = resized.uri;
+  } catch {
+    throw new Error('Kunne ikke klargjøre bildet for opplasting. Prøv igjen.');
   }
 
-  const ext = uploadUri.split('.').pop()?.toLowerCase() ?? 'jpg';
-  const safeExt = ['jpg', 'jpeg', 'png'].includes(ext) ? ext : 'jpg';
-  const contentType = safeExt === 'png' ? 'image/png' : 'image/jpeg';
-  const fileName = `${userId}/${inspectionId}/${Date.now()}.${safeExt}`;
+  const contentType = 'image/jpeg';
+  const fileName = `${userId}/${inspectionId}/${Date.now()}.jpg`;
   const uploadUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/inspection-media/${fileName}`;
 
   const response = await FileSystem.uploadAsync(uploadUrl, uploadUri, {

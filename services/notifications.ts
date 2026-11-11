@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/lib/supabase';
 
 const REMINDER_IDS_KEY = 'inspection_reminder_ids';
@@ -146,12 +147,39 @@ export async function cancelInspectionReminders(notificationIds: string[]): Prom
 }
 
 const SEASONAL_IDS_KEY = 'seasonal_reminder_ids';
+const SEASONAL_OPTOUT_KEY = 'seasonal_reminders_optout';
+
+async function cancelStoredSeasonalNotifications(): Promise<void> {
+  const raw = await AsyncStorage.getItem(SEASONAL_IDS_KEY);
+  if (!raw) return;
+  const stored: Record<string, string> = JSON.parse(raw);
+  const { cancelScheduledNotificationAsync } = await import('expo-notifications');
+  await Promise.all(Object.values(stored).map((id) => cancelScheduledNotificationAsync(id)));
+  await AsyncStorage.removeItem(SEASONAL_IDS_KEY);
+}
+
+/** Oppstarts-vedlikehold: re-planlegg kun hvis brukeren ikke aktivt har slått av. */
+export async function maintainSeasonalReminders(): Promise<void> {
+  try {
+    const optedOut = await AsyncStorage.getItem(SEASONAL_OPTOUT_KEY);
+    if (optedOut === '1') return;
+    await scheduleSeasonalReminders();
+  } catch (err) {
+    Sentry.captureException(err, { tags: { context: 'seasonal_maintain' } });
+  }
+}
 
 export async function scheduleSeasonalReminders(): Promise<void> {
   if (isExpoGo || Platform.OS === 'web') return;
   await initNotificationHandler();
   const granted = await requestNotificationPermission();
   if (!granted) return;
+
+  // Idempotent: rydd forrige planlagte sett først — ellers akkumuleres
+  // duplikat-varsler for samme datoer ved hver oppstart/re-planlegging.
+  try { await cancelStoredSeasonalNotifications(); } catch { /* best effort */ }
+  // Eksplisitt planlegging (profil-bryter PÅ) opphever tidligere opt-out.
+  await AsyncStorage.removeItem(SEASONAL_OPTOUT_KEY).catch(() => {});
 
   const { SEASON_REMINDERS } = await import('@/constants/seasonReminders');
   const { scheduleNotificationAsync, SchedulableTriggerInputTypes } = await import('expo-notifications');
@@ -171,8 +199,9 @@ export async function scheduleSeasonalReminders(): Promise<void> {
         trigger: { type: SchedulableTriggerInputTypes.DATE, date: fireDate },
       });
       stored[reminder.id] = id;
-    } catch {
-      // Skip if scheduling fails for any single reminder
+    } catch (err) {
+      // Hopp over enkelt-påminnelse, men gjør systemisk svikt synlig i Sentry.
+      Sentry.captureException(err, { tags: { context: 'seasonal_schedule_item' } });
     }
   }
 
@@ -182,14 +211,11 @@ export async function scheduleSeasonalReminders(): Promise<void> {
 export async function cancelSeasonalReminders(): Promise<void> {
   if (isExpoGo) return;
   try {
-    const raw = await AsyncStorage.getItem(SEASONAL_IDS_KEY);
-    if (!raw) return;
-    const stored: Record<string, string> = JSON.parse(raw);
-    const { cancelScheduledNotificationAsync } = await import('expo-notifications');
-    await Promise.all(Object.values(stored).map((id) => cancelScheduledNotificationAsync(id)));
-    await AsyncStorage.removeItem(SEASONAL_IDS_KEY);
-  } catch {
-    // Fail silently
+    await cancelStoredSeasonalNotifications();
+    // Husk aktivt valg — oppstarts-vedlikeholdet skal ikke slå varslene på igjen.
+    await AsyncStorage.setItem(SEASONAL_OPTOUT_KEY, '1');
+  } catch (err) {
+    Sentry.captureException(err, { tags: { context: 'seasonal_cancel' } });
   }
 }
 
@@ -228,13 +254,19 @@ export async function checkNearbySwarmAlerts(
     const lastChecked = await AsyncStorage.getItem(SWARM_CHECKED_KEY).catch(() => null);
     const since = lastChecked ?? new Date(Date.now() - 7 * 86400000).toISOString();
 
+    // swarm_reports har reported_at (ikke created_at) — feil kolonnenavn gjorde
+    // at spørringen alltid feilet stille og nærsverm-varsler aldri ble sendt.
     const { data, error } = await supabase
       .from('swarm_reports')
-      .select('id, lat, lng, description, created_at')
+      .select('id, lat, lng, description, reported_at')
       .eq('status', 'open')
-      .gte('created_at', since);
+      .gte('reported_at', since);
 
-    if (error || !data) return;
+    if (error) {
+      Sentry.captureException(error, { tags: { context: 'swarm_alerts_query' } });
+      return;
+    }
+    if (!data) return;
 
     await AsyncStorage.setItem(SWARM_CHECKED_KEY, new Date().toISOString()).catch(() => null);
 
@@ -256,8 +288,9 @@ export async function checkNearbySwarmAlerts(
       },
       trigger: null,
     });
-  } catch {
-    // Sverm-varsler er nice-to-have
+  } catch (err) {
+    // Sverm-varsler er nice-to-have, men systemisk svikt skal synes i Sentry.
+    Sentry.captureException(err, { tags: { context: 'swarm_alerts' } });
   }
 }
 
@@ -282,8 +315,10 @@ export async function registerPushToken(): Promise<void> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
 
-    await supabase.from('profiles').update({ push_token: token }).eq('id', session.user.id);
-  } catch {
-    // Push-token er nice-to-have — appen fungerer uten
+    const { error } = await supabase.from('profiles').update({ push_token: token }).eq('id', session.user.id);
+    if (error) Sentry.captureException(error, { tags: { context: 'push_token_write' } });
+  } catch (err) {
+    // Push-token er nice-to-have — appen fungerer uten, men svikt skal synes i Sentry.
+    Sentry.captureException(err, { tags: { context: 'push_token_registration' } });
   }
 }

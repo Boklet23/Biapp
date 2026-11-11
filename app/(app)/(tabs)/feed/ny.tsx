@@ -72,7 +72,12 @@ export default function NyttInnlegg() {
         {imageUri && (
           <View style={styles.imagePreview}>
             <Image source={{ uri: imageUri }} style={styles.previewImg} resizeMode="cover" />
-            <Pressable style={styles.removeImg} onPress={() => setImageUri(null)}>
+            <Pressable
+              style={styles.removeImg}
+              onPress={() => setImageUri(null)}
+              accessibilityRole="button"
+              accessibilityLabel="Fjern bilde"
+            >
               <Text style={styles.removeImgText}>✕</Text>
             </Pressable>
           </View>

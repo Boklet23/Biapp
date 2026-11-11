@@ -25,7 +25,8 @@ export default function Login() {
 
   const handleLogin = async () => {
     setServerError('');
-    const result = loginSchema.safeParse({ email, password });
+    // Autofyll/lim-inn legger ofte på mellomrom — samme trim som glemt-passord-flyten.
+    const result = loginSchema.safeParse({ email: email.trim(), password });
 
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};

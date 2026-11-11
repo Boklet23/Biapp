@@ -24,16 +24,21 @@ export async function fetchDiseaseBySlug(slug: string): Promise<Disease | null> 
 }
 
 function mapDisease(row: Record<string, unknown>): Disease {
+  // Samme guard-mønster som øvrige mapX(): kast på manglende nøkkelfelt,
+  // render-trygge tomstrenger for tekstfelt (laer har DISEASES-fallback).
+  if (typeof row.id !== 'string') throw new Error('Ugyldig sykdom: mangler id');
+  if (typeof row.slug !== 'string') throw new Error('Ugyldig sykdom: mangler slug');
+  if (typeof row.name_no !== 'string') throw new Error('Ugyldig sykdom: mangler name_no');
   return {
-    id: row.id as string,
-    slug: row.slug as string,
-    nameNo: row.name_no as string,
-    isNotifiable: row.is_notifiable as boolean,
+    id: row.id,
+    slug: row.slug,
+    nameNo: row.name_no,
+    isNotifiable: row.is_notifiable === true,
     severity: row.severity as Disease['severity'],
-    description: row.description as string,
-    symptoms: row.symptoms as string,
-    treatment: row.treatment as string,
-    prevention: row.prevention as string,
+    description: typeof row.description === 'string' ? row.description : '',
+    symptoms: typeof row.symptoms === 'string' ? row.symptoms : '',
+    treatment: typeof row.treatment === 'string' ? row.treatment : '',
+    prevention: typeof row.prevention === 'string' ? row.prevention : '',
     thumbnailPath: typeof row.image_url === 'string' ? row.image_url : null,
     photos: Array.isArray(row.photos) ? (row.photos as DiseasePhoto[]) : [],
     seasonalTreatment: Array.isArray(row.seasonal_treatment)

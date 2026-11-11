@@ -8,15 +8,17 @@ export interface CreateHarvestData {
   notes?: string;
 }
 
-export async function fetchHarvests(): Promise<HarvestRecord[]> {
+/** @param sinceYears Hvor mange år bakover vinduet strekker seg (default 2). */
+export async function fetchHarvests(sinceYears = 2): Promise<HarvestRecord[]> {
   const twoYearsAgo = new Date();
-  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - sinceYears);
 
   const { data, error } = await supabase
     .from('harvest_records')
     .select('*')
     .gte('harvested_at', twoYearsAgo.toISOString().split('T')[0])
-    .order('harvested_at', { ascending: false });
+    .order('harvested_at', { ascending: false })
+    .limit(1000);
 
   if (error) throw error;
   return data.map(mapHarvest);

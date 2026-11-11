@@ -47,7 +47,7 @@ export default function Kalender() {
 
   const { data: allInspections = [], error: inspError } = useQuery({
     queryKey: ['all-inspections'],
-    queryFn: fetchAllInspections,
+    queryFn: () => fetchAllInspections(),
   });
 
   const { data: allEvents = [], error: eventsError } = useQuery({
@@ -65,7 +65,8 @@ export default function Kalender() {
 
   const createMutation = useMutation({
     mutationFn: async (args: { title: string; date: string; notes: string }) => {
-      const notifId = await scheduleEventNotification('new', args.title, args.date);
+      // Varsel er en bonus — det skal aldri blokkere selve lagringen.
+      const notifId = await scheduleEventNotification('new', args.title, args.date).catch(() => null);
       return createCalendarEvent({
         title: args.title,
         eventDate: args.date,
@@ -85,8 +86,8 @@ export default function Kalender() {
 
   const updateMutation = useMutation({
     mutationFn: async (args: { id: string; title: string; date: string; notes: string; oldNotifId: string | null }) => {
-      const notifId = await scheduleEventNotification(args.id, args.title, args.date);
-      if (args.oldNotifId) await cancelNotification(args.oldNotifId);
+      const notifId = await scheduleEventNotification(args.id, args.title, args.date).catch(() => null);
+      if (args.oldNotifId) await cancelNotification(args.oldNotifId).catch(() => {});
       return updateCalendarEvent(args.id, {
         title: args.title,
         eventDate: args.date,
@@ -107,7 +108,7 @@ export default function Kalender() {
   const deleteMutation = useMutation({
     mutationFn: async (event: CalendarEvent) => {
       if (event.notificationId) {
-        await cancelNotification(event.notificationId);
+        await cancelNotification(event.notificationId).catch(() => {});
       }
       await deleteCalendarEvent(event.id);
     },

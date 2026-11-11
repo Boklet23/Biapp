@@ -32,7 +32,9 @@ const SUBSCRIPTION_LABELS: Record<string, string> = {
 };
 
 export default function ProfilModal() {
-  const { profile, setProfile, signOut } = useAuthStore();
+  const profile = useAuthStore((s) => s.profile);
+  const setProfile = useAuthStore((s) => s.setProfile);
+  const signOut = useAuthStore((s) => s.signOut);
   const effectiveTier = useEffectiveTier();
   const trialDaysLeft = useTrialDaysLeft();
   // Trial-brukere har effektiv Hobbyist men har ikke betalt — vis oppgrader-CTA

@@ -25,7 +25,8 @@ Sentry.init({
 });
 
 function RootLayoutNav() {
-  const { setSession, setProfile } = useAuthStore();
+  const setSession = useAuthStore((s) => s.setSession);
+  const setProfile = useAuthStore((s) => s.setProfile);
 
   useEffect(() => {
     // Resolve isLoading immediately using getSession — don't wait for onAuthStateChange
@@ -45,7 +46,9 @@ function RootLayoutNav() {
           setProfile(null);
         }
       })
-      .catch(() => {
+      .catch((e: unknown) => {
+        // Uten denne var «plutselig utlogget» usynlig i Sentry.
+        Sentry.captureException(e, { extra: { context: 'getSession startup' } });
         setSession(null); // Force isLoading=false even if getSession() fails
       });
 

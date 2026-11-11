@@ -1,5 +1,6 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { esc } from '@/utils/escapeHtml';
 import { Hive, Inspection, HarvestRecord, Treatment, HiveWeight } from '@/types';
 
 function formatDate(iso: string): string {
@@ -11,15 +12,6 @@ function formatDateShort(iso: string): string {
 }
 
 /** Escaper HTML-spesialtegn for å forhindre injeksjon i PDF-mal. */
-function esc(text: string | null | undefined): string {
-  if (!text) return '';
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 export interface ReportData {
   year: number;

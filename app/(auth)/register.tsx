@@ -34,7 +34,8 @@ export default function Register() {
       return;
     }
     setTermsError(false);
-    const result = registerSchema.safeParse({ displayName, email, password });
+    // Autofyll/lim-inn legger ofte på mellomrom rundt e-post/navn.
+    const result = registerSchema.safeParse({ displayName: displayName.trim(), email: email.trim(), password });
 
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};

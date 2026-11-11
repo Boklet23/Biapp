@@ -10,7 +10,10 @@ async function cleanStorageBucket(
   const subFolders: string[] = [];
 
   while (true) {
-    const { data: items } = await client.storage.from(bucket).list(folder, { limit: PAGE_SIZE, offset });
+    const { data: items, error: listError } = await client.storage
+      .from(bucket)
+      .list(folder, { limit: PAGE_SIZE, offset });
+    if (listError) throw new Error(`list ${bucket}/${folder}: ${listError.message}`);
     if (!items?.length) break;
 
     const filePaths: string[] = [];
@@ -24,7 +27,8 @@ async function cleanStorageBucket(
     }
 
     if (filePaths.length > 0) {
-      await client.storage.from(bucket).remove(filePaths);
+      const { error: removeError } = await client.storage.from(bucket).remove(filePaths);
+      if (removeError) throw new Error(`remove ${bucket}: ${removeError.message}`);
     }
 
     if (items.length < PAGE_SIZE) break;
@@ -57,19 +61,44 @@ Deno.serve(async (req: Request) => {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  // Clean up storage files before deleting user (GDPR compliance)
-  await Promise.all([
-    cleanStorageBucket(supabaseAdmin, 'hive-photos', user.id),
-    cleanStorageBucket(supabaseAdmin, 'inspection-media', user.id),
-  ]);
+  // Storage først, og ABORT hvis det feiler — en stille list/remove-feil ville
+  // ellers latt bilder ligge igjen for alltid mens kontoen ble slettet (GDPR).
+  // Brukeren finnes fortsatt, så klienten kan trygt prøve på nytt.
+  try {
+    await Promise.all([
+      cleanStorageBucket(supabaseAdmin, 'hive-photos', user.id),
+      cleanStorageBucket(supabaseAdmin, 'inspection-media', user.id),
+    ]);
+  } catch (err) {
+    console.error('delete-account: storage-opprydding feilet:', err);
+    return new Response(JSON.stringify({ error: 'Sletting feilet. Prøv igjen senere.' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
   const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
 
   if (deleteError) {
-    return new Response(JSON.stringify({ error: deleteError.message }), {
+    // Detaljer kun i serverlogg — ikke rå DB-feil til klienten.
+    console.error('delete-account: deleteUser feilet:', deleteError.message);
+    return new Response(JSON.stringify({ error: 'Sletting feilet. Prøv igjen senere.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
+  }
+
+  // GDPR: be RevenueCat slette abonnentprofilen (kjøpshistorikk knyttet til
+  // user.id). Best effort — kontoen er allerede slettet, svaret blokkeres ikke.
+  // Krever REVENUECAT_SECRET_API_KEY i funksjonens secrets; no-op hvis usatt.
+  const rcKey = Deno.env.get('REVENUECAT_SECRET_API_KEY');
+  if (rcKey) {
+    await fetch(`https://api.revenuecat.com/v1/subscribers/${user.id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${rcKey}` },
+    }).then((res) => {
+      if (!res.ok) console.error('RevenueCat-sletting feilet:', res.status);
+    }).catch((e) => console.error('RevenueCat-sletting feilet:', e));
   }
 
   return new Response(JSON.stringify({ success: true }), {

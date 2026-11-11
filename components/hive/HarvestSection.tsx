@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Colors, Shadows } from '@/constants/colors';
-import { createHarvest, deleteHarvest, fetchHarvests } from '@/services/harvest';
+import { QueryErrorNotice } from '@/components/ui/QueryErrorNotice';
+import { fetchHarvests } from '@/services/harvest';
+import { useCreateHarvest, useDeleteHarvest } from '@/hooks/useHarvestMutations';
 import { HarvestRecord } from '@/types';
 
 function formatDate(iso: string): string {
@@ -24,22 +26,14 @@ const HONEY_COLORS = [
 ];
 
 function AddHarvestModal({ hiveId, visible, onClose }: AddModalProps) {
-  const queryClient = useQueryClient();
   const [kgStr, setKgStr] = useState('');
   const [notes, setNotes] = useState('');
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [honeyType, setHoneyType] = useState('');
   const [honeyColor, setHoneyColor] = useState('');
 
-  const { mutate, isPending } = useMutation({
-    mutationFn: () => createHarvest({
-      hiveId,
-      harvestedAt: date,
-      quantityKg: parseFloat(kgStr.replace(',', '.')),
-      notes: [honeyType, honeyColor, notes.trim()].filter(Boolean).join(' · ') || undefined,
-    }),
+  const { mutate: createMutate, isPending } = useCreateHarvest({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['harvests'] });
       setKgStr('');
       setNotes('');
       setDate(new Date().toISOString().split('T')[0]);
@@ -47,7 +41,14 @@ function AddHarvestModal({ hiveId, visible, onClose }: AddModalProps) {
       setHoneyColor('');
       onClose();
     },
-    onError: (e: Error) => Alert.alert('Feil', e.message),
+    onError: (e) => Alert.alert('Feil', e.message),
+  });
+
+  const mutate = () => createMutate({
+    hiveId,
+    harvestedAt: date,
+    quantityKg: parseFloat(kgStr.replace(',', '.')),
+    notes: [honeyType, honeyColor, notes.trim()].filter(Boolean).join(' · ') || undefined,
   });
 
   const isValidDate = /^\d{4}-\d{2}-\d{2}$/.test(date);
@@ -95,6 +96,9 @@ function AddHarvestModal({ hiveId, visible, onClose }: AddModalProps) {
                 key={c.label}
                 style={[modal.colorSwatch, { backgroundColor: c.color, borderWidth: honeyColor === c.label ? 3 : 1 }]}
                 onPress={() => setHoneyColor(honeyColor === c.label ? '' : c.label)}
+                accessibilityRole="radio"
+                accessibilityLabel={c.label}
+                accessibilityState={{ checked: honeyColor === c.label }}
               />
             ))}
           </View>
@@ -119,20 +123,16 @@ interface HarvestSectionProps {
 }
 
 export function HarvestSection({ hiveId }: HarvestSectionProps) {
-  const queryClient = useQueryClient();
   const [modalVisible, setModalVisible] = useState(false);
 
-  const { data: allHarvests = [] } = useQuery({
+  const { data: allHarvests = [], isError, refetch } = useQuery({
     queryKey: ['harvests'],
-    queryFn: fetchHarvests,
+    queryFn: () => fetchHarvests(),
   });
 
   const harvests = allHarvests.filter((h) => h.hiveId === hiveId);
 
-  const { mutate: remove } = useMutation({
-    mutationFn: deleteHarvest,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['harvests'] }),
-  });
+  const { mutate: remove } = useDeleteHarvest();
 
   const handleLongPress = (h: HarvestRecord) => {
     Alert.alert('Slett høsting', `Slett ${h.quantityKg} kg (${formatDate(h.harvestedAt)})?`, [
@@ -152,7 +152,9 @@ export function HarvestSection({ hiveId }: HarvestSectionProps) {
         </Pressable>
       </View>
 
-      {harvests.length === 0 ? (
+      {isError ? (
+        <QueryErrorNotice message="Kunne ikke laste høstinger" onRetry={() => refetch()} />
+      ) : harvests.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyEmoji}>🍯</Text>
           <Text style={styles.emptyText}>Ingen høstinger logget ennå</Text>

@@ -95,6 +95,44 @@ Deno.serve(async (req: Request) => {
       return Response.json({ error: 'Mangler bilde' }, { status: 400, headers: CORS });
     }
 
+    // ~7 MB base64 ≈ 5 MB binært — klienten komprimerer til langt under dette.
+    if (imageBase64.length > 7_000_000) {
+      return Response.json({ error: 'Bildet er for stort. Prøv et mindre bilde.' }, { status: 413, headers: CORS });
+    }
+
+    // ── Reserver kvoteplass FØR det betalte AI-kallet ─────────────────────
+    // Gammel rekkefølge (count → Anthropic-kall → insert) hadde et sekund-
+    // langt race-vindu der N samtidige kall alle passerte count-sjekken.
+    // Nå: insert først, tell etterpå, refunder ved overtrekk eller feil.
+    const { data: usageRow, error: usageErr } = await adminSupabase
+      .from('ai_analysis_usage')
+      .insert({ user_id: user.id, analysis_type: 'varroa' })
+      .select('id')
+      .single();
+    if (usageErr || !usageRow) {
+      console.error('Kunne ikke reservere kvote:', usageErr?.message);
+      return Response.json({ error: 'Analyse feilet. Prøv igjen.' }, { status: 500, headers: CORS });
+    }
+    const refundUsage = async () => {
+      await adminSupabase.from('ai_analysis_usage').delete().eq('id', usageRow.id);
+    };
+
+    const { count: afterCount } = await adminSupabase
+      .from('ai_analysis_usage')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('analysis_type', 'varroa')
+      .gte('used_at', startOfMonth.toISOString());
+
+    if ((afterCount ?? 1) > limit) {
+      await refundUsage();
+      return Response.json(
+        { error: `Månedlig grense nådd (${limit} analyser). Oppgrader for ubegrenset tilgang.` },
+        { status: 429, headers: CORS },
+      );
+    }
+
+    try {
     // ── Call Anthropic API ─────────────────────────────────────────────────
     const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -146,6 +184,7 @@ Alvorlighetsgrader for klisterplate (24-timers fall):
     if (!anthropicRes.ok) {
       const errText = await anthropicRes.text();
       console.error('Anthropic API error:', anthropicRes.status, errText);
+      await refundUsage();
       return Response.json({ error: 'AI-tjenesten er ikke tilgjengelig akkurat nå. Prøv igjen.' }, { status: 502, headers: CORS });
     }
 
@@ -157,6 +196,7 @@ Alvorlighetsgrader for klisterplate (24-timers fall):
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
 
     if (!jsonMatch) {
+      await refundUsage();
       return Response.json({ error: 'Kunne ikke tolke AI-svar. Prøv med et tydeligere bilde.' }, { status: 500, headers: CORS });
     }
 
@@ -168,20 +208,21 @@ Alvorlighetsgrader for klisterplate (24-timers fall):
       confidence:     string;
     };
 
-    // ── Log usage ─────────────────────────────────────────────────────────
-    await adminSupabase
-      .from('ai_analysis_usage')
-      .insert({ user_id: user.id, analysis_type: 'varroa' });
-
     return Response.json({
       count:          result.count,
       type:           result.type,
       severity:       result.severity,
       recommendation: result.recommendation,
       confidence:     result.confidence,
-      usageThisMonth: used + 1,
+      usageThisMonth: afterCount ?? used + 1,
       monthlyLimit:   limit,
     }, { headers: CORS });
+
+    } catch (innerErr) {
+      // Analysefeil etter kvote-reservasjon: refunder plassen før generisk feil.
+      await refundUsage();
+      throw innerErr;
+    }
 
   } catch (err) {
     console.error('analyze-varroa error:', err);

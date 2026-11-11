@@ -13,7 +13,8 @@ export async function fetchWeights(hiveId: string): Promise<HiveWeight[]> {
     .from('hive_weights')
     .select('*')
     .eq('hive_id', hiveId)
-    .order('weighed_at', { ascending: false });
+    .order('weighed_at', { ascending: false })
+    .limit(200);
 
   if (error) throw error;
   return data.map(mapWeight);

@@ -7,24 +7,26 @@ import { useAuthStore } from '@/store/auth';
 import { useToastStore } from '@/store/toast';
 import { GlobalToast } from '@/components/ui/Toast';
 import { Colors } from '@/constants/colors';
-import { hasNotificationPermission, registerPushToken, scheduleSeasonalReminders } from '@/services/notifications';
+import { hasNotificationPermission, registerPushToken, maintainSeasonalReminders } from '@/services/notifications';
 import { applyCustomerInfo, initPurchases } from '@/services/subscription';
 
 const isExpoGo = Constants.appOwnership === 'expo';
 
 export default function AppLayout() {
-  const { session, isLoading } = useAuthStore();
+  const session = useAuthStore((s) => s.session);
+  const isLoading = useAuthStore((s) => s.isLoading);
 
   useEffect(() => {
     if (!session) return;
     // Be ALDRI om varseltillatelse ved oppstart (før verdi er vist) — kun
-    // registrer token + planlegg påminnelser hvis tillatelse alt er gitt.
+    // registrer token + vedlikehold påminnelser hvis tillatelse alt er gitt.
     // Selve prompten eies av ActivationGuide steg 3 etter første kube.
+    // maintainSeasonalReminders er idempotent og respekterer brukerens av-valg.
     hasNotificationPermission()
       .then((granted) => {
         if (granted) {
           registerPushToken();
-          scheduleSeasonalReminders().catch(() => {});
+          maintainSeasonalReminders();
         }
       })
       .catch(() => {});
@@ -36,7 +38,10 @@ export default function AppLayout() {
           useToastStore.getState().show('Abonnementsstatus kunne ikke synkroniseres', 'error');
         });
     }
-  }, [session]);
+    // Avhenger av bruker-id, ikke session-objektet: token-refresh (~hver time)
+    // gir nytt objekt med samme id og skal ikke re-kjøre oppstartslogikken.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user.id]);
 
   useEffect(() => {
     if (isExpoGo) return;

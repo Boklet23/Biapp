@@ -8,6 +8,7 @@ import { useEffectiveTier } from '@/hooks/useEffectiveTier';
 import { Screen } from '@/components/ui/Screen';
 import { HiveTypeChip } from '@/components/hive/HiveTypeChip';
 import { LoadingCard } from '@/components/ui/LoadingCard';
+import { QueryErrorNotice } from '@/components/ui/QueryErrorNotice';
 import { TreatmentSection } from '@/components/hive/TreatmentSection';
 import { WeightSection } from '@/components/hive/WeightSection';
 import { HarvestSection } from '@/components/hive/HarvestSection';
@@ -174,12 +175,12 @@ export default function KubeProfil() {
     queryFn: () => fetchHive(id),
   });
 
-  const { data: inspections = [] } = useQuery({
+  const { data: inspections = [], isError: inspectionsError, refetch: refetchInspections } = useQuery({
     queryKey: ['inspections', id],
     queryFn: () => fetchInspections(id),
   });
 
-  const { data: treatments = [] } = useQuery({
+  const { data: treatments = [], isError: treatmentsError, refetch: refetchTreatments } = useQuery({
     queryKey: ['treatments', id],
     queryFn: () => fetchTreatments(id),
   });
@@ -317,6 +318,18 @@ export default function KubeProfil() {
           </Text>
           <Text style={styles.collaborationChevron}>›</Text>
         </Pressable>
+
+        {/* Feilede datakilder: skill «kunne ikke laste» fra tomme seksjoner */}
+        {inspectionsError && (
+          <View style={{ marginBottom: 16 }}>
+            <QueryErrorNotice message="Kunne ikke laste inspeksjoner" onRetry={() => refetchInspections()} />
+          </View>
+        )}
+        {treatmentsError && (
+          <View style={{ marginBottom: 16 }}>
+            <QueryErrorNotice message="Kunne ikke laste behandlinger" onRetry={() => refetchTreatments()} />
+          </View>
+        )}
 
         {/* Helsescore */}
         <HealthScoreSection inspections={inspections} />

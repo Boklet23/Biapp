@@ -138,13 +138,13 @@ export default function Hjem() {
 
   const { data: allInspections = [] } = useQuery({
     queryKey: ['all-inspections'],
-    queryFn: fetchAllInspections,
+    queryFn: () => fetchAllInspections(),
     staleTime: 10 * 60 * 1000,
   });
 
   const { data: harvests = [] } = useQuery({
     queryKey: ['harvests'],
-    queryFn: fetchHarvests,
+    queryFn: () => fetchHarvests(),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -217,23 +217,31 @@ export default function Hjem() {
     setReportLoading(true);
     try {
       // allSettled: lag rapport på det som lyktes — én feilende kilde (f.eks.
-      // behandlinger) skal ikke blokkere hele rapporten.
-      const [inspResult, treatmentsResult] = await Promise.allSettled([
+      // behandlinger) skal ikke blokkere hele rapporten. Høst/kuber hentes også
+      // ferskt her: rapporten er et offisielt dokument og skal ikke stille vise
+      // 0 kg fordi en tidligere bakgrunnshenting feilet og etterlot tom cache.
+      const [inspResult, treatmentsResult, harvestsResult, hivesResult] = await Promise.allSettled([
         fetchAllInspections(),
         fetchAllTreatments(),
+        fetchHarvests(),
+        fetchHives(),
       ]);
       const reportInspections = inspResult.status === 'fulfilled' ? inspResult.value : [];
       const treatments = treatmentsResult.status === 'fulfilled' ? treatmentsResult.value : [];
+      const reportHarvests = harvestsResult.status === 'fulfilled' ? harvestsResult.value : harvests;
+      const reportHives = hivesResult.status === 'fulfilled' ? hivesResult.value : hives;
       await generateAndShareReport({
         year: currentYear,
-        hives,
+        hives: reportHives,
         inspections: reportInspections,
-        harvests,
+        harvests: reportHarvests,
         treatments,
         weights: [],
         displayName: profile?.displayName ?? null,
       });
-      if (inspResult.status === 'rejected' || treatmentsResult.status === 'rejected') {
+      const anyFailed = [inspResult, treatmentsResult, harvestsResult, hivesResult]
+        .some((r) => r.status === 'rejected');
+      if (anyFailed) {
         showToast('Rapport laget, men noen data kunne ikke hentes', 'info');
       }
     } catch {

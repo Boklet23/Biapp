@@ -29,7 +29,8 @@ export async function fetchCalendarEvents(): Promise<CalendarEvent[]> {
   const { data, error } = await supabase
     .from('calendar_events')
     .select('*')
-    .order('event_date', { ascending: true });
+    .order('event_date', { ascending: true })
+    .limit(500);
 
   if (error) throw error;
   return data.map(mapEvent);

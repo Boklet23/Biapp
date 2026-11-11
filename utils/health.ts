@@ -1,15 +1,20 @@
+import { varroaThresholds } from '@/constants/varroa';
 import { Inspection } from '@/types';
 
 export function computeHealthScore(insp: Inspection | undefined): number {
   if (!insp) return 50;
   let score = 100;
 
+  // Metodespesifikke terskler — samme kilde som kubeprofilens helsestatus og
+  // behandlingsrådene, slik at liste/dashboard og profil aldri motsier hverandre.
+  // (Tidligere hardkodet denne egne bånd som ignorerte varroaMethod.)
+  const { moderate, elevated, critical } = varroaThresholds(insp.varroaMethod);
   const varroa = insp.varroaCount ?? 0;
-  if (varroa <= 1)      score -= 5;
-  else if (varroa <= 2) score -= 20;
-  else if (varroa <= 3) score -= 35;
-  else if (varroa <= 5) score -= 52;
-  else                  score -= 68;
+  if (varroa >= critical)      score -= 68;
+  else if (varroa >= elevated) score -= 52;
+  else if (varroa >= moderate) score -= 35;
+  else if (varroa > 0)         score -= 20;
+  else                         score -= 5;
 
   if (insp.numFramesBrood === 0) score -= 20;
 

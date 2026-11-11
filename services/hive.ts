@@ -96,7 +96,8 @@ export async function fetchHives(): Promise<Hive[]> {
     .from('hives')
     .select('*')
     .eq('is_active', true)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(500);
 
   const timeout = new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error('Tidsavbrudd – prøv igjen')), FETCH_TIMEOUT_MS)
@@ -112,9 +113,12 @@ export async function fetchHive(id: string): Promise<Hive> {
     .from('hives')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
+  // Slettet på annen enhet / utdatert lenke: gi en forståelig norsk melding
+  // i stedet for PostgREST sin rå «multiple (or no) rows»-tekst i toasten.
+  if (!data) throw new Error('Kube ikke funnet');
   return mapHive(data);
 }
 
@@ -172,17 +176,28 @@ export async function updateHive(id: string, input: UpdateHiveData): Promise<Hiv
 export async function fetchMapHives(): Promise<MapHiveEntry[]> {
   const { data, error } = await supabase.rpc('get_map_hives');
   if (error) throw error;
-  return (data ?? []).map((row: Record<string, unknown>) => ({
-    id: row.id as string,
-    name: row.name as string,
-    type: row.type as HiveType,
-    locationLat: row.location_lat as number,
-    locationLng: row.location_lng as number,
-    locationName: typeof row.location_name === 'string' ? row.location_name : null,
-    ownerId: row.owner_id as string,
-    ownerName: row.owner_name as string,
-    relationship: row.relationship as MapHiveEntry['relationship'],
-  }));
+  // RPC-en filtrerer bort rader uten posisjon, men stol ikke blindt på det —
+  // en NaN/manglende koordinat ville gått rett inn i Mapbox native.
+  return (data ?? []).flatMap((row: Record<string, unknown>) => {
+    if (
+      typeof row.id !== 'string' ||
+      typeof row.location_lat !== 'number' ||
+      typeof row.location_lng !== 'number'
+    ) {
+      return [];
+    }
+    return [{
+      id: row.id,
+      name: typeof row.name === 'string' ? row.name : 'Kube',
+      type: row.type as HiveType,
+      locationLat: row.location_lat,
+      locationLng: row.location_lng,
+      locationName: typeof row.location_name === 'string' ? row.location_name : null,
+      ownerId: typeof row.owner_id === 'string' ? row.owner_id : '',
+      ownerName: typeof row.owner_name === 'string' ? row.owner_name : 'Birøkter',
+      relationship: row.relationship as MapHiveEntry['relationship'],
+    }];
+  });
 }
 
 export async function deleteHive(id: string): Promise<void> {

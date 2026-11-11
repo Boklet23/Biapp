@@ -1,5 +1,6 @@
 // Yr.no Locationforecast 2.0 — gratis, ingen API-nøkkel nødvendig
 // Docs: https://api.met.no/weatherapi/locationforecast/2.0/documentation
+import * as Sentry from '@sentry/react-native';
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 time
 const CACHE_MAX_SIZE = 100;
@@ -121,7 +122,10 @@ export async function fetchForecast(lat: number, lng: number): Promise<ForecastD
     }
     forecastCache.set(key, { days, fetchedAt: Date.now() });
     return days;
-  } catch {
+  } catch (err) {
+    // UI degraderer pent til tom liste, men svikten må synes i Sentry —
+    // resolve-med-fallback omgår ellers den globale QueryCache.onError.
+    Sentry.captureException(err, { tags: { context: 'yr_forecast' } });
     return [];
   }
 }
@@ -167,7 +171,8 @@ export async function fetchWeather(lat: number, lng: number): Promise<WeatherDat
     }
     cache.set(key, data);
     return data;
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, { tags: { context: 'yr_weather' } });
     return null;
   }
 }

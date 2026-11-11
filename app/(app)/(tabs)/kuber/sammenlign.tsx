@@ -33,7 +33,7 @@ export default function SammenlignKuber() {
   });
   const { data: allInspections = [], isLoading: inspLoading } = useQuery({
     queryKey: ['all-inspections'],
-    queryFn: fetchAllInspections,
+    queryFn: () => fetchAllInspections(),
     enabled: hasPro,
   });
   const isLoading = hivesLoading || inspLoading;

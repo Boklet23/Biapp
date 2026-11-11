@@ -54,6 +54,7 @@ export default function VisInspeksjon() {
   const { data: insp, isLoading } = useQuery({
     queryKey: ['inspection', inspId],
     queryFn: () => fetchInspection(inspId),
+    enabled: !!inspId,
   });
 
   const { data: media = [] } = useQuery({

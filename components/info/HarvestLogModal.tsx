@@ -63,11 +63,15 @@ export function HarvestLogModal({ visible, hives, onClose, onSubmit, loading }: 
     }
   };
 
-  const canSubmit = selectedHiveId !== null && kg > 0 && !loading;
+  // Teksten i feltet er fasiten: ugyldig/utenfor-område tekst deaktiverer
+  // Lagre i stedet for å stille sende forrige gyldige verdi (kg-state).
+  const parsedKg = parseFloat(kgText.replace(',', '.'));
+  const kgValid = !isNaN(parsedKg) && parsedKg > 0 && parsedKg <= 200;
+  const canSubmit = selectedHiveId !== null && kgValid && !loading;
 
   const handleSubmit = () => {
     if (!canSubmit || selectedHiveId === null) return;
-    onSubmit(selectedHiveId, toDateString(date), kg, notes.trim());
+    onSubmit(selectedHiveId, toDateString(date), Math.round(parsedKg * 10) / 10, notes.trim());
   };
 
   return (
@@ -131,7 +135,13 @@ export function HarvestLogModal({ visible, hives, onClose, onSubmit, loading }: 
         {/* Kg stepper */}
         <Text style={styles.label}>Mengde (kg)</Text>
         <View style={styles.kgRow}>
-          <Pressable style={styles.stepBtn} onPress={() => adjustKg(-0.5)}>
+          <Pressable
+            style={styles.stepBtn}
+            onPress={() => adjustKg(-0.5)}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel="Reduser mengde med 0,5 kg"
+          >
             <Text style={styles.stepBtnText}>−</Text>
           </Pressable>
           <TextInput
@@ -142,7 +152,13 @@ export function HarvestLogModal({ visible, hives, onClose, onSubmit, loading }: 
             selectTextOnFocus
           />
           <Text style={styles.kgUnit}>kg</Text>
-          <Pressable style={styles.stepBtn} onPress={() => adjustKg(0.5)}>
+          <Pressable
+            style={styles.stepBtn}
+            onPress={() => adjustKg(0.5)}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel="Øk mengde med 0,5 kg"
+          >
             <Text style={styles.stepBtnText}>+</Text>
           </Pressable>
         </View>

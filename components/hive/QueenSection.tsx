@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Colors, Shadows } from '@/constants/colors';
+import { QueryErrorNotice } from '@/components/ui/QueryErrorNotice';
 import { createQueen, deleteQueen, fetchQueens, updateQueenReplaced } from '@/services/queen';
 import { Queen } from '@/types';
 
@@ -29,11 +30,12 @@ function queenAge(introducedAt: string, replacedAt: string | null): string {
 
 interface AddQueenModalProps {
   hiveId: string;
+  currentQueen: Queen | null;
   visible: boolean;
   onClose: () => void;
 }
 
-function AddQueenModal({ hiveId, visible, onClose }: AddQueenModalProps) {
+function AddQueenModal({ hiveId, currentQueen, visible, onClose }: AddQueenModalProps) {
   const queryClient = useQueryClient();
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [origin, setOrigin] = useState(ORIGINS[0]);
@@ -42,7 +44,19 @@ function AddQueenModal({ hiveId, visible, onClose }: AddQueenModalProps) {
   const [notes, setNotes] = useState('');
 
   const { mutate, isPending } = useMutation({
-    mutationFn: () => createQueen({ hiveId, introducedAt: date, origin, breed, markedColor: color, notes: notes.trim() || undefined }),
+    mutationFn: async () => {
+      // Én aktiv dronning per kube: ny dronning markerer automatisk den gamle
+      // som erstattet — ellers forsvant den gamle fra UI-et (verken «aktiv»
+      // eller «tidligere») til noen manuelt merket den. Erstatningsdatoen
+      // klampes mot gammel dronnings innsettingsdato, ellers ville en ny
+      // dronning datert FØR den gamle brutt DB-constrainten
+      // queens_replaced_after_introduced (0056).
+      if (currentQueen) {
+        const replacedAt = date < currentQueen.introducedAt ? currentQueen.introducedAt : date;
+        await updateQueenReplaced(currentQueen.id, replacedAt);
+      }
+      return createQueen({ hiveId, introducedAt: date, origin, breed, markedColor: color, notes: notes.trim() || undefined });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['queens', hiveId] });
       setDate(new Date().toISOString().split('T')[0]);
@@ -93,6 +107,9 @@ function AddQueenModal({ hiveId, visible, onClose }: AddQueenModalProps) {
                 key={c}
                 style={[modal.colorDot, { backgroundColor: MARK_HEX[c], borderWidth: color === c ? 3 : 1 }]}
                 onPress={() => setColor(c)}
+                accessibilityRole="radio"
+                accessibilityLabel={c}
+                accessibilityState={{ checked: color === c }}
               >
                 {color === c && <Text style={modal.colorCheck}>✓</Text>}
               </Pressable>
@@ -116,7 +133,7 @@ export function QueenSection({ hiveId }: QueenSectionProps) {
   const queryClient = useQueryClient();
   const [modalVisible, setModalVisible] = useState(false);
 
-  const { data: queens = [] } = useQuery({
+  const { data: queens = [], isError, refetch } = useQuery({
     queryKey: ['queens', hiveId],
     queryFn: () => fetchQueens(hiveId),
   });
@@ -154,7 +171,9 @@ export function QueenSection({ hiveId }: QueenSectionProps) {
         </Pressable>
       </View>
 
-      {queens.length === 0 ? (
+      {isError ? (
+        <QueryErrorNotice message="Kunne ikke laste dronninger" onRetry={() => refetch()} />
+      ) : queens.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyEmoji}>👑</Text>
           <Text style={styles.emptyText}>Ingen dronning registrert</Text>
@@ -199,7 +218,7 @@ export function QueenSection({ hiveId }: QueenSectionProps) {
         </View>
       )}
 
-      <AddQueenModal hiveId={hiveId} visible={modalVisible} onClose={() => setModalVisible(false)} />
+      <AddQueenModal hiveId={hiveId} currentQueen={current ?? null} visible={modalVisible} onClose={() => setModalVisible(false)} />
     </View>
   );
 }

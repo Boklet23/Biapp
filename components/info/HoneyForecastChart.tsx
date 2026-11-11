@@ -102,13 +102,28 @@ function buildChartData(
   return data;
 }
 
-function computeStats(data: MonthData[], harvests: HarvestRecord[]) {
+function computeStats(
+  data: MonthData[],
+  harvests: HarvestRecord[],
+  activeHiveCount: number,
+  hives: Hive[],
+) {
   const currentYear = new Date().getFullYear();
 
-  // Annual forecast = sum of all 12 months in chart for this year
-  const annualForecast = data
-    .filter((d) => d.year === currentYear)
-    .reduce((sum, d) => sum + d.kg, 0);
+  // «Årets prognose» = alle 12 måneder i inneværende år (logget der det finnes,
+  // ellers modell). IKKE chart-vinduet: det er rullerende ±6 mnd, så filtrering
+  // på årstall manglet opptil 5 av årets måneder — i januar forsvant hele
+  // aug–des (høysesongen) fra prognosen.
+  const avgYield = avgYieldForHives(hives);
+  const loggedByMonth: Record<number, number> = {};
+  for (const h of harvests) {
+    const [y, m] = h.harvestedAt.split('-').map(Number);
+    if (y === currentYear) loggedByMonth[m] = (loggedByMonth[m] ?? 0) + h.quantityKg;
+  }
+  let annualForecast = 0;
+  for (let m = 1; m <= 12; m++) {
+    annualForecast += loggedByMonth[m] ?? activeHiveCount * avgYield * SEASONAL_FACTORS[m];
+  }
 
   // Total logged this year
   const loggedKg = harvests
@@ -159,7 +174,7 @@ export function HoneyForecastChart({
   }));
 
   const isPaidUser = subscriptionTier !== 'starter';
-  const stats = isPaidUser ? computeStats(data, harvests) : null;
+  const stats = isPaidUser ? computeStats(data, harvests, activeHiveCount, hives) : null;
 
   const handleBarPress = (d: MonthData) => {
     setSelected((prev) => (prev?.month === d.month && prev?.year === d.year ? null : d));

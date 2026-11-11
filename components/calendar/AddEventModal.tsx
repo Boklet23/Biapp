@@ -47,13 +47,20 @@ export function AddEventModal({ visible, initialDate, initialValues, isEditing, 
         setDate(new Date());
       }
     }
-  }, [visible, initialDate, initialValues]);
+    // Verdiavhengigheter (ikke objektet): forelderen lager nytt initialValues-objekt
+    // ved hver re-render (f.eks. når isPending flipper) — objekt-dep nullstilte da
+    // skjemaet midt i en treg lagring.
+  }, [visible, initialDate, initialValues?.title, initialValues?.eventDate, initialValues?.notes]);
 
   const handleSubmit = () => {
     if (!title.trim()) return;
     onSubmit(title.trim(), toDateString(date), notes.trim());
-    setTitle('');
-    setNotes('');
+    // Ved redigering beholdes feltene til lagringen faktisk lykkes (modalen
+    // lukkes av onSuccess) — en feilet lagring skal ikke tømme brukerens tekst.
+    if (!isEditing) {
+      setTitle('');
+      setNotes('');
+    }
   };
 
   return (

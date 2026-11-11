@@ -23,6 +23,7 @@ import { fetchHive } from '@/services/hive';
 import { createInspection, uploadInspectionPhoto, createInspectionMedia, CreateInspectionData } from '@/services/inspection';
 import { supabase } from '@/lib/supabase';
 import { fetchWeather } from '@/services/weather';
+import { clearScheduledReminder } from '@/services/notifications';
 import { useToastStore } from '@/store/toast';
 import { useEffectiveTier } from '@/hooks/useEffectiveTier';
 import { UpgradeModal } from '@/components/ui/UpgradeModal';
@@ -217,6 +218,9 @@ export default function NyInspeksjon() {
     onError: (error: Error) => showToast(error.message ?? 'Kunne ikke lagre inspeksjon', 'error'),
     onSuccess: (insp) => {
       AsyncStorage.removeItem(draftKey(id)).catch(() => {});
+      // Nullstill forfalt-påminnelsen for kuben — ellers kan den aldri
+      // planlegges på nytt neste gang inspeksjonen blir forfalt.
+      clearScheduledReminder(id).catch(() => {});
       queryClient.invalidateQueries({ queryKey: ['inspections', id] });
       queryClient.invalidateQueries({ queryKey: ['last-inspection-per-hive'] });
       queryClient.invalidateQueries({ queryKey: ['all-inspections'] });
@@ -230,21 +234,25 @@ export default function NyInspeksjon() {
 
   const handleNext = () => {
     if (isLastStep) {
-      if (varroaCount !== '' && (isNaN(Number(varroaCount)) || Number(varroaCount) < 0)) {
+      // Norsk desimalkomma («2,5») må normaliseres — Number('2,5') er NaN,
+      // og NaN i weather_temp ble stille til null via JSON-serialisering.
+      const parsedVarroa = varroaCount === '' ? undefined : Number(varroaCount.replace(',', '.'));
+      if (parsedVarroa !== undefined && (isNaN(parsedVarroa) || parsedVarroa < 0)) {
         showToast('Varroa-telling må være et positivt tall', 'error');
         return;
       }
+      const parsedTemp = weatherTemp ? Number(weatherTemp.replace(',', '.')) : undefined;
       mutation.mutate({
         hiveId: id,
         inspectedAt: inspectedAt.toISOString(),
-        weatherTemp: weatherTemp ? Number(weatherTemp) : undefined,
+        weatherTemp: parsedTemp !== undefined && !isNaN(parsedTemp) ? parsedTemp : undefined,
         weatherCondition: weatherCondition.trim() || undefined,
         numFramesBrood: framesBrood,
         numFramesHoney: framesHoney,
         numFramesEmpty: framesEmpty,
         queenSeen,
         queenCellsFound: queenCells,
-        varroaCount: varroaCount ? Number(varroaCount) : undefined,
+        varroaCount: parsedVarroa,
         varroaMethod: varroaMethod || undefined,
         varroaAiCount: varroaAiResult?.count != null && varroaAiResult.count >= 0 ? varroaAiResult.count : undefined,
         varroaAiSeverity: varroaAiResult?.severity,

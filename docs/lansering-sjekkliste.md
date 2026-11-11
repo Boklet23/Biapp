@@ -1,6 +1,8 @@
 # BiVokter — Lanseringssjekkliste (manuelle dashboard-punkter)
 
-Sist verifisert: 2026-06-14. Alt kodbart fra review v3 er levert, testet og bygget (v21).
+Sist verifisert: 2026-11-10 (review v4). Alt kodbart fra review v3 er levert; review v4
+fikset i tillegg RevenueCat-webhookens tier-parsing (v18 — entitlement_ids er array),
+fire RLS-korrelasjonsfeil i prod og storage-policy-lekkasjen på kubebilder.
 Dette er de gjenstående punktene som **må gjøres manuelt i dashbordene** — de kan ikke
 gjøres fra kode.
 
@@ -45,6 +47,9 @@ gjøres fra kode.
 - **Hvorfor:** Free tier auto-pauser databasen etter inaktivitet → appen slutter å virke
   for betalende brukere. Må oppgraderes før første ekte bruker.
 - **Bonus på Pro:** Slå på **PITR** (Point-in-Time Recovery) backup under Database → Backups.
+- **Samtidig (krever Pro):** Slå på **Leaked password protection** (HaveIBeenPwned) under
+  Auth → Settings → Passwords. Forsøkt aktivert via Management API 2026-11-10 → HTTP 402
+  («available on Pro Plans and up») — gjøres i samme slengen som oppgraderingen.
 
 ### 4. RevenueCat-produkter aktive i Play Console
 - **Hvor:** Play Console → Tjenester og API-er → Abonnementer (Monetisering)
