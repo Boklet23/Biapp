@@ -134,8 +134,14 @@ Deno.serve(async (req: Request) => {
 
     try {
     // ── Call Anthropic API ─────────────────────────────────────────────────
+    // Abort etter 25s: et hengende kall må bli et JS-unntak slik at
+    // kvote-refusjonen i catch faktisk kjører — ellers lekker reservasjonen
+    // når runtimen dreper funksjonen uten at noe etterarbeid rekker å kjøre.
+    const abortController = new AbortController();
+    const abortTimer = setTimeout(() => abortController.abort(), 25_000);
     const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal: abortController.signal,
       headers: {
         'x-api-key':         Deno.env.get('ANTHROPIC_API_KEY')!,
         'anthropic-version': '2023-06-01',
@@ -180,6 +186,7 @@ Alvorlighetsgrader for klisterplate (24-timers fall):
         }],
       }),
     });
+    clearTimeout(abortTimer);
 
     if (!anthropicRes.ok) {
       const errText = await anthropicRes.text();

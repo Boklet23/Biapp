@@ -46,16 +46,18 @@ function AddQueenModal({ hiveId, currentQueen, visible, onClose }: AddQueenModal
   const { mutate, isPending } = useMutation({
     mutationFn: async () => {
       // Én aktiv dronning per kube: ny dronning markerer automatisk den gamle
-      // som erstattet — ellers forsvant den gamle fra UI-et (verken «aktiv»
-      // eller «tidligere») til noen manuelt merket den. Erstatningsdatoen
-      // klampes mot gammel dronnings innsettingsdato, ellers ville en ny
-      // dronning datert FØR den gamle brutt DB-constrainten
-      // queens_replaced_after_introduced (0056).
+      // som erstattet — ellers forsvant den gamle fra UI-et til noen manuelt
+      // merket den. Rekkefølge: opprett den NYE først — feiler det, er
+      // ingenting endret. Feiler kun steg 2 ligger to «aktive» igjen, som er
+      // synlig og reparerbart via langtrykk (motsatt rekkefølge kunne
+      // etterlate kuben uten dronning). Erstatningsdatoen klampes mot gammel
+      // innsettingsdato pga. DB-constrainten queens_replaced_after_introduced.
+      const created = await createQueen({ hiveId, introducedAt: date, origin, breed, markedColor: color, notes: notes.trim() || undefined });
       if (currentQueen) {
         const replacedAt = date < currentQueen.introducedAt ? currentQueen.introducedAt : date;
         await updateQueenReplaced(currentQueen.id, replacedAt);
       }
-      return createQueen({ hiveId, introducedAt: date, origin, breed, markedColor: color, notes: notes.trim() || undefined });
+      return created;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['queens', hiveId] });

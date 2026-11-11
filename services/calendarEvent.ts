@@ -26,9 +26,16 @@ function mapEvent(row: Record<string, unknown>): CalendarEvent {
 }
 
 export async function fetchCalendarEvents(): Promise<CalendarEvent[]> {
+  // Vindu: siste år + alt fremover. Uten datofilter kuttet .limit(500) fra
+  // feil ende for storbrukere (stigende sortering = de 500 ELDSTE radene,
+  // og alle kommende hendelser ville forsvunnet stille).
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
   const { data, error } = await supabase
     .from('calendar_events')
     .select('*')
+    .gte('event_date', oneYearAgo.toISOString().split('T')[0])
     .order('event_date', { ascending: true })
     .limit(500);
 
